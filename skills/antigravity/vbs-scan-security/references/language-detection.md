@@ -21,7 +21,7 @@ Cách detect ngôn ngữ code chính trong repo để chọn rule overlay.
    | `ruby` | `.rb` | |
    | `java` | `.java` | |
    | `rust` | `.rs` | |
-   | `csharp` | `.cs` | |
+   | `dotnet` | `.cs`, `.csproj`, `.sln` | ASP.NET Core / EF Core; marker phụ: `global.json`, `appsettings.json` |
    | `kotlin` | `.kt`, `.kts` | |
 
 3. **Primary language** = lang nào có **≥30% tổng file code** trong scope.
@@ -47,6 +47,7 @@ Cách detect ngôn ngữ code chính trong repo để chọn rule overlay.
 | `php` | ✅ v0.1 | mysqli vs PDO, `$_GET/$_POST` direct, `eval`/`include` variable, Laravel CSRF, `unserialize` |
 | `typescript` | ✅ v0.2 | Sequelize/Prisma/TypeORM/Mongoose SQLi+NoSQLi, React/Vue/Angular XSS, Express/NestJS/Next.js mass-assignment/SSRF/CSRF/CORS, js-yaml deserialize, child_process injection, JWT none/algorithm-confusion |
 | `python` | ✅ v0.4 | SQLAlchemy text() + Django .raw/.extra, pickle/yaml.load (RCE), subprocess shell=True, Flask Werkzeug debugger RCE, Django DEBUG/FastAPI debug, Django ModelForm/Flask `**request.json`/FastAPI Pydantic mass-assignment, PyJWT algorithms allowlist, flask-cors/django-cors-headers/FastAPI CORSMiddleware, Django CSRF middleware |
+| `dotnet` | ✅ v0.6 | ASP.NET Core / Minimal API model binding, EF Core raw SQL, Newtonsoft TypeNameHandling / legacy formatter deserialization, Process.Start command injection |
 | Khác | Phase v0.5+ | Ruby, Java, Rust theo nhu cầu cộng đồng |
 
 ## Frontend framework detection (sub-classification)

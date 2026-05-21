@@ -5,7 +5,7 @@ description: Use when scanning code for security vulnerabilities. Use when user 
 
 # vbsec — Security Scanner cho Vibe Coders (Antigravity variant)
 
-Quét lỗ hổng bảo mật cho code do AI sinh ra (vibe code). Bộ skill này check 21 lỗi bảo mật phổ biến nhất của vibe code, kế thừa kiến trúc SMALL/LARGE mode, tổng quát hóa cross-language + chuyên sâu cho Go/PHP/Python/TypeScript.
+Quét lỗ hổng bảo mật cho code do AI sinh ra (vibe code). Bộ skill này check 21 lỗi bảo mật phổ biến nhất của vibe code, kế thừa kiến trúc SMALL/LARGE mode, tổng quát hóa cross-language + chuyên sâu cho Go/PHP/Python/TypeScript/.NET.
 
 > Public repo: https://github.com/tanviet12/vbsec
 > License: MIT
@@ -195,12 +195,12 @@ File i18n chứa bảng key→text cho toàn bộ user-facing strings. Mọi tex
 
 Đọc [`references/language-detection.md`](references/language-detection.md). Tóm tắt:
 
-1. Count extension trong file list: `.go`, `.py`, `.php`, `.js`, `.ts`, `.jsx`, `.tsx`, `.rb`, `.java`, `.rs`, `.cs`
+1. Count extension trong file list: `.go`, `.py`, `.php`, `.js`, `.ts`, `.jsx`, `.tsx`, `.rb`, `.java`, `.rs`, `.cs`, `.csproj`, `.sln`
 2. Primary lang = lang chiếm ≥30% tổng files
 3. Có `rules/languages/<lang>/` → load overlay; không có → chỉ dùng generic
 4. Multi-lang repo (Go backend + Vue frontend) → load cả 2 overlay
 
-**Hiện hỗ trợ chuyên sâu:** `go`, `php`, `typescript` (gộp JS+TS), `python`.
+**Hiện hỗ trợ chuyên sâu:** `go`, `php`, `typescript` (gộp JS+TS), `python`, `dotnet`.
 
 ---
 

@@ -45,6 +45,11 @@ rules/
         ├── 15-cors-misconfig.md
         ├── 17-verbose-error-debug-mode.md
         └── 21-command-injection.md
+    └── dotnet/
+        ├── 02-sql-injection.md        (applies_to: dotnet — .cs .csproj .sln)
+        ├── 07-mass-assignment.md
+        ├── 08-insecure-deserialization.md
+        └── 21-command-injection.md
 ```
 
 **Matching is by frontmatter `id`, not filename.** Filename numeric prefix is convention only, to aid navigation. If `rules/languages/go/02-sql-injection.md` has `id: SQL-INJECTION`, it overrides `rules/generic/02-sql-injection.md` (also `id: SQL-INJECTION`) when scanning a Go repo.
@@ -68,8 +73,9 @@ See `references/language-detection.md` for the detection heuristic. In short:
 | PHP | `php/` | 5 | Stable (v0.1) |
 | TypeScript/JavaScript | `typescript/` | 10 | Stable (v0.2) — includes both `.ts` and `.js` files |
 | Python | `python/` | 9 | Stable (v0.4) — `.py` and `.pyw` |
+| .NET / C# | `dotnet/` | 4 | Stable (v0.6) — ASP.NET Core / EF Core |
 
-**Phase v0.5+** (planned): Ruby, Rust, Java/Kotlin.
+**Phase v0.7+** (planned): Ruby, Rust, Java/Kotlin.
 
 ## Why specialize?
 
@@ -77,7 +83,7 @@ Generic rules describe **intent and reasoning** — they work cross-language. Bu
 
 - "SQL injection" in Python = `cursor.execute(f"...")`; in Go = `db.Raw(fmt.Sprintf(...))`; in PHP = `mysqli_query("$_GET[id]")`
 - "Verbose error" in Go = `gin.DebugMode`; in PHP = `APP_DEBUG=true` + Ignition page (CRITICAL because leaks APP_KEY)
-- "Command injection" in Go is rarer (args usually passed separately); in PHP it's common (shell_exec ubiquitous)
+- "Command injection" in Go is rarer (args usually passed separately); in PHP it's common (shell_exec ubiquitous); in .NET it usually appears through `Process.Start` and `cmd.exe /c` / PowerShell wrappers.
 
 Severity also shifts: PHP `VERBOSE-ERROR-DEBUG-MODE` is CRITICAL (Ignition leaks secrets + has past RCE CVE), while Go is HIGH (gin debug leaks routes/stack but no secret leak).
 

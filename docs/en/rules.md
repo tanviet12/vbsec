@@ -4,7 +4,7 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 
 > **Conventions:**
 > - **Severity max** — the highest severity a finding of this rule can receive
-> - **Applies to** — `all` = every language; specialized overlays listed if `go`, `php`, `typescript` (includes `.js/.jsx/.ts/.tsx`), `python` (`.py/.pyw`)
+> - **Applies to** — `all` = every language; specialized overlays listed if `go`, `php`, `typescript` (includes `.js/.jsx/.ts/.tsx`), `python` (`.py/.pyw`), `dotnet` (`.cs/.csproj/.sln`)
 
 ---
 
@@ -13,13 +13,13 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 | # | Rule ID | Severity max | Specialization |
 |---|---|---|---|
 | 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | — |
-| 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python |
+| 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python, dotnet |
 | 3 | [XSS](#rule-3--xss) | HIGH | typescript, python |
 | 4 | [IDOR](#rule-4--idor) | HIGH | — |
 | 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | — |
 | 6 | [BRUTE-FORCE](#rule-6--brute-force) | HIGH | — |
-| 7 | [MASS-ASSIGNMENT](#rule-7--mass-assignment) | CRITICAL | typescript, python |
-| 8 | [INSECURE-DESERIALIZATION](#rule-8--insecure-deserialization) | CRITICAL | go, php, typescript, python |
+| 7 | [MASS-ASSIGNMENT](#rule-7--mass-assignment) | CRITICAL | typescript, python, dotnet |
+| 8 | [INSECURE-DESERIALIZATION](#rule-8--insecure-deserialization) | CRITICAL | go, php, typescript, python, dotnet |
 | 9 | [SSRF](#rule-9--ssrf) | HIGH | go, typescript, python |
 | 10 | [PATH-TRAVERSAL](#rule-10--path-traversal) | HIGH | — |
 | 11 | [CSRF](#rule-11--csrf) | HIGH | php, typescript, python |
@@ -32,7 +32,7 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 | 18 | [MISSING-RATE-LIMIT](#rule-18--missing-rate-limit) | HIGH | — |
 | 19 | [RACE-CONDITION](#rule-19--race-condition) | HIGH | — |
 | 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | — |
-| 21 | [COMMAND-INJECTION](#rule-21--command-injection) | CRITICAL | go, php, typescript, python |
+| 21 | [COMMAND-INJECTION](#rule-21--command-injection) | CRITICAL | go, php, typescript, python, dotnet |
 
 ---
 
@@ -582,6 +582,7 @@ Some rules have language-specific overrides that catch idioms more accurately. W
 |---|---|---|
 | Go | [`skill/rules/languages/go/`](../../skill/rules/languages/go/) | SQL-INJECTION (GORM Raw), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
 | PHP | [`skill/rules/languages/php/`](../../skill/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), XSS (echo $_GET), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), WEAK-PASSWORD-HASHING (md5), UNRESTRICTED-FILE-UPLOAD (move_uploaded_file) |
+| .NET / C# | [`skill/rules/languages/dotnet/`](../../skill/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/legacy formatters), COMMAND-INJECTION (Process.Start) |
 
 Want to add another language (Ruby, Java, JS/TS, Python, Rust)? See [contributing.md](contributing.md).
 
