@@ -582,7 +582,7 @@ Một số rule có override chuyên sâu cho ngôn ngữ cụ thể. Khi vbsec 
 |---|---|---|
 | Go | [`skill/rules/languages/go/`](../../skill/rules/languages/go/) | SQL-INJECTION (GORM Raw), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
 | PHP | [`skill/rules/languages/php/`](../../skill/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), XSS (echo $_GET), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), WEAK-PASSWORD-HASHING (md5), UNRESTRICTED-FILE-UPLOAD (move_uploaded_file) |
-| .NET / C# | [`skill/rules/languages/dotnet/`](../../skill/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/formatter legacy), COMMAND-INJECTION (Process.Start) |
+| .NET / C# | [`skill/rules/languages/dotnet/`](../../skill/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/formatter cũ), COMMAND-INJECTION (Process.Start) |
 
 Muốn add language khác (Ruby, Java, JS/TS, Python, Rust)? Đọc [contributing.md](contributing.md).
 

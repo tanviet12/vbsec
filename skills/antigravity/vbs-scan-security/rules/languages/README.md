@@ -35,16 +35,16 @@ rules/
     │   ├── 15-cors-misconfig.md
     │   ├── 17-verbose-error-debug-mode.md
     │   └── 21-command-injection.md
-    └── python/
-        ├── 02-sql-injection.md        (applies_to: python — .py .pyw)
-        ├── 07-mass-assignment.md
-        ├── 08-insecure-deserialization.md
-        ├── 09-ssrf.md
-        ├── 11-csrf.md
-        ├── 14-jwt-none-algorithm.md
-        ├── 15-cors-misconfig.md
-        ├── 17-verbose-error-debug-mode.md
-        └── 21-command-injection.md
+    ├── python/
+    │   ├── 02-sql-injection.md        (applies_to: python — .py .pyw)
+    │   ├── 07-mass-assignment.md
+    │   ├── 08-insecure-deserialization.md
+    │   ├── 09-ssrf.md
+    │   ├── 11-csrf.md
+    │   ├── 14-jwt-none-algorithm.md
+    │   ├── 15-cors-misconfig.md
+    │   ├── 17-verbose-error-debug-mode.md
+    │   └── 21-command-injection.md
     └── dotnet/
         ├── 02-sql-injection.md        (applies_to: dotnet — .cs .csproj .sln)
         ├── 07-mass-assignment.md
