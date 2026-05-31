@@ -154,7 +154,7 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | Cần làm gì |
 |---|---|
-| [`skill/SKILL.md`](../../skill/SKILL.md) | Thêm row vào bảng "21 rules generic" ở Step 4 (đổi thành "22 rules") |
+| [`skill/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Thêm row vào bảng "21 rules generic" ở Step 4 (đổi thành "22 rules") |
 | [`docs/vi/rules.md`](rules.md) | Thêm section `### Rule 22 — OPEN-REDIRECT` |
 | [`docs/en/rules.md`](../en/rules.md) | Thêm tương ứng |
 | [`README.vi.md`](../../README.vi.md) | Update danh sách 21 → 22 (cả bảng) |
@@ -233,8 +233,8 @@ grep -rE 'find_by_sql.*#\{' app/
 
 | File | Cần làm gì |
 |---|---|
-| [`skill/references/language-detection.md`](../../skill/references/language-detection.md) | Thêm Ruby vào Phase 1 table (extension `.rb`, file `Gemfile`) |
-| [`skill/SKILL.md`](../../skill/SKILL.md) | Dòng "Phase 1 hiện hỗ trợ chuyên sâu: `go`, `php`" → thêm `ruby` |
+| [`skill/references/language-detection.md`](../../skills/vbs-scan-security/references/language-detection.md) | Thêm Ruby vào Phase 1 table (extension `.rb`, file `Gemfile`) |
+| [`skill/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Dòng "Phase 1 hiện hỗ trợ chuyên sâu: `go`, `php`" → thêm `ruby` |
 | [`docs/vi/rules.md`](rules.md) | Cập nhật cột "Specialization" cho rule có override Ruby |
 | [`docs/en/rules.md`](../en/rules.md) | Tương ứng |
 | [`README.{vi,en}.md`](../../README.vi.md) | Update Roadmap (đánh dấu Ruby done) |

@@ -368,6 +368,9 @@ WARN ≠ approve. Báo cáo cần nêu rõ HIGH issues cần khắc phục trư�
 │   └── languages/                    # Override chuyên sâu per language
 │       ├── go/                       # GORM, slog, Colly...
 │       ├── php/                      # mysqli/PDO, $_GET, eval/include, Laravel CSRF
+│       ├── typescript/               # Sequelize/Prisma/Mongoose, React/Vue/Angular, Express/NestJS/Next.js
+│       ├── python/                   # SQLAlchemy/Django ORM, pickle/yaml, FastAPI/Flask/Django
+│       ├── dotnet/                   # EF Core, ASP.NET Core, Newtonsoft.Json
 │       └── README.md                 # Hướng dẫn add language mới
 └── references/
     ├── chunking-strategy.md

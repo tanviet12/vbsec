@@ -262,7 +262,7 @@ if (summary.verdict === 'FAIL') process.exit(1);
 | SMALL | ≤20 file ngôn ngữ chính VÀ ≤30 file tổng VÀ ≤14 ngày | 30-60 giây | 1 agent, ~5-15 tool calls |
 | LARGE | Vượt 1 trong 3 ngưỡng trên | 5-15 phút | Spawn sub-agents song song, mỗi chunk 1 agent |
 
-LARGE mode dùng [chunking-strategy.md](../../skill/references/chunking-strategy.md) để chia file theo top-level folder, mỗi sub-agent xử lý 1 chunk. Main agent aggregate findings + translate cuối.
+LARGE mode dùng [chunking-strategy.md](../../skills/vbs-scan-security/references/chunking-strategy.md) để chia file theo top-level folder, mỗi sub-agent xử lý 1 chunk. Main agent aggregate findings + translate cuối.
 
 ### Khi nào dùng SMALL vs LARGE?
 
