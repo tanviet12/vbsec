@@ -1,6 +1,6 @@
 ---
 name: vbs-scan-security
-description: Use when scanning code for security vulnerabilities. Use when user says "scan security", "kiểm tra bảo mật", "security audit", "review security", or invokes `/vbs-scan-security`. For large scans (>20 main-language files OR >30 total OR >14 days) processes chunks sequentially. Outputs bilingual reports (vi/en).
+description: Use when scanning code for security vulnerabilities. Use when user says "scan security", "kiểm tra bảo mật", "security audit", "review security", or invokes `/vbs-scan-security`. For large scans (>20 main-language files OR >30 total OR >14 days) processes chunks sequentially. Outputs bilingual reports (vi/en). Optional `--auto-fix` (agentic patch + verify loop) and `--sca` (live CVE lookup via OSV.dev).
 license: MIT
 ---
 
@@ -37,11 +37,20 @@ Hoặc nói tự nhiên: *"scan security cho repo này"* / *"kiểm tra bảo m�
 - `lang=vi` hoặc `--vi` → Tiếng Việt (mặc định)
 - `lang=en` hoặc `--en` → English
 
+**Cờ tùy chọn (v0.7+, mặc định TẮT):**
+
+| Flag | Alias | Mô tả |
+|---|---|---|
+| `--sca` | `sca` | Tra cứu CVE **live** qua OSV.dev cho dependency (NuGet/Go/npm/Composer/PyPI). Xem [`references/dependency-scan.md`](references/dependency-scan.md). Cần network. |
+| `--auto-fix` | `auto-fix` | Tự sinh patch, verify bằng build command, revert nếu fail. Xem [`workflows/auto-fix.md`](workflows/auto-fix.md). **Ghi đè file nguồn** — cần git repo. |
+
 Ví dụ:
 ```
 $vbs-scan-security pr id 42 lang=en
 $vbs-scan-security staged --vi
 $vbs-scan-security commit within 7days
+$vbs-scan-security all --sca
+$vbs-scan-security uncommitted --auto-fix
 ```
 
 ---
@@ -85,6 +94,8 @@ Tham khảo chi tiết: [`references/data-flow-classification.md`](references/da
 │           SMALL (≤20 main, ≤30 total, ≤14d) → inline                 │
 │           LARGE (vượt ngưỡng)                → sequential chunking   │
 │  [Step 4] Apply 21 rules (generic + lang overlay)                    │
+│  [Step 4b] SCA scan (optional, --sca) → rule 22 VULNERABLE-DEPENDENCY│
+│  [Step 4c] Auto-fix (optional, --auto-fix) → patch/verify/retry loop │
 │  [Step 5] Generate bilingual report + save to vbsec-reports/         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -107,8 +118,14 @@ LANG="vi"
 if echo "$ARGS" | grep -qE 'lang=en|--en|\ben\b'; then LANG="en"; fi
 if echo "$ARGS" | grep -qE 'lang=vi|--vi'; then LANG="vi"; fi
 
+# 1b) Extract --auto-fix / --sca flags (v0.7+, default off)
+AUTO_FIX=false
+if echo "$ARGS" | grep -qE '\-\-auto-fix|\bauto-fix\b'; then AUTO_FIX=true; fi
+SCA=false
+if echo "$ARGS" | grep -qE '\-\-sca|\bsca\b'; then SCA=true; fi
+
 # 2) Extract scope
-SCOPE=$(echo "$ARGS" | sed -E 's/(lang=(vi|en)|--vi|--en)//g' | xargs)
+SCOPE=$(echo "$ARGS" | sed -E 's/(lang=(vi|en)|--vi|--en|--auto-fix|\bauto-fix\b|--sca|\bsca\b)//g' | xargs)
 
 # 3) Gather files
 NO_GIT_NOTE=""
@@ -204,12 +221,18 @@ echo "Git repo: $IS_GIT_REPO"
 echo "Files: $(echo "$FILES" | wc -l)"
 echo "Report file: $REPORT_FILE"
 echo "Scan root: $SCAN_ROOT"
+echo "SCA (live OSV lookup): $SCA"
+echo "Auto-fix: $AUTO_FIX"
 [ "$NO_GIT_NOTE" = "true" ] && echo "Note: non-git folder — scanning all files via find"
 ```
 
 **Lưu ý (v0.5.1+):** Skill chạy được trên cả non-git folder. Default scope (`all`) dùng `find` thay `git ls-files`. Các scope dựa vào git (`staged`, `uncommitted`, `commit within`, `commit id`, `pr id`) BẮT BUỘC git — báo `msg_scope_needs_git` rồi exit. Nếu `NO_GIT_NOTE=true`, report header in `{msg_no_git_note}`.
 
 **Scan root:** nếu `Scan root` khác `.` (scope `commit id`, `pr id`), mọi lần đọc/grep file phải đọc tại `$SCAN_ROOT/<path>`. Đó là snapshot đúng commit/PR; KHÔNG đọc bản trong thư mục hiện tại (có thể đang ở branch khác). Report vẫn ghi path gốc `<path>`, không kèm prefix `$SCAN_ROOT`. LARGE mode cũng đọc mọi chunk tại `$SCAN_ROOT`. Render report xong → `rm -rf "$SCAN_ROOT"`.
+
+**v0.7+:** `$AUTO_FIX=true` nhưng `$IS_GIT_REPO=false` → Step 4c tự skip và in `{msg_autofix_needs_git}` (scan/report vẫn chạy bình thường).
+
+**v0.7+:** `$AUTO_FIX=true` và `$SCAN_ROOT` khác `.` (scope `commit id`, `pr id`) → file đang đọc là snapshot tạm, sửa ở đó không có tác dụng. Step 4c KHÔNG apply patch nào: mọi finding CRITICAL/HIGH chỉ ghi diff ra `vbsec-reports/patches/`, `patch_status: "suggested_only"`, và in `{msg_autofix_snapshot_scope}` một lần.
 
 ---
 
@@ -265,7 +288,7 @@ Cho mỗi rule trong `rules/generic/` (01-21):
 3. Với mỗi match: trace data flow (L1-L4), phân loại có phải vulnerability thật không
 4. Nếu có rule cùng `id` trong `rules/languages/<detected-lang>/`, **rule chuyên sâu thắng generic**.
 
-**21 rules generic:**
+**21 rules generic (luôn chạy) + 1 rule optional (`--sca`):**
 
 | # | ID | Severity max |
 |---|---|---|
@@ -290,6 +313,19 @@ Cho mỗi rule trong `rules/generic/` (01-21):
 | 19 | RACE-CONDITION | HIGH |
 | 20 | OUTDATED-DEPENDENCY | HIGH |
 | 21 | COMMAND-INJECTION | CRITICAL |
+| 22 | VULNERABLE-DEPENDENCY | CRITICAL |
+
+Rule 22 chỉ chạy khi `$SCA=true` — xem Step 4b.
+
+---
+
+## Step 4b: SCA Scan (optional — `--sca`)
+
+Chỉ chạy khi `$SCA=true`. Đọc [`references/dependency-scan.md`](references/dependency-scan.md): parse manifest theo ecosystem (NuGet/.NET, Go, npm/TS, Composer/PHP, PyPI), query `https://api.osv.dev/v1/querybatch` rồi `v1/vulns/{id}`, map CVSS → severity, tạo finding `VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`. Network fail/không có manifest → note `{msg_sca_unavailable}`/`{msg_sca_no_manifest}`, KHÔNG fail scan, fallback rule 20. Đây là bước chạy 1 lần cho toàn repo (không chunk theo folder như LARGE mode).
+
+## Step 4c: Auto-fix (optional — `--auto-fix`)
+
+Chỉ chạy khi `$AUTO_FIX=true`, và cần `$IS_GIT_REPO=true` (không có → in `{msg_autofix_needs_git}`, skip). `$SCAN_ROOT` khác `.` → chỉ sinh patch, KHÔNG apply, mọi finding là `suggested_only`. Chạy TRƯỚC Step 5 để `patch_status` kịp vào report. Đọc [`workflows/auto-fix.md`](workflows/auto-fix.md): với mỗi finding CRITICAL/HIGH, harvest context → generate unified diff → `git apply --check` → `git apply` → build verify theo `$PRIMARY_LANG` → revert + retry (tối đa 2 lần) nếu fail.
 
 ---
 
@@ -313,6 +349,7 @@ Tham khảo template trong [`references/output-format.md`](references/output-for
 7. PASSED CHECKS (list)
 7b. Hardening notes (tuỳ chọn, `{header_hardening_title}`) — gợi ý phòng thủ, KHÔNG phải finding
 8. Next steps
+8b. **Auto-fix summary** (chỉ khi `--auto-fix` đã chạy ở Step 4c)
 9. **Save notification** (path file đã ghi)
 10. **Gitignore warning** (nếu cần)
 11. Footer + disclaimer

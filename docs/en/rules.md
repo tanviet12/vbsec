@@ -1,4 +1,4 @@
-# The 21 vbsec Security Rules
+# The vbsec Security Rules (21 core + 1 optional)
 
 Compact overview of each rule with unsafe/safe examples. For the full reasoning, search patterns, and edge cases, open the corresponding rule file under [`skills/vbs-scan-security/rules/generic/`](../../skills/vbs-scan-security/rules/generic/).
 
@@ -33,6 +33,7 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 | 19 | [RACE-CONDITION](#rule-19--race-condition) | HIGH | — |
 | 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | — |
 | 21 | [COMMAND-INJECTION](#rule-21--command-injection) | CRITICAL | go, php, typescript, python, dotnet |
+| 22 | [VULNERABLE-DEPENDENCY](#rule-22--vulnerable-dependency) | CRITICAL | all (only with `--sca`) |
 
 ---
 
@@ -574,6 +575,29 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 
 ---
 
+### Rule 22 — VULNERABLE-DEPENDENCY
+
+**Severity max:** CRITICAL
+**Applies to:** all — **only runs with the `--sca` flag** (opt-in, default off, needs network)
+
+The live counterpart to rule 20: queries [OSV.dev](https://osv.dev) for the exact package/version pairs found in your manifest (NuGet, Go, npm, Composer, PyPI), and only flags when OSV confirms a real CVE — with the exact `fixed_version` and CVSS score, not a static guess. See [`dependency-scan.md`](../../skill/references/dependency-scan.md) for the full parsing + query flow.
+
+**Unsafe (`composer.lock`):**
+```json
+{"name": "guzzlehttp/guzzle", "version": "7.4.1"}
+```
+OSV confirms a CVE for this version → CRITICAL/HIGH finding with `fixed_version`.
+
+**Safe:**
+```bash
+composer require guzzlehttp/guzzle:<fixed_version>
+composer update guzzlehttp/guzzle
+```
+
+[Full reasoning →](../../skill/rules/generic/22-vulnerable-dependency.md)
+
+---
+
 ## Specializations
 
 Some rules have language-specific overrides that catch idioms more accurately. When vbsec detects the primary language, it loads the matching overlay:
@@ -592,7 +616,7 @@ Want to add another language (Ruby, Java, Rust)? See [contributing.md](contribut
 
 ## Updating this rule list
 
-If you add a new rule (22, 23...) or change a severity, remember to update:
+If you add a new rule (23, 24...) or change a severity, remember to update:
 
 1. This file (`docs/en/rules.md`)
 2. [`docs/vi/rules.md`](../vi/rules.md)

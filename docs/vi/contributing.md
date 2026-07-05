@@ -55,8 +55,9 @@ git init
 | Cải thiện rule existing (thêm pattern, giảm false positive) | Cao | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Sửa lỗi reasoning trong rule | Cao | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Thêm test case (positive + negative) | Trung | `tests/` (chưa có infra, kèm trong PR description) |
-| Thêm rule mới (rule 22, 23...) | Trung | Cần thảo luận trước qua issue |
-| Cập nhật CVE list cho OUTDATED-DEPENDENCY | Trung | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
+| Thêm rule mới (rule 23, 24...) | Trung | Cần thảo luận trước qua issue |
+| Cập nhật CVE list cho OUTDATED-DEPENDENCY (fallback offline) | Trung | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
+| Thêm ecosystem mới cho `--sca`/VULNERABLE-DEPENDENCY | Trung | `skills/vbs-scan-security/references/dependency-scan.md` |
 | Docs (typo, ví dụ, cải thiện workflow) | Thấp-Trung | `docs/`, `README.*.md` |
 
 **Trước khi làm PR lớn (rule mới, language mới):** mở issue thảo luận để tránh dụng độ.
@@ -89,9 +90,9 @@ git init
 
 ### 1. Đặt tên + chọn số
 
-Rule kế tiếp là **22**. Tên ID dạng `KEBAB-CASE-UPPERCASE`, ví dụ: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
+Rule kế tiếp là **23** (rule 22 là `VULNERABLE-DEPENDENCY`, thêm ở v0.7 cho `--sca`/OSV live lookup). Tên ID dạng `KEBAB-CASE-UPPERCASE`, ví dụ: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
 
-File: `skills/vbs-scan-security/rules/generic/22-open-redirect.md`
+File: `skills/vbs-scan-security/rules/generic/23-open-redirect.md`
 
 ### 2. Template frontmatter
 
@@ -154,10 +155,10 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | Cần làm gì |
 |---|---|
-| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Thêm row vào bảng "21 rules generic" ở Step 4 (đổi thành "22 rules") |
-| [`docs/vi/rules.md`](rules.md) | Thêm section `### Rule 22 — OPEN-REDIRECT` |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Thêm row vào bảng "22 rules generic" ở Step 4 (đổi thành "23 rules") |
+| [`docs/vi/rules.md`](rules.md) | Thêm section `### Rule 23 — OPEN-REDIRECT` |
 | [`docs/en/rules.md`](../en/rules.md) | Thêm tương ứng |
-| [`README.vi.md`](../../README.vi.md) | Update danh sách 21 → 22 (cả bảng) |
+| [`README.vi.md`](../../README.vi.md) | Update danh sách 22 → 23 (cả bảng) |
 | [`README.md`](../../README.md) | Update tương ứng |
 
 ### 4. Test
@@ -307,6 +308,13 @@ git add app.py
 
 Nhiều pattern trông giống vuln nhưng safe trong context cụ thể. Ví dụ: `f"SELECT * FROM users WHERE id={user_id}"` SAFE nếu `user_id` là biến internal L3 (hardcoded const, framework-provided). Test đảm bảo rule KHÔNG flag những case này.
 
+### Test `--auto-fix` / `--sca`
+
+2 flag này mutate file / gọi network — test rõ cả nhánh fail, không chỉ happy path:
+
+- **`--auto-fix`:** chạy trên repo có finding CRITICAL cố tình **không sửa được** (vd fix đúng cần 1 dependency chưa install, nên build luôn fail). Xác nhận: file được revert về nguyên bản sau khi hết retry budget, `patch_status: "failed_verification"`, và working tree sạch (`git diff` rỗng cho file đó).
+- **`--sca`:** chạy 1 lần có network (xác nhận `scan_source: "osv.dev live"`) và 1 lần block network, vd kết hợp `--sca` với DNS/proxy không reachable (xác nhận fallback graceful: `scan_source: "static list (offline)"`, không crash, có in `{msg_sca_unavailable}`).
+
 ### Document test plan trong PR
 
 Trong mô tả PR, bao gồm:
@@ -367,7 +375,7 @@ Trong mô tả PR, bao gồm:
 
 | Prefix | Khi nào dùng | Ví dụ |
 |---|---|---|
-| `feat:` | Thêm tính năng / rule mới | `feat: add OPEN-REDIRECT rule (22)` |
+| `feat:` | Thêm tính năng / rule mới | `feat: add OPEN-REDIRECT rule (23)` |
 | `fix:` | Sửa bug, giảm false positive | `fix: reduce false positive in SQL-INJECTION for parameterized GORM` |
 | `docs:` | Cập nhật docs / README | `docs: clarify SMALL vs LARGE thresholds` |
 | `lang:` | Thêm/sửa language specialization | `lang: add Ruby specialization for SQL-INJECTION` |

@@ -47,6 +47,8 @@ For each file, look for these 21 vulnerability categories:
 20. OUTDATED-DEPENDENCY — package.json/requirements.txt/go.mod with known-CVE versions
 21. COMMAND-INJECTION — exec/system/spawn/shell=True with user input
 
+Note: vbsec has 22 canonical rules total. Rule 22 (VULNERABLE-DEPENDENCY, live OSV.dev lookup under `--sca`) is intentionally NOT in this per-chunk list — it's a repo-wide dependency-manifest check, not something that benefits from folder-based chunking. The **main orchestrator** runs it once (SKILL.md Step 4b), then merges its findings into the aggregated result below. Do not attempt OSV lookups from within a sub-agent chunk.
+
 # Methodology — Reasoning, not pattern-matching
 
 For EACH potential finding:
@@ -211,9 +213,10 @@ Sau khi tất cả sub-agents return:
 1. Đọc tất cả `.vbsec-tmp/findings-*.md`
 2. **Dedup**: cùng `file:line:rule_id` → giữ severity cao nhất
 3. **Cross-reference**: 1 finding có liên quan đến finding khác không? (vd: HARDCODED-SECRET in .env + EXPOSED-CONFIG cùng vị trí)
-4. **Translate**: Nếu `lang=vi`, dịch `issue` và `fix` sang tiếng Việt theo phrase template trong i18n file
-5. **Render report** theo `output-format.md`
-6. **Cleanup**: `rm -rf .vbsec-tmp/` sau khi done
+4. **Merge SCA findings** (nếu `--sca`): main agent tự chạy [`../references/dependency-scan.md`](dependency-scan.md) 1 lần (không qua sub-agent), thêm findings `VULNERABLE-DEPENDENCY` vào cùng danh sách trước khi render.
+5. **Translate**: Nếu `lang=vi`, dịch `issue` và `fix` sang tiếng Việt theo phrase template trong i18n file
+6. **Render report** theo `output-format.md`
+7. **Cleanup**: `rm -rf .vbsec-tmp/` sau khi done
 
 ## Edge cases
 

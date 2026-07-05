@@ -10,9 +10,11 @@ applies_to: all
 
 Dependency cũ có **CVE đã công bố** → exploit code có sẵn trên GitHub, hacker chỉ việc copy-paste. Vibe coder cài package từ tutorial 2 năm trước, không bao giờ update → mang theo cả tá lỗ hổng (log4shell, prototype pollution, RCE, SSRF...).
 
-vbsec chạy **offline** (không fetch CVE DB), nên rule này:
+vbsec mặc định chạy **offline** (không fetch CVE DB), nên rule này:
 1. Flag một số package + version **well-known vulnerable** (static list dưới)
 2. Khuyến nghị user tự chạy `npm audit` / `pip-audit` / `govulncheck` / `composer audit`
+
+**v0.7+**: nếu user truyền flag `--sca`, vbsec tra cứu **live** qua OSV.dev API — xem [`22-vulnerable-dependency`](22-vulnerable-dependency.md) + [`../../references/dependency-scan.md`](../../references/dependency-scan.md). Rule 22 có `cve_id`/`fixed_version` chính xác hơn static list dưới; khi cùng package/version match cả 2 rule, chỉ giữ finding của rule 22. Rule này (20) vẫn là fallback bắt buộc khi không có `--sca` hoặc network không khả dụng.
 
 ## Khi nào HIGH
 
@@ -197,5 +199,6 @@ requests==2.31.0
 ## Cross-references
 
 - **Lưu ý**: list trên KHÔNG đầy đủ — chỉ là well-known CVE. Phải chạy audit tool để có data thật.
+- `22-vulnerable-dependency`: bản "live" của rule này, dùng khi có `--sca`. Không double-report cùng package/version ở cả 2 rule.
 - Cross-check với `01-hardcoded-secret`: package cũ có thể leak qua telemetry
 - Cross-check với `17-verbose-error-debug-mode`: error stack reveal version → CVE lookup dễ

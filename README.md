@@ -21,7 +21,7 @@ A multi-platform agent skill that performs in-depth security scans and detects 2
 
 AI-generated code now represents a meaningful share of new commits across the industry. While modern coding assistants excel at producing code that *works*, they routinely ship code with classic security pitfalls: hardcoded secrets, SQL injection, missing access controls, weak password hashing, JWT misuse, and broken CORS configurations. These mistakes rarely surface in functional testing — they surface in incident reports.
 
-vbsec brings production-grade security review into the AI coding loop. It runs as a native agent skill on three platforms — type `/vbs-scan-security` in Claude Code, `$vbs-scan-security` (or `/skills`) in OpenAI Codex CLI, or simply ask Google Antigravity to "scan security" — and receive a structured report covering 20+ categories of vulnerabilities. There are no external API calls, no separate tool installation, and no additional infrastructure to maintain.
+vbsec brings production-grade security review into the AI coding loop. It runs as a native agent skill on three platforms — type `/vbs-scan-security` in Claude Code, `$vbs-scan-security` (or `/skills`) in OpenAI Codex CLI, or simply ask Google Antigravity to "scan security" — and receive a structured report covering 20+ categories of vulnerabilities. By default there are no external API calls, no separate tool installation, and no additional infrastructure to maintain — network access is entirely opt-in, only triggered by the `--sca` flag for live CVE lookups (see [Disclaimer](#disclaimer)).
 
 vbsec has been exercised against intentionally vulnerable open-source training apps such as OWASP Juice Shop — and identifies findings that line up with the documented vulnerability challenges across SQL injection, NoSQL injection, JWT misuse, broken access control, mass assignment, deserialization RCE, and more.
 
@@ -52,6 +52,10 @@ vbsec is engineered around a small set of design choices that distinguish it fro
 
 - **Multi-platform.** One canonical rule set, three platform variants. Claude Code uses parallel sub-agents for large scans; Codex and Antigravity use sequential chunking with identical output. A single `sync-skills.sh` script keeps rule definitions in lock-step across all three.
 
+- **Optional auto-fix loop (`--auto-fix`, off by default).** For CRITICAL/HIGH findings, vbsec can generate a unified-diff patch, apply it via `git apply`, run a language-appropriate build command to verify it, and revert + retry (up to 2 times) if the build fails. This is the one place in the skill allowed to write to your source tree, and it requires a git repository.
+
+- **Optional live CVE lookup via OSV.dev (`--sca`, off by default).** Instead of relying only on an offline static list, vbsec can query [OSV.dev](https://osv.dev) live for your dependency manifests (NuGet, Go, npm, Composer, PyPI) and enrich findings with the confirmed CVE id, CVSS score, and exact fixed version — so CI/CD can gate on real data.
+
 ## Multi-platform support
 
 vbsec ships three variants from a single source of truth:
@@ -62,7 +66,7 @@ vbsec ships three variants from a single source of truth:
 | OpenAI Codex CLI | `skills/codex/vbs-scan-security/` | `~/.agents/skills/vbs-scan-security` | Sequential chunking |
 | Google Antigravity | `skills/antigravity/vbs-scan-security/` | `~/.gemini/antigravity/skills/vbs-scan-security` | Sequential chunking |
 
-All three share the same 21 rules, language overlays, i18n strings, and output format. Findings are identical; only execution strategy differs. Sequential variants are ~3× slower wall-clock than Claude Code's parallel mode on large repositories, but produce the same JSON summary and the same Markdown report.
+All three share the same 22 rules (21 always-on generic rules + 1 optional rule for `--sca`), language overlays, i18n strings, and output format. Findings are identical; only execution strategy differs. Sequential variants are ~3× slower wall-clock than Claude Code's parallel mode on large repositories, but produce the same JSON summary and the same Markdown report.
 
 Contributors: edit rules in `skills/vbs-scan-security/` (the canonical Claude folder), then run `./scripts/sync-skills.sh` to propagate to the Codex and Antigravity variants. Platform-specific files (`SKILL.md`, `workflows/large-review*.md`) are hand-maintained.
 
@@ -124,6 +128,8 @@ The default scope is the entire repository. This is a deliberate change from ear
 /vbs-scan-security uncommitted           # only scan uncommitted changes
 /vbs-scan-security pr id 42 lang=en      # scan a PR, report in English
 /vbs-scan-security commit within 7days   # scan last 7 days of commits
+/vbs-scan-security all --sca             # + live CVE lookup via OSV.dev (needs network)
+/vbs-scan-security uncommitted --auto-fix # + auto-patch CRITICAL/HIGH findings (needs git)
 ```
 
 **Works without git.** Vibe coders rarely init `git` before pasting AI-generated code into a folder. The default scope (`/vbs-scan-security`) walks the filesystem directly when no `.git/` is present — common build/vendored folders are excluded automatically. Git-specific scopes (`uncommitted`, `staged`, `commit within`, `commit id`, `pr id`) still require a git repository and will print a helpful message asking you to init git or fall back to the default scope.
@@ -157,8 +163,9 @@ See [docs/en/usage.md](docs/en/usage.md) for all options including `staged`, sin
 | 19 | `RACE-CONDITION` | HIGH | — |
 | 20 | `OUTDATED-DEPENDENCY` | HIGH | — |
 | 21 | `COMMAND-INJECTION` | CRITICAL | go, php, typescript, python, dotnet |
+| 22 | `VULNERABLE-DEPENDENCY` | CRITICAL | all (only with `--sca`, live OSV.dev lookup) |
 
-The list currently contains 21 rules and will continue to expand.
+The list currently contains 22 rules (21 always-on generic rules + `VULNERABLE-DEPENDENCY`, which only runs with `--sca`) and will continue to expand.
 
 ## Documentation
 
@@ -175,9 +182,10 @@ Contributions are welcome: bug reports, rule fixes, and new language overlays vi
 - v0.2 — TypeScript/JavaScript specialization (Sequelize/Prisma/Mongoose, React/Vue/Angular, Express/NestJS/Next.js) ✅
 - v0.3 — Default scope changed to full-repo, persistent reports, verbose per-finding explanations ✅
 - v0.4 — Python specialization (SQLAlchemy/Django ORM SQLi, pickle/yaml deserialization RCE, Werkzeug debugger, FastAPI/Flask/Django CSRF + CORS, PyJWT algorithms, subprocess shell=True) ✅
-- v0.5 (current) — Multi-platform support: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, shared rule set, `install.sh` + `sync-skills.sh`) ✅
-- .NET/C# specialization (EF Core raw SQL, ASP.NET Core model binding, Newtonsoft.Json/legacy formatter deserialization, Process.Start) ✅
-- v0.6+ — Ruby, Java, Rust — community-driven
+- v0.5 — Multi-platform support: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, shared rule set, `install.sh` + `sync-skills.sh`) ✅
+- v0.6 — .NET/C# specialization (EF Core raw SQL, ASP.NET Core model binding, Newtonsoft.Json/legacy formatter deserialization, Process.Start) ✅
+- v0.7 (current) — `--auto-fix` (agentic patch + build-verify + retry loop) and `--sca` (live CVE lookup via OSV.dev, `VULNERABLE-DEPENDENCY` rule 22) ✅
+- v0.8+ — Ruby, Java, Rust — community-driven
 
 ## Disclaimer
 
@@ -185,7 +193,8 @@ vbsec is a reference scanner. It catches common AI-generated code mistakes, but:
 
 - It does NOT replace a professional security audit
 - It does NOT guarantee 100% vulnerability coverage
-- It does NOT fetch live CVE databases (run `npm audit` / `pip-audit` / `govulncheck` separately for that)
+- By default it does NOT fetch live CVE databases (run `npm audit` / `pip-audit` / `govulncheck` separately for that) — pass `--sca` to opt into live lookups via [OSV.dev](https://osv.dev) (needs network; see [usage.md](docs/en/usage.md#live-dependency-scan---sca))
+- `--auto-fix` writes directly to your source files (with build verification + revert on failure) — it is off by default and requires a git repository; see [usage.md](docs/en/usage.md#auto-fix---auto-fix)
 
 Use vbsec as a **first line of defense**, not as proof of security.
 

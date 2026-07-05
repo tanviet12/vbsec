@@ -16,6 +16,8 @@ Detailed guide to invoking `/vbs-scan-security`, choosing scopes, understanding 
 - [JSON summary for tooling](#json-summary-for-tooling)
 - [Performance expectations](#performance-expectations)
 - [Resuming after LARGE mode is interrupted](#resuming-after-large-mode-is-interrupted)
+- [Auto-fix (--auto-fix)](#auto-fix---auto-fix)
+- [Live dependency scan (--sca)](#live-dependency-scan---sca)
 - [CI/CD integration](#cicd-integration)
 
 ---
@@ -167,15 +169,17 @@ CRITICAL issues found. DO NOT deploy until fixed.
 ```json
 {
   "verdict": "FAIL",
+  "summary": {"critical": 2, "high": 1, "medium": 0, "low": 0, "passed": 14},
   "scope": "uncommitted",
-  "files_scanned": 12,
+  "files_reviewed": 12,
   "primary_language": "typescript",
-  "mode": "SMALL",
-  "counts": {"critical": 2, "high": 1, "medium": 0, "low": 0},
+  "specialized_rules_used": true,
+  "mode": "small",
+  "date": "2026-05-13",
   "findings": [
-    {"file": "api/users.ts", "line": 42, "rule": "SQL-INJECTION", "severity": "CRITICAL"},
-    {"file": ".env", "line": 1, "rule": "HARDCODED-SECRET", "severity": "CRITICAL"},
-    {"file": "auth.ts", "line": 18, "rule": "WEAK-PASSWORD-HASHING", "severity": "HIGH"}
+    {"file": "api/users.ts", "line": 42, "rule_id": "SQL-INJECTION", "severity": "CRITICAL", "issue_summary": "req.body.id concatenated into SQL", "fix_summary": "Use parameterized query"},
+    {"file": ".env", "line": 1, "rule_id": "HARDCODED-SECRET", "severity": "CRITICAL", "issue_summary": "Stripe live key committed", "fix_summary": "Rotate key + .gitignore"},
+    {"file": "auth.ts", "line": 18, "rule_id": "WEAK-PASSWORD-HASHING", "severity": "HIGH", "issue_summary": "MD5 used for password hashing", "fix_summary": "Use bcrypt/argon2"}
   ]
 }
 ```
@@ -206,31 +210,33 @@ WARN is **not** approval. Security/tech lead should still review HIGH issues.
 
 ## JSON summary for tooling
 
-The JSON summary always sits at the end of the report, in a `json` fenced code block. Schema is stable:
+The JSON summary always sits at the end of the report, in a `json` fenced code block. Schema is stable (full reference in [`output-format.md`](../../skill/references/output-format.md)):
 
 ```json
 {
   "verdict": "PASS" | "WARN" | "FAIL",
+  "summary": {"critical": <int>, "high": <int>, "medium": <int>, "low": <int>, "passed": <int>},
   "scope": "uncommitted" | "staged" | "commit_within_Ndays" | "commit_id_<sha>" | "pr_<num>" | "all",
-  "files_scanned": <int>,
+  "files_reviewed": <int>,
   "primary_language": <string>,
-  "mode": "SMALL" | "LARGE",
-  "counts": {
-    "critical": <int>,
-    "high": <int>,
-    "medium": <int>,
-    "low": <int>
-  },
+  "specialized_rules_used": <bool>,
+  "mode": "small" | "large",
+  "date": <ISO 8601 date>,
   "findings": [
     {
       "file": <string>,
       "line": <int>,
-      "rule": <string>,
-      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+      "rule_id": <string>,
+      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+      "issue_summary": <string>,
+      "fix_summary": <string>
     }
-  ]
+  ],
+  "dependencies_scanned": { "total": <int>, "ecosystems": [<string>], "vulnerable_count": <int>, "scan_source": "osv.dev live" | "static list (offline)" }
 }
 ```
+
+`dependencies_scanned` is only present when `--sca` ran. A finding with `rule_id: VULNERABLE-DEPENDENCY` gets extra `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`cvss_score` fields. A finding processed by `--auto-fix` gets an extra `patch_status` field.
 
 ### Parsing JSON from the output
 
@@ -392,23 +398,63 @@ Parse the JSON summary and apply your own policy:
 
 ```bash
 # Block when ≥3 HIGH issues exist
-HIGH_COUNT=$(jq -r '.counts.high' summary.json)
+HIGH_COUNT=$(jq -r '.summary.high' summary.json)
 if [ "$HIGH_COUNT" -ge 3 ]; then
   echo "Too many HIGH issues ($HIGH_COUNT). Blocking."
   exit 1
 fi
 
 # Or: block on specific rules only
-CRITICAL_RULES=$(jq -r '.findings[] | select(.severity=="CRITICAL") | .rule' summary.json)
+CRITICAL_RULES=$(jq -r '.findings[] | select(.severity=="CRITICAL") | .rule_id' summary.json)
 if echo "$CRITICAL_RULES" | grep -q "HARDCODED-SECRET"; then
   echo "Hardcoded secret detected — blocking deploy."
   exit 1
 fi
+
+# Block on OSV-confirmed CRITICAL CVEs (CVSS >= 9.0) from --sca
+jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .cvss_score >= 9.0)] | length == 0' summary.json \
+  || { echo "CRITICAL CVE (CVSS>=9.0) confirmed via OSV — blocking."; exit 1; }
+```
+
+---
+
+## Auto-fix (`--auto-fix`)
+
+**v0.7+, off by default.** After a scan, vbsec generates a unified-diff patch for each CRITICAL/HIGH finding, applies it via `git apply`, runs the language-appropriate build command (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`) to verify it, and reverts + retries (up to 2 times) if the build fails.
+
+```
+/vbs-scan-security uncommitted --auto-fix
+```
+
+**Before using it:**
+- **Requires a git repository** — vbsec needs to be able to revert if a patch breaks the build. No git → the step is skipped automatically, with a warning.
+- **Commit or back up your working tree first** — auto-fix writes directly to source files on disk (build verification reduces risk, but it's still a real mutation).
+- Only CRITICAL/HIGH findings are auto-fixed; MEDIUM/LOW are always left untouched.
+- Languages without a reliable build command (anything outside .NET/Go/TypeScript/PHP/Python) only get a suggested patch saved to `vbsec-reports/patches/` — vbsec never overwrites source for those.
+
+Each processed finding gets a `patch_status` field in the JSON summary (`applied`/`failed_verification`/`suggested_only`/`skipped_low_severity`) — CI can gate further on this (e.g. fail if any `failed_verification` remain).
+
+---
+
+## Live dependency scan (`--sca`)
+
+**v0.7+, off by default, requires network.** Instead of only the offline static list (`OUTDATED-DEPENDENCY` rule), `--sca` queries [OSV.dev](https://osv.dev) **live** for dependency manifests across 5 ecosystems: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python).
+
+```
+/vbs-scan-security all --sca
+```
+
+Result: `rule_id: VULNERABLE-DEPENDENCY` findings with accurate `cve_id`, `fixed_version`, and `cvss_score` straight from OSV — not a guess. If the network is unavailable, vbsec falls back to the static list (rule 20) instead of failing the scan.
+
+Combine both flags to auto-bump vulnerable dependencies and verify the build:
+
+```
+/vbs-scan-security all --sca --auto-fix
 ```
 
 ---
 
 ## Next steps
 
-- Read [rules.md](rules.md) for full details on the 21 rules
+- Read [rules.md](rules.md) for full details on the 21 core rules + rule 22 (SCA)
 - Want to add a new rule or language? See [contributing.md](contributing.md)

@@ -1,6 +1,6 @@
 ---
 name: vbs-scan-security
-description: Use when scanning code for security vulnerabilities. Use when user says "scan security", "kiểm tra bảo mật", "security audit", "review security", or invokes `/vbs-scan-security`. Auto-delegates to sub-agents for large scans (>20 main-language files OR >30 total OR >14 days). Outputs bilingual reports (vi/en).
+description: Use when scanning code for security vulnerabilities. Use when user says "scan security", "kiểm tra bảo mật", "security audit", "review security", or invokes `/vbs-scan-security`. Auto-delegates to sub-agents for large scans (>20 main-language files OR >30 total OR >14 days). Outputs bilingual reports (vi/en). Optional `--auto-fix` (agentic patch + verify loop) and `--sca` (live CVE lookup via OSV.dev).
 userInvocable: true
 ---
 
@@ -30,11 +30,21 @@ Quét lỗ hổng bảo mật cho code do AI sinh ra (vibe code). Bộ skill nà
 - `lang=vi` hoặc `--vi` → Tiếng Việt (mặc định)
 - `lang=en` hoặc `--en` → English
 
+**Cờ tùy chọn (v0.7+, mặc định TẮT — thêm vào bất kỳ scope nào):**
+
+| Flag | Alias | Mô tả |
+|---|---|---|
+| `--sca` | `sca` | Tra cứu CVE **live** qua OSV.dev cho dependency (5 ecosystem: NuGet/Go/npm/Composer/PyPI). Xem [`references/dependency-scan.md`](references/dependency-scan.md). Cần network. |
+| `--auto-fix` | `auto-fix` | Tự sinh patch (unified diff) cho finding CRITICAL/HIGH, verify bằng build command, revert nếu fail. Xem [`workflows/auto-fix.md`](workflows/auto-fix.md). **Ghi đè file nguồn** — cần git repo, khuyến nghị working tree sạch trước khi chạy. |
+
 Ví dụ:
 ```
 /vbs-scan-security pr id 42 lang=en
 /vbs-scan-security staged --vi
 /vbs-scan-security commit within 7days
+/vbs-scan-security all --sca
+/vbs-scan-security uncommitted --auto-fix
+/vbs-scan-security all --sca --auto-fix
 ```
 
 ---
@@ -92,12 +102,20 @@ Tham khảo chi tiết: [`references/data-flow-classification.md`](references/da
 │   review.md            review.md                                     │
 │                                                                      │
 │   Both apply:                                                        │
-│     - rules/generic/*.md (21 rules, luôn chạy)                       │
+│     - rules/generic/*.md (21 rules cross-language, luôn chạy)        │
 │     - rules/languages/<detected>/*.md (override nếu trùng tên)       │
 │                  ↓                                                   │
-│  [Step 4] Generate report                                            │
-│     ├─ Markdown report (theo lang chọn)                              │
-│     └─ JSON summary (canonical EN, ở cuối)                           │
+│  [Step 4b] SCA scan (optional — cần $SCA=true)                       │
+│     └─ references/dependency-scan.md → rule 22 VULNERABLE-DEPENDENCY │
+│                  ↓                                                   │
+│  [Step 4c] Auto-fix (optional — cần $AUTO_FIX=true)                  │
+│     └─ workflows/auto-fix.md → patch + verify + retry loop           │
+│        (chạy TRƯỚC khi render report cuối, để patch_status kịp vào   │
+│         JSON summary + section Auto-fix trong report)                │
+│                  ↓                                                   │
+│  [Step 5] Generate report                                            │
+│     ├─ Markdown report (theo lang chọn, gồm cả section Auto-fix)     │
+│     └─ JSON summary (canonical EN, ở cuối, gồm patch_status)         │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -120,8 +138,14 @@ LANG="vi"
 if echo "$ARGS" | grep -qE 'lang=en|--en|\ben\b'; then LANG="en"; fi
 if echo "$ARGS" | grep -qE 'lang=vi|--vi'; then LANG="vi"; fi
 
-# 2) Extract scope (strip lang flags first)
-SCOPE=$(echo "$ARGS" | sed -E 's/(lang=(vi|en)|--vi|--en)//g' | xargs)
+# 1b) Extract --auto-fix / --sca flags (v0.7+, default off)
+AUTO_FIX=false
+if echo "$ARGS" | grep -qE '\-\-auto-fix|\bauto-fix\b'; then AUTO_FIX=true; fi
+SCA=false
+if echo "$ARGS" | grep -qE '\-\-sca|\bsca\b'; then SCA=true; fi
+
+# 2) Extract scope (strip lang + auto-fix/sca flags first)
+SCOPE=$(echo "$ARGS" | sed -E 's/(lang=(vi|en)|--vi|--en|--auto-fix|\bauto-fix\b|--sca|\bsca\b)//g' | xargs)
 
 # 3) Gather files
 NO_GIT_NOTE=""
@@ -218,6 +242,8 @@ echo "Git repo: $IS_GIT_REPO"
 echo "Files: $(echo "$FILES" | wc -l)"
 echo "Report file: $REPORT_FILE"
 echo "Scan root: $SCAN_ROOT"
+echo "SCA (live OSV lookup): $SCA"
+echo "Auto-fix: $AUTO_FIX"
 [ "$NO_GIT_NOTE" = "true" ] && echo "Note: non-git folder — scanning all files via find"
 [ "$GITIGNORE_WARNING" = "missing" ] && echo "Note: vbsec-reports/ not in .gitignore — will warn user at end"
 ```
@@ -228,6 +254,8 @@ echo "Scan root: $SCAN_ROOT"
 - Path output `vbsec-reports/scan-<timestamp>.md` cần được mkdir trước khi scan, để workflows save vào
 - **v0.5.1+**: skill chạy được trên cả non-git folder. Default scope (`all`) dùng `find` thay `git ls-files`. Các scope dựa vào git (`staged`, `uncommitted`, `commit within`, `commit id`, `pr id`) BẮT BUỘC git — báo `msg_scope_needs_git` rồi exit.
 - Nếu `NO_GIT_NOTE=true`, report header phải in `{msg_no_git_note}` để user biết folder không có git → không lọc theo `.gitignore`.
+- **v0.7+**: `$AUTO_FIX=true` nhưng `$IS_GIT_REPO=false` → Step 4c (auto-fix) sẽ tự skip và in `{msg_autofix_needs_git}` (không exit toàn bộ scan, phần scan/report vẫn chạy bình thường).
+- **v0.7+**: `$AUTO_FIX=true` và `$SCAN_ROOT` khác `.` (scope `commit id`, `pr id`) → file đang đọc là snapshot tạm, sửa ở đó không có tác dụng. Step 4c KHÔNG apply patch nào: mọi finding CRITICAL/HIGH chỉ ghi diff ra `vbsec-reports/patches/`, `patch_status: "suggested_only"`, và in `{msg_autofix_snapshot_scope}` một lần.
 
 ---
 
@@ -289,7 +317,7 @@ Cho mỗi rule trong `rules/generic/` (01-21):
 3. Với mỗi match: trace data flow (L1-L4), phân loại có phải vulnerability thật không
 4. Nếu có rule cùng tên (cùng `id`) trong `rules/languages/<detected-lang>/`, **rule chuyên sâu thắng generic** (đè hoàn toàn pattern + reasoning steps cho lang đó).
 
-**21 rules generic:**
+**21 rules generic (luôn chạy) + 1 rule optional (`--sca`):**
 
 | # | ID | Severity max |
 |---|---|---|
@@ -314,6 +342,34 @@ Cho mỗi rule trong `rules/generic/` (01-21):
 | 19 | RACE-CONDITION | HIGH |
 | 20 | OUTDATED-DEPENDENCY | HIGH |
 | 21 | COMMAND-INJECTION | CRITICAL |
+| 22 | VULNERABLE-DEPENDENCY | CRITICAL |
+
+Rule 22 chỉ chạy khi `$SCA=true` — xem Step 4b dưới đây. 21 rules còn lại luôn chạy.
+
+---
+
+## Step 4b: SCA Scan (optional — `--sca`)
+
+Chỉ chạy khi `$SCA=true`. Đọc [`references/dependency-scan.md`](references/dependency-scan.md) và follow:
+
+1. Parse manifest dependency theo ecosystem tương ứng `$PRIMARY_LANG` (NuGet/.NET, Go, npm/TypeScript, Composer/PHP, PyPI/Python) — có thể nhiều ecosystem nếu multi-lang repo.
+2. Query live `https://api.osv.dev/v1/querybatch` rồi `v1/vulns/{id}` cho từng package (dùng Bash tool, đây là 1 trong 2 chỗ duy nhất trong skill được phép gọi network thật — chỗ còn lại là `gh pr diff`).
+3. Map CVSS → severity, tạo finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`.
+4. Network fail/không có manifest → in `{msg_sca_unavailable}`/`{msg_sca_no_manifest}`, KHÔNG fail scan, fallback sang rule 20 (đã chạy sẵn ở Step 4).
+5. Merge findings rule 22 vào cùng danh sách trước khi qua Step 5. Nếu trùng package/version với finding rule 20, chỉ giữ rule 22.
+6. **LARGE mode:** đây là bước main agent tự chạy 1 lần cho toàn repo, KHÔNG delegate cho sub-agent theo chunk (dependency manifest không chia theo folder được) — xem [`references/sub-agent-prompts.md`](references/sub-agent-prompts.md) mục "Aggregate workflow".
+
+---
+
+## Step 4c: Auto-fix (optional — `--auto-fix`)
+
+Chỉ chạy khi `$AUTO_FIX=true`. Chạy **TRƯỚC** khi render report ở Step 5 (để `patch_status` kịp có mặt trong JSON summary và section Auto-fix render đúng vị trí). Đọc [`workflows/auto-fix.md`](workflows/auto-fix.md) và follow toàn bộ workflow đó:
+
+1. Gate: cần `$IS_GIT_REPO=true`, nếu không → in `{msg_autofix_needs_git}`, skip toàn bộ bước này (report vẫn render bình thường ở Step 5, chỉ thiếu section Auto-fix).
+   Nếu `$SCAN_ROOT` khác `.` (scope `commit id`, `pr id`) → chỉ sinh patch, KHÔNG `git apply`/build verify; mọi finding CRITICAL/HIGH là `suggested_only` (xem gate trong workflow).
+2. Chỉ xử lý finding CRITICAL/HIGH (từ cả rule 1-21 và rule 22 nếu có `--sca`).
+3. Với mỗi finding: harvest context → generate unified diff → `git apply --check` → `git apply` → chạy build command theo `$PRIMARY_LANG` → revert + retry (tối đa 2 lần) nếu fail.
+4. Gắn `patch_status` vào từng finding đã xử lý — dùng ở Step 5 khi render JSON + section Auto-fix.
 
 ---
 
@@ -337,6 +393,7 @@ Tham khảo template trong [`references/output-format.md`](references/output-for
 7. PASSED CHECKS (list)
 7b. Hardening notes (tuỳ chọn, `{header_hardening_title}`) — gợi ý phòng thủ, KHÔNG phải finding
 8. Next steps (1-2 dòng)
+8b. **Auto-fix summary** (chỉ khi `--auto-fix` đã chạy ở Step 4c — xem [`workflows/auto-fix.md`](workflows/auto-fix.md))
 9. **Save notification** (path file đã ghi)
 10. **Gitignore warning** (nếu cần)
 11. Footer + disclaimer
@@ -389,13 +446,15 @@ WARN ≠ approve. Báo cáo cần nêu rõ HIGH issues cần khắc phục trư�
 ├── SKILL.md                          # File này
 ├── workflows/
 │   ├── small-review.md               # Inline scan (default cho repo nhỏ-vừa)
-│   └── large-review.md               # Sub-agent delegation
+│   ├── large-review.md               # Sub-agent delegation
+│   └── auto-fix.md                   # v0.7+: patch/verify/retry loop (--auto-fix)
 ├── rules/
-│   ├── generic/                      # 21 rules cross-language (bắt buộc apply)
+│   ├── generic/                      # 22 rules cross-language
 │   │   ├── 01-hardcoded-secret.md
 │   │   ├── 02-sql-injection.md
-│   │   ├── ... (đến 21)
-│   │   └── 21-command-injection.md
+│   │   ├── ... (đến 21, luôn chạy)
+│   │   ├── 21-command-injection.md
+│   │   └── 22-vulnerable-dependency.md   # v0.7+: chỉ chạy với --sca
 │   └── languages/                    # Override chuyên sâu per language
 │       ├── go/                       # GORM, slog, Colly...
 │       ├── php/                      # mysqli/PDO, $_GET, eval/include, Laravel CSRF
@@ -405,13 +464,14 @@ WARN ≠ approve. Báo cáo cần nêu rõ HIGH issues cần khắc phục trư�
     ├── sub-agent-prompts.md
     ├── language-detection.md
     ├── data-flow-classification.md
+    ├── dependency-scan.md             # v0.7+: parser manifest + OSV.dev query (--sca)
     ├── output-format.md
     └── i18n/
         ├── vi.md
         └── en.md
 ```
 
-**Thêm rule mới (cross-language):** tạo file số tiếp theo trong `rules/generic/`, frontmatter có `id`, `severity_max`, `applies_to: all`. Update bảng ở Step 4 trong file này.
+**Thêm rule mới (cross-language):** tạo file số tiếp theo (23+) trong `rules/generic/`, frontmatter có `id`, `severity_max`, `applies_to: all`. Update bảng ở Step 4 trong file này.
 
 **Thêm language specialization mới (e.g., Ruby):** tạo `rules/languages/ruby/<rule-id>.md` với cùng `id` như generic — sẽ tự override. Đọc `rules/languages/README.md` để biết template.
 
