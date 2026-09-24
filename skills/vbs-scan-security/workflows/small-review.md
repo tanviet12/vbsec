@@ -19,17 +19,17 @@ Inline scan workflow cho repo nhỏ-vừa (≤20 main-lang files VÀ ≤30 total
 
 1. **Generic rules (luôn load):**
    ```
-   skill/rules/generic/01-hardcoded-secret.md
-   skill/rules/generic/02-sql-injection.md
+   rules/generic/01-hardcoded-secret.md
+   rules/generic/02-sql-injection.md
    ...
-   skill/rules/generic/21-command-injection.md
+   rules/generic/21-command-injection.md
    ```
 
    Đọc TẤT CẢ 21 file bằng Read tool.
 
 2. **Specialized overlay (nếu `$OVERLAY_AVAILABLE`):**
    ```
-   skill/rules/languages/<primary_lang>/*.md
+   rules/languages/<primary_lang>/*.md
    ```
 
    Với mỗi file overlay có cùng `id` với rule generic, **rule chuyên sâu thay thế hoàn toàn** rule generic cho lang đó. Ghi nhớ id nào đã override.
