@@ -127,7 +127,7 @@ To support Python / Ruby / Rust / etc.:
 4. Update `references/language-detection.md`:
    - Add extension mapping
    - Add Phase table entry
-5. Update `skill/SKILL.md` line "Phase 1 hiện hỗ trợ chuyên sâu" to include the new language
+5. Update the folder tree in `SKILL.md` and the "Specialized for" column in `README.md`, `README.vi.md`, `docs/{en,vi}/rules.md`
 6. Run a real scan + 5-10 sample repos to validate before announcing the language as "stable"
 
 ## Future: rule composition
