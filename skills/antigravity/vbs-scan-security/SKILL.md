@@ -304,11 +304,12 @@ Tham khảo template trong [`references/output-format.md`](references/output-for
 5. MEDIUM section
 6. LOW section
 7. PASSED CHECKS
+7b. Hardening notes (tuỳ chọn, `{header_hardening_title}`) — gợi ý phòng thủ, KHÔNG phải finding
 8. Next steps
 9. Save notification
 10. Gitignore warning (nếu cần)
 11. Footer + disclaimer
-12. JSON summary (canonical EN)
+12. JSON summary (canonical EN) — đúng schema ở `references/output-format.md` mục 7
 
 **Save-to-file:** ghi TOÀN BỘ report (identical với stdout) vào `vbsec-reports/scan-<timestamp>.md` dùng tool write của Antigravity.
 
@@ -319,6 +320,10 @@ Sau đó in 1-2 dòng note ra stdout:
 ```
 
 Mọi section header, severity label, verdict text lấy từ i18n file đã load ở Step 1.
+
+**Finding vs hardening note:** chỉ tạo finding khi có đường khai thác cụ thể (input attacker điều khiển được tới sink, hoặc cấu hình sai khai thác được ngay). Reasoning kết luận "an toàn" → KHÔNG tạo finding. Gợi ý phòng thủ thêm cho code đã an toàn (header, cờ cookie khi không có XSS, lockfile...) → `hardening_notes[]` + section `{header_hardening_title}`, không gán `rule_id`, không tính vào summary/verdict. Chi tiết: [`references/output-format.md`](references/output-format.md) mục "Finding vs hardening note".
+
+**Validate JSON trước khi kết thúc (bắt buộc):** sau khi ghi report, chạy `python3 <skill-dir>/references/validate-report.py <report-file>` (`<skill-dir>` = thư mục chứa file SKILL.md này). Script báo lỗi → sửa JSON trong report, ghi lại, chạy lại (tối đa 2 lần). Lỗi hay gặp: dùng key `id`/`rule` thay vì `rule_id`, tự đặt rule ID ngoài 21 rule, severity viết thường, `summary` đếm lệch với `findings`. Không có `python3` → tự đối chiếu với bảng schema ở `output-format.md` mục 7.
 
 ---
 

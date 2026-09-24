@@ -70,7 +70,7 @@ For mỗi `chunk` trong `chunks` (theo thứ tự, không parallel):
 
 5. **Write chunk findings** vào `.vbsec-tmp/findings-<slug>.md`:
    - Format markdown (cùng schema với sub-agent output của Claude variant)
-   - Sections: `## FINDINGS`, `## PASSED`, `## NOT_MAPPED` (nếu có)
+   - Sections: `## FINDINGS`, `## PASSED`, `## NOT_MAPPED` (nếu có), `## HARDENING_NOTES` (nếu có — gợi ý phòng thủ, không phải finding)
    - File path tuyệt đối từ repo root
 
 6. **Print confirmation:** `[chunk N/total] ✓ <count_findings> findings`
@@ -85,14 +85,15 @@ For mỗi `chunk` trong `chunks` (theo thứ tự, không parallel):
 2. **Validate rule_ids**: mọi finding phải có `rule_id` trong 21 canonical IDs.
 3. **Dedup**: key = `(file, line, rule_id)`. Giữ entry có severity cao nhất. Nếu tie, giữ entry có `context` dài hơn.
    - **Lưu ý:** dedup key có `rule_id` → 1 vị trí (file:line) dính 2 rule khác nhau (vd IDOR + RACE) sẽ là 2 entry riêng, KHÔNG dedup.
-4. **Collect NOT_MAPPED**: nếu có, note ở cuối main report (giúp roadmap future rules).
-5. **Collect PASSED**: union các rule_id xuất hiện trong `## PASSED` section của tất cả chunks. Một rule chỉ vào PASSED list nếu **không** xuất hiện trong findings của bất kỳ chunk nào.
-6. **Cross-chunk rules**:
+4. **Collect HARDENING_NOTES**: gộp vào `hardening_notes[]` + section `{header_hardening_title}` (dedup, tối đa 5 dòng). KHÔNG đưa vào `findings[]`.
+5. **Collect NOT_MAPPED**: nếu có, note ở cuối main report (giúp roadmap future rules).
+6. **Collect PASSED**: union các rule_id xuất hiện trong `## PASSED` section của tất cả chunks. Một rule chỉ vào PASSED list nếu **không** xuất hiện trong findings của bất kỳ chunk nào.
+7. **Cross-chunk rules**:
    - **SLOPSQUATTING**: collect tất cả import statement từ chunks, dedup, kiểm tra package có hợp lệ.
    - **OUTDATED-DEPENDENCY**: đọc file dependency lock (`package-lock.json`, `go.sum`, `composer.lock`) ở root.
    - **CSRF middleware global**: nếu phát hiện middleware global ở 1 chunk, downgrade các CSRF finding ở chunk khác.
 
-7. **Counts sanity check** (BẮT BUỘC trước khi render):
+8. **Counts sanity check** (BẮT BUỘC trước khi render):
    ```
    total = len(findings)
    assert total == count_by_severity('CRITICAL') + count_by_severity('HIGH') + count_by_severity('MEDIUM') + count_by_severity('LOW')

@@ -117,6 +117,10 @@ Use EN canonical (do not translate). Format:
   suggested_new_rule_id: SUGGESTED-NEW-RULE (only if you believe this is a class of vulnerability worth a new rule)
   reasoning: Why none of the 21 canonical rules fit
 - ... (issues you couldn't map — usually empty; only add when truly novel)
+
+## HARDENING_NOTES
+- path/to/file.ext:12 — defense-in-depth suggestion for code that is NOT exploitable (not a finding)
+- ... (usually empty; max 5)
 ```
 
 # Important constraints
@@ -139,7 +143,8 @@ When you encounter a real security issue that doesn't obviously fit one of the 2
 | SUPPLY-CHAIN (curl \| sh no checksum, mutable tag) | `OUTDATED-DEPENDENCY` | "supply chain risk: unpinned install" |
 | INFO-DISCLOSURE (robots.txt leak, .git exposed) | `VERBOSE-ERROR-DEBUG-MODE` | "information disclosure: ..." |
 | DEPRECATED-API (apt-key, old syscall) | `OUTDATED-DEPENDENCY` | "deprecated API: ..." |
-| DEPENDENCY-HARDENING (lockfile ignored) | `OUTDATED-DEPENDENCY` | "dependency hardening missing" |
+
+Only map when there is a **concrete exploit path** (attacker-controlled input reaches the sink, or a misconfiguration is exploitable as-is). Defense-in-depth suggestions for code that is already safe — missing lockfile, cookie flags with no XSS present, extra headers, stricter PDO options — are NOT findings: list them under `## HARDENING_NOTES` at the end of your findings file (one line each: `file:line — note`). If your own reasoning concludes the code is safe, do not emit a finding.
 
 If you genuinely cannot map a finding to any of the 21 rules, **skip it** and mention it ONLY in the `## NOT_MAPPED` section at the end of your findings file (see format below) — main agent will decide whether to surface or propose adding a new rule in future versions.
 

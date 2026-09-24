@@ -86,14 +86,15 @@ Khi sub-agent return mà:
 2. **Validate rule_ids**: Mọi finding phải có `rule_id` trong 21 canonical IDs. Nếu sub-agent đã invent (vd `INSECURE-COOKIE`) → map về canonical theo mapping table trong [`../references/sub-agent-prompts.md`](../references/sub-agent-prompts.md#rule-id-discipline-critical--read-carefully). Nếu thật sự không map được → drop hoặc move vào `## NOT_MAPPED` section riêng.
 3. **Dedup**: key = `(file, line, rule_id)`. Giữ entry có severity cao nhất. Nếu tie, giữ entry có `context` dài hơn.
    - **Lưu ý:** dedup key có `rule_id` → 1 vị trí (file:line) dính 2 rule khác nhau (vd IDOR + RACE) sẽ là 2 entry riêng, KHÔNG dedup.
-4. **Collect NOT_MAPPED**: nếu có findings trong `## NOT_MAPPED` section của sub-agent reports, collect lại để note ở cuối main report (giúp roadmap future rules).
-5. **Collect PASSED**: union các rule_id xuất hiện trong `## PASSED` section của tất cả chunks. Một rule chỉ vào PASSED list nếu **không** xuất hiện trong findings của bất kỳ chunk nào.
-6. **Cross-chunk rules**:
+4. **Collect HARDENING_NOTES**: gộp section `## HARDENING_NOTES` của các sub-agent vào `hardening_notes[]` + section `{header_hardening_title}` (dedup, tối đa 5 dòng). KHÔNG đưa vào `findings[]`.
+5. **Collect NOT_MAPPED**: nếu có findings trong `## NOT_MAPPED` section của sub-agent reports, collect lại để note ở cuối main report (giúp roadmap future rules).
+6. **Collect PASSED**: union các rule_id xuất hiện trong `## PASSED` section của tất cả chunks. Một rule chỉ vào PASSED list nếu **không** xuất hiện trong findings của bất kỳ chunk nào.
+7. **Cross-chunk rules**:
    - **SLOPSQUATTING**: collect tất cả import statement từ chunks, dedup, kiểm tra package có hợp lệ. Add findings nếu có suspicious.
    - **OUTDATED-DEPENDENCY**: đọc file dependency lock (`package-lock.json`, `go.sum`, `composer.lock`) ở root → check với danh sách known-CVE versions trong rule. Cross-chunk vì lock file thường ở chunk `root`.
    - **CSRF middleware global**: nếu phát hiện middleware global ở 1 chunk, downgrade các CSRF finding ở chunk khác (vì middleware đã apply).
 
-7. **Counts sanity check** (BẮT BUỘC trước khi render):
+8. **Counts sanity check** (BẮT BUỘC trước khi render):
    ```
    total = len(findings)
    assert total == count_by_severity('CRITICAL') + count_by_severity('HIGH') + count_by_severity('MEDIUM') + count_by_severity('LOW')

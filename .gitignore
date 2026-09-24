@@ -18,3 +18,6 @@ sepay-wiki-bot/
 
 # Plans / WIP notes
 .claude/plans/
+
+# Python bytecode cache (scripts/check-fixtures.py, validate-report.py)
+__pycache__/
