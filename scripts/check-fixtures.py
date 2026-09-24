@@ -25,6 +25,35 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXPECTED_DIR = os.path.join(ROOT, "tests", "expected")
 SEVERITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+RULES_DIR = os.path.join(ROOT, "skills", "vbs-scan-security", "rules", "generic")
+
+
+def canonical_rule_ids():
+    ids = set()
+    for path in glob.glob(os.path.join(RULES_DIR, "*.md")):
+        m = re.search(r"^id:\s*(\S+)", open(path, encoding="utf-8").read(), re.M)
+        if m:
+            ids.add(m.group(1))
+    return ids
+
+
+CANONICAL = canonical_rule_ids()
+
+
+def normalize(finding, problems):
+    """Lấy rule_id theo spec; report lệch spec (key `rule`/`id`) vẫn chấm được nhưng bị ghi nhận."""
+    rid = finding.get("rule_id")
+    if rid is None:
+        for key in ("rule", "id"):
+            if finding.get(key) in CANONICAL:
+                rid = finding[key]
+                problems.add(f"dùng key `{key}` thay vì `rule_id`")
+                break
+    if rid is None:
+        problems.add("finding thiếu rule_id")
+    elif rid not in CANONICAL:
+        problems.add(f"rule ID ngoài danh sách: {rid}")
+    return {**finding, "rule_id": rid}
 
 
 def latest_report(fixture_dir):
@@ -75,11 +104,14 @@ def check(lang, report_path):
         print(f"   chưa có report trong {fixture}/vbsec-reports/ — chạy scan trước")
         return None
 
+    problems = set()
     findings = [
-        {**f, "file": norm_path(f.get("file", ""), fixture), "severity": str(f.get("severity", "")).upper()}
+        {**normalize(f, problems), "file": norm_path(f.get("file", ""), fixture), "severity": str(f.get("severity", "")).upper()}
         for f in load_findings(report_path)
     ]
     print(f"   report: {os.path.relpath(report_path, ROOT)} ({len(findings)} findings)")
+    for p in sorted(problems):
+        print(f"   JSON SAI CHUẨN: {p}")
 
     hit, missed, weak = 0, [], []
     matched = set()
