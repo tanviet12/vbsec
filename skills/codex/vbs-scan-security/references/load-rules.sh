@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # load-rules.sh — in phần PHÁT HIỆN của bộ rule hiệu lực cho các ngôn ngữ đã detect.
 #
-# Usage: bash <skill-dir>/references/load-rules.sh [lang ...]
-#   vd:  bash references/load-rules.sh typescript
-#        bash references/load-rules.sh go typescript     # repo đa ngôn ngữ
-#        bash references/load-rules.sh                   # không có overlay → chỉ generic
+# Usage: bash <skill-dir>/references/load-rules.sh --part N [lang ...]
+#   vd:  bash references/load-rules.sh --part 1 typescript
+#        bash references/load-rules.sh --part 2 go typescript   # repo đa ngôn ngữ
+#        bash references/load-rules.sh --part 1                 # không có overlay → chỉ generic
+#
+# Output được chia thành nhiều phần, mỗi phần < ~20.000 ký tự, vì Bash tool của agent
+# cắt output dài (~30.000 ký tự). Dòng cuối mỗi phần cho biết tổng số phần; chạy đủ
+# mọi phần (có thể chạy song song). Không truyền --part = in phần 1.
 #
 # Với mỗi rule generic (01-21):
 #   - Mọi lang đã detect đều có overlay cùng `id` → chỉ in overlay (generic bị thay thế hoàn toàn).
@@ -17,7 +21,16 @@
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LANGS=("$@")
+PART_BUDGET=20000   # ký tự mỗi phần
+PART=1
+LANGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --part) PART="$2"; shift 2 ;;
+    --part=*) PART="${1#--part=}"; shift ;;
+    *) LANGS+=("$1"); shift ;;
+  esac
+done
 
 rule_id() { sed -n 's/^id:[[:space:]]*//p' "$1" | head -1; }
 
@@ -30,12 +43,14 @@ overlay_for() {  # overlay_for <lang> <id> → path hoặc rỗng
   return 0
 }
 
-print_detection() {  # print_detection <path>
+detection() {  # detection <path> → phần phát hiện của 1 rule, kèm header
   local rel="${1#"$SKILL_DIR"/}"
   echo "=== RULE $(rule_id "$1") (source: $rel) ==="
   awk '/^## (Examples|Fix recommendation|Cross-references)/ { exit } { print }' "$1"
   echo
 }
+
+FILES_SELECTED=()
 
 for generic in "$SKILL_DIR"/rules/generic/[0-9]*.md; do
   id="$(rule_id "$generic")"
@@ -46,6 +61,35 @@ for generic in "$SKILL_DIR"/rules/generic/[0-9]*.md; do
     if [ -n "$o" ]; then overlays+=("$o"); else all_covered=0; fi
   done
   [ ${#LANGS[@]} -eq 0 ] && all_covered=0
-  [ "$all_covered" -eq 1 ] || print_detection "$generic"
-  for o in ${overlays[@]+"${overlays[@]}"}; do print_detection "$o"; done
+  [ "$all_covered" -eq 1 ] || FILES_SELECTED+=("$generic")
+  for o in ${overlays[@]+"${overlays[@]}"}; do FILES_SELECTED+=("$o"); done
 done
+
+# Gom rule vào từng phần theo ngân sách ký tự (không cắt ngang 1 rule).
+part_of=()
+current=1
+used=0
+for f in "${FILES_SELECTED[@]}"; do
+  size=$(detection "$f" | wc -m | tr -d ' ')
+  if [ "$used" -gt 0 ] && [ $((used + size)) -gt "$PART_BUDGET" ]; then
+    current=$((current + 1))
+    used=0
+  fi
+  part_of+=("$current")
+  used=$((used + size))
+done
+total_parts=$current
+
+if ! [ "$PART" -ge 1 ] 2>/dev/null || [ "$PART" -gt "$total_parts" ]; then
+  echo "--part phải từ 1 đến $total_parts" >&2
+  exit 1
+fi
+
+for i in "${!FILES_SELECTED[@]}"; do
+  [ "${part_of[$i]}" -eq "$PART" ] && detection "${FILES_SELECTED[$i]}"
+done
+if [ "$PART" -lt "$total_parts" ]; then
+  echo "=== PART $PART/$total_parts — CHƯA ĐỦ: chạy tiếp --part $((PART + 1)) đến --part $total_parts ==="
+else
+  echo "=== PART $PART/$total_parts — đã in đủ ${#FILES_SELECTED[@]} rule ==="
+fi

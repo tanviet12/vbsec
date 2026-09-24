@@ -18,13 +18,13 @@ Inline scan workflow cho repo nhỏ-vừa (≤20 main-lang files VÀ ≤30 total
 
 ### Step S1 — Load applicable rules
 
-1. **Nạp phần phát hiện của bộ rule hiệu lực — 1 lệnh Bash:**
+1. **Nạp phần phát hiện của bộ rule hiệu lực qua script (vài lệnh Bash, mỗi lệnh 1 phần):**
 
    ```bash
-   bash <skill-dir>/references/load-rules.sh <primary_lang> [<lang2> ...]
+   bash <skill-dir>/references/load-rules.sh --part 1 <primary_lang> [<lang2> ...]
    ```
 
-   (`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → gọi không tham số.) Script in đủ 21 rule, mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
+   (`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → bỏ tham số lang.) Dòng cuối output cho biết tổng số phần (`PART 1/4`...) → chạy tiếp `--part 2`, `--part 3`... (chạy song song được) tới khi thấy "đã in đủ". Output chia phần vì Bash tool cắt output dài; **KHÔNG pipe qua `head`/`tail`**. Gộp lại, script in đủ 21 rule, mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
 
 2. **Phần chi tiết (Examples, Fix recommendation, Cross-references) chỉ đọc khi cần:**
    - Rule có finding **CRITICAL/HIGH** → Read file theo path ở header `=== RULE <id> (source: ...) ===` để lấy code fix và ví dụ cho verbose block trong report.

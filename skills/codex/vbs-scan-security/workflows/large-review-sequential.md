@@ -19,10 +19,10 @@ Codex CLI và Antigravity (tại thời điểm này) chưa có cơ chế cho sk
 Nạp phần phát hiện của bộ rule vào context **1 lần ở đầu workflow** để tránh re-read mỗi chunk:
 
 ```bash
-bash <skill-dir>/references/load-rules.sh <primary_lang> [<lang2> ...]
+bash <skill-dir>/references/load-rules.sh --part 1 <primary_lang> [<lang2> ...]
 ```
 
-(`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → gọi không tham số.) Script in đủ 21 rule, mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
+(`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → bỏ tham số lang.) Dòng cuối output cho biết tổng số phần (`PART 1/4`...) → chạy tiếp `--part 2`, `--part 3`... (chạy song song được) tới khi thấy "đã in đủ". Output chia phần vì Bash tool cắt output dài; **KHÔNG pipe qua `head`/`tail`**. Gộp lại, script in đủ 21 rule, mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
 
 Phần chi tiết (Examples, Fix recommendation) chỉ Read khi rule có finding CRITICAL/HIGH, lúc render report.
 

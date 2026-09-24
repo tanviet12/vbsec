@@ -14,6 +14,8 @@
 #   ./scripts/run-fixtures.sh --check-only   # không scan, chỉ chấm report mới nhất
 #
 # Token mỗi lần scan được ghi vào tests/usage.log để so trước/sau khi đổi skill.
+# Scan chạy với tool tối thiểu và KHÔNG load MCP server nào (--strict-mcp-config), để số
+# token phản ánh chi phí của skill thay vì system prompt/MCP riêng của từng máy.
 
 set -euo pipefail
 
@@ -44,7 +46,9 @@ if [ "$CHECK_ONLY" -eq 0 ]; then
     fi
     echo "== scan $lang"
     (cd "$dir" && claude -p "/vbs-scan-security all lang=en" \
-      --allowedTools "Bash Read Grep Glob Write" --output-format json > "$USAGE_TMP") || true
+      --allowedTools "Bash Read Grep Glob Write" --tools "Bash,Read,Grep,Glob,Write" \
+      --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
+      --output-format json > "$USAGE_TMP") || true
     python3 - "$USAGE_TMP" "$lang" "$USAGE_LOG" <<'PY'
 import json, sys, datetime
 path, lang, log = sys.argv[1:4]
