@@ -260,7 +260,7 @@ BẤT KỲ điều kiện nào sang LARGE → dùng LARGE mode.
 
 Cho mỗi rule trong `rules/generic/` (01-21):
 
-1. Read rule file → hiểu intent, severity, search patterns gợi ý
+1. Nạp phần phát hiện của cả bộ rule bằng **1 lệnh** `bash <skill-dir>/references/load-rules.sh <lang...>` (overlay đã thay generic) → hiểu intent, severity, search patterns gợi ý. Phần Examples/Fix recommendation chỉ Read khi rule có finding CRITICAL/HIGH (chi tiết trong workflow)
 2. Apply lên files trong scope (dùng grep + read tool của Codex)
 3. Với mỗi match: trace data flow (L1-L4), phân loại có phải vulnerability thật không
 4. Nếu có rule cùng `id` trong `rules/languages/<detected-lang>/`, **rule chuyên sâu thắng generic**.
