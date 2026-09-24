@@ -9,6 +9,7 @@ Inline scan workflow cho repo nhỏ-vừa (≤20 main-lang files VÀ ≤30 total
 - `$SCOPE` — scope label
 - `$LANG` — output lang (`vi` hoặc `en`)
 - `$FILES` — list file đã filter (loại vendored)
+- `$SCAN_ROOT` — thư mục chứa code cần đọc (`.` hoặc snapshot tạm cho scope `commit id`/`pr id`). Đọc file tại `$SCAN_ROOT/<path>`, report ghi `<path>`
 - `$PRIMARY_LANG` — kết quả detect language
 - `$OVERLAY_AVAILABLE` — có rule chuyên sâu không
 - i18n strings đã load (từ `references/i18n/<lang>.md`)

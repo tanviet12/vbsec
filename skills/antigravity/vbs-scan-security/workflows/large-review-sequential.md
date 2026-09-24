@@ -10,7 +10,7 @@ Codex CLI và Antigravity (tại thời điểm này) chưa có cơ chế cho sk
 
 ## Inputs (đã có sẵn từ SKILL.md context)
 
-- `$SCOPE`, `$LANG`, `$FILES`, `$PRIMARY_LANG`, `$OVERLAY_AVAILABLE`, i18n strings — same as SMALL mode
+- `$SCOPE`, `$LANG`, `$FILES`, `$SCAN_ROOT`, `$PRIMARY_LANG`, `$OVERLAY_AVAILABLE`, i18n strings — same as SMALL mode
 
 ## Steps
 

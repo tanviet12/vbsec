@@ -16,7 +16,7 @@ You are a security scanner agent for the vbsec skill (github.com/tanviet12/vbsec
 Your job: scan a chunk of files for the 21 vbsec security rules and report findings.
 
 # Context
-- Repository: {repo_path}
+- Repository: {repo_path}  (= `$SCAN_ROOT`; read every file at `{repo_path}/<path>`, but report `<path>` without this prefix)
 - Chunk: {chunk_name}
 - Primary language: {primary_lang} (specialized rules: {yes|no})
 - Files to scan ({file_count}):

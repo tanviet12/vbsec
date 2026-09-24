@@ -6,7 +6,7 @@ Sub-agent delegation workflow cho repo lớn (>20 main-lang files HOẶC >30 tot
 
 ## Inputs (đã có sẵn từ SKILL.md context)
 
-- `$SCOPE`, `$LANG`, `$FILES`, `$PRIMARY_LANG`, `$OVERLAY_AVAILABLE`, i18n strings — same as SMALL mode
+- `$SCOPE`, `$LANG`, `$FILES`, `$SCAN_ROOT`, `$PRIMARY_LANG`, `$OVERLAY_AVAILABLE`, i18n strings — same as SMALL mode
 
 ## Steps
 
