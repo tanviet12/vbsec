@@ -262,7 +262,7 @@ if (summary.verdict === 'FAIL') process.exit(1);
 | SMALL | ≤20 primary-lang files AND ≤30 total AND ≤14 days | 30-60 seconds | 1 agent, ~5-15 tool calls |
 | LARGE | Any of the three thresholds exceeded | 5-15 minutes | Parallel sub-agents, one per chunk |
 
-LARGE mode uses [chunking-strategy.md](../../skill/references/chunking-strategy.md) to split files by top-level folder, with one sub-agent per chunk. The main agent aggregates findings + translates at the end.
+LARGE mode uses [chunking-strategy.md](../../skills/vbs-scan-security/references/chunking-strategy.md) to split files by top-level folder, with one sub-agent per chunk. The main agent aggregates findings + translates at the end.
 
 ### When does it use SMALL vs LARGE?
 

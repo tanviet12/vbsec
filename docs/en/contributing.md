@@ -35,7 +35,7 @@ ln -sfn ~/vbsec-dev/skill ~/.claude/skills/vbs-scan-security
 # Restart Claude Code
 ```
 
-Edit any file under `skill/` → open Claude Code → invoke `/vbs-scan-security` → your change is live (Claude Code reads files fresh on every skill invocation).
+Edit any file under `skills/vbs-scan-security/` → open Claude Code → invoke `/vbs-scan-security` → your change is live (Claude Code reads files fresh on every skill invocation).
 
 **Tip:** Create a separate test repo to dogfood:
 
@@ -51,12 +51,12 @@ git init
 
 | Type | Priority | Touches |
 |---|---|---|
-| New language specialization (Ruby, JS/TS, Python, Java, Rust) | High | `skill/rules/languages/<lang>/` |
-| Improving an existing rule (more patterns, fewer false positives) | High | `skill/rules/generic/NN-*.md` |
-| Fixing reasoning bugs in a rule | High | `skill/rules/generic/NN-*.md` |
+| New language specialization (Ruby, JS/TS, Python, Java, Rust) | High | `skills/vbs-scan-security/rules/languages/<lang>/` |
+| Improving an existing rule (more patterns, fewer false positives) | High | `skills/vbs-scan-security/rules/generic/NN-*.md` |
+| Fixing reasoning bugs in a rule | High | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Adding test cases (positive + negative) | Medium | `tests/` (no infra yet — bundle in PR description) |
 | Adding a brand-new rule (22, 23...) | Medium | Discuss via issue first |
-| CVE list updates for OUTDATED-DEPENDENCY | Medium | `skill/rules/generic/20-outdated-dependency.md` |
+| CVE list updates for OUTDATED-DEPENDENCY | Medium | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
 | Docs (typos, examples, workflow improvements) | Low-Medium | `docs/`, `README.*.md` |
 
 **Before large PRs (new rule, new language):** open an issue first to avoid duplication of effort.
@@ -70,7 +70,7 @@ git init
        ↓
 2. Branch: feat/add-ruby-specialization
        ↓
-3. Edit rule files under skill/
+3. Edit rule files under skills/vbs-scan-security/
        ↓
 4. Test on a test repo (positive + negative case)
        ↓
@@ -91,7 +91,7 @@ git init
 
 The next rule number is **22**. ID is `UPPERCASE-KEBAB-CASE`, e.g.: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
 
-File: `skill/rules/generic/22-open-redirect.md`
+File: `skills/vbs-scan-security/rules/generic/22-open-redirect.md`
 
 ### 2. Frontmatter template
 
@@ -154,11 +154,11 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | What to do |
 |---|---|
-| [`skill/SKILL.md`](../../skill/SKILL.md) | Add a row to the rules table in Step 4 (renumber from "21 rules" to "22 rules") |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Add a row to the rules table in Step 4 (renumber from "21 rules" to "22 rules") |
 | [`docs/vi/rules.md`](../vi/rules.md) | Add a `### Rule 22 — OPEN-REDIRECT` section |
 | [`docs/en/rules.md`](rules.md) | Same |
 | [`README.vi.md`](../../README.vi.md) | Update the 21→22 list (the table) |
-| [`README.en.md`](../../README.en.md) | Same |
+| [`README.md`](../../README.md) | Same |
 
 ### 4. Test
 
@@ -173,7 +173,7 @@ A specialization overrides a generic rule for a specific language with patterns 
 ### Example: adding Ruby
 
 ```bash
-mkdir -p skill/rules/languages/ruby
+mkdir -p skills/vbs-scan-security/rules/languages/ruby
 ```
 
 Pick the rules worth specializing (not all 21 — focus on ones with idiomatic Ruby patterns). Examples:
@@ -184,7 +184,7 @@ Pick the rules worth specializing (not all 21 — focus on ones with idiomatic R
 
 ### Specialization file template
 
-File: `skill/rules/languages/ruby/02-sql-injection.md` (number + name match the generic counterpart):
+File: `skills/vbs-scan-security/rules/languages/ruby/02-sql-injection.md` (number + name match the generic counterpart):
 
 ```markdown
 ---
@@ -233,15 +233,15 @@ grep -rE 'find_by_sql.*#\{' app/
 
 | File | What to do |
 |---|---|
-| [`skill/references/language-detection.md`](../../skill/references/language-detection.md) | Add Ruby to the Phase 1 table (extension `.rb`, file `Gemfile`) |
-| [`skill/SKILL.md`](../../skill/SKILL.md) | The line "Phase 1 hiện hỗ trợ chuyên sâu: `go`, `php`" — add `ruby` |
+| [`skills/vbs-scan-security/references/language-detection.md`](../../skills/vbs-scan-security/references/language-detection.md) | Add Ruby to the Phase 1 table (extension `.rb`, file `Gemfile`) |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | The line "Phase 1 hiện hỗ trợ chuyên sâu: `go`, `php`" — add `ruby` |
 | [`docs/vi/rules.md`](../vi/rules.md) | Update the "Specialization" column for rules with Ruby override |
 | [`docs/en/rules.md`](rules.md) | Same |
-| [`README.{vi,en}.md`](../../README.en.md) | Update Roadmap (mark Ruby done) |
+| [`README.md` + `README.vi.md`](../../README.md) | Update Roadmap (mark Ruby done) |
 
 ### Folder README
 
-You can add `skill/rules/languages/ruby/README.md` describing: frameworks covered (Rails, Sinatra), ORM (ActiveRecord), idiomatic Ruby conventions.
+You can add `skills/vbs-scan-security/rules/languages/ruby/README.md` describing: frameworks covered (Rails, Sinatra), ORM (ActiveRecord), idiomatic Ruby conventions.
 
 ---
 
@@ -249,8 +249,8 @@ You can add `skill/rules/languages/ruby/README.md` describing: frameworks covere
 
 All user-facing strings in the report must go through i18n. When you need a new key:
 
-1. Open `skill/references/i18n/vi.md` — add the key + Vietnamese value
-2. Open `skill/references/i18n/en.md` — add the SAME key + English value
+1. Open `skills/vbs-scan-security/references/i18n/vi.md` — add the key + Vietnamese value
+2. Open `skills/vbs-scan-security/references/i18n/en.md` — add the SAME key + English value
 3. In the rule / template file, reference the key (do not hardcode the string)
 
 **Rules:**
@@ -357,7 +357,7 @@ Include in the PR description:
 - [ ] Negative case tested → does NOT false-positive
 - [ ] `docs/vi/rules.md` + `docs/en/rules.md` updated
 - [ ] `SKILL.md` Step 4 table updated if adding a new rule
-- [ ] README.vi.md + README.en.md updated if adding a new rule
+- [ ] README.vi.md + README.md updated if adding a new rule
 - [ ] If adding new strings: both `i18n/vi.md` AND `i18n/en.md` updated
 - [ ] Commit message follows convention below
 - [ ] PR description includes test plan

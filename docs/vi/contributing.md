@@ -35,7 +35,7 @@ ln -sfn ~/vbsec-dev/skill ~/.claude/skills/vbs-scan-security
 # Restart Claude Code
 ```
 
-Edit bất kỳ file nào trong `skill/` → mở Claude Code → gọi `/vbs-scan-security` → file mới đã được load (Claude Code đọc file fresh mỗi lần invoke skill).
+Edit bất kỳ file nào trong `skills/vbs-scan-security/` → mở Claude Code → gọi `/vbs-scan-security` → file mới đã được load (Claude Code đọc file fresh mỗi lần invoke skill).
 
 **Mẹo:** Tạo 1 test repo riêng để dogfood:
 
@@ -51,12 +51,12 @@ git init
 
 | Loại | Độ ưu tiên | File chạm tới |
 |---|---|---|
-| Thêm language specialization (Ruby, JS/TS, Python, Java, Rust) | Cao | `skill/rules/languages/<lang>/` |
-| Cải thiện rule existing (thêm pattern, giảm false positive) | Cao | `skill/rules/generic/NN-*.md` |
-| Sửa lỗi reasoning trong rule | Cao | `skill/rules/generic/NN-*.md` |
+| Thêm language specialization (Ruby, JS/TS, Python, Java, Rust) | Cao | `skills/vbs-scan-security/rules/languages/<lang>/` |
+| Cải thiện rule existing (thêm pattern, giảm false positive) | Cao | `skills/vbs-scan-security/rules/generic/NN-*.md` |
+| Sửa lỗi reasoning trong rule | Cao | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Thêm test case (positive + negative) | Trung | `tests/` (chưa có infra, kèm trong PR description) |
 | Thêm rule mới (rule 22, 23...) | Trung | Cần thảo luận trước qua issue |
-| Cập nhật CVE list cho OUTDATED-DEPENDENCY | Trung | `skill/rules/generic/20-outdated-dependency.md` |
+| Cập nhật CVE list cho OUTDATED-DEPENDENCY | Trung | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
 | Docs (typo, ví dụ, cải thiện workflow) | Thấp-Trung | `docs/`, `README.*.md` |
 
 **Trước khi làm PR lớn (rule mới, language mới):** mở issue thảo luận để tránh dụng độ.
@@ -70,7 +70,7 @@ git init
        ↓
 2. Branch: feat/add-ruby-specialization
        ↓
-3. Edit file rule trong skill/
+3. Edit file rule trong skills/vbs-scan-security/
        ↓
 4. Test trên test repo (positive + negative case)
        ↓
@@ -91,7 +91,7 @@ git init
 
 Rule kế tiếp là **22**. Tên ID dạng `KEBAB-CASE-UPPERCASE`, ví dụ: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
 
-File: `skill/rules/generic/22-open-redirect.md`
+File: `skills/vbs-scan-security/rules/generic/22-open-redirect.md`
 
 ### 2. Template frontmatter
 
@@ -154,11 +154,11 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | Cần làm gì |
 |---|---|
-| [`skill/SKILL.md`](../../skill/SKILL.md) | Thêm row vào bảng "21 rules generic" ở Step 4 (đổi thành "22 rules") |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Thêm row vào bảng "21 rules generic" ở Step 4 (đổi thành "22 rules") |
 | [`docs/vi/rules.md`](rules.md) | Thêm section `### Rule 22 — OPEN-REDIRECT` |
 | [`docs/en/rules.md`](../en/rules.md) | Thêm tương ứng |
 | [`README.vi.md`](../../README.vi.md) | Update danh sách 21 → 22 (cả bảng) |
-| [`README.en.md`](../../README.en.md) | Update tương ứng |
+| [`README.md`](../../README.md) | Update tương ứng |
 
 ### 4. Test
 
@@ -173,7 +173,7 @@ Specialization = override rule generic cho 1 ngôn ngữ cụ thể, với patte
 ### Ví dụ: thêm Ruby
 
 ```bash
-mkdir -p skill/rules/languages/ruby
+mkdir -p skills/vbs-scan-security/rules/languages/ruby
 ```
 
 Chọn rule muốn specialize (không cần toàn bộ 21 — chọn rule nào Ruby có pattern đặc thù). Ví dụ:
@@ -184,7 +184,7 @@ Chọn rule muốn specialize (không cần toàn bộ 21 — chọn rule nào R
 
 ### Template specialization file
 
-File: `skill/rules/languages/ruby/02-sql-injection.md` (số + tên trùng với generic counterpart):
+File: `skills/vbs-scan-security/rules/languages/ruby/02-sql-injection.md` (số + tên trùng với generic counterpart):
 
 ```markdown
 ---
@@ -233,15 +233,15 @@ grep -rE 'find_by_sql.*#\{' app/
 
 | File | Cần làm gì |
 |---|---|
-| [`skill/references/language-detection.md`](../../skill/references/language-detection.md) | Thêm Ruby vào Phase 1 table (extension `.rb`, file `Gemfile`) |
-| [`skill/SKILL.md`](../../skill/SKILL.md) | Dòng "Phase 1 hiện hỗ trợ chuyên sâu: `go`, `php`" → thêm `ruby` |
+| [`skills/vbs-scan-security/references/language-detection.md`](../../skills/vbs-scan-security/references/language-detection.md) | Thêm Ruby vào Phase 1 table (extension `.rb`, file `Gemfile`) |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Dòng "Phase 1 hiện hỗ trợ chuyên sâu: `go`, `php`" → thêm `ruby` |
 | [`docs/vi/rules.md`](rules.md) | Cập nhật cột "Specialization" cho rule có override Ruby |
 | [`docs/en/rules.md`](../en/rules.md) | Tương ứng |
-| [`README.{vi,en}.md`](../../README.vi.md) | Update Roadmap (đánh dấu Ruby done) |
+| [`README.vi.md` + `README.md`](../../README.vi.md) | Update Roadmap (đánh dấu Ruby done) |
 
 ### Folder README
 
-Có thể thêm `skill/rules/languages/ruby/README.md` nói qua: framework cover được (Rails, Sinatra), ORM (ActiveRecord), conventions Ruby idiomatic.
+Có thể thêm `skills/vbs-scan-security/rules/languages/ruby/README.md` nói qua: framework cover được (Rails, Sinatra), ORM (ActiveRecord), conventions Ruby idiomatic.
 
 ---
 
@@ -249,8 +249,8 @@ Có thể thêm `skill/rules/languages/ruby/README.md` nói qua: framework cover
 
 Mọi user-facing string trong báo cáo phải qua i18n. Khi cần thêm key mới:
 
-1. Mở `skill/references/i18n/vi.md` — thêm key + Vietnamese value
-2. Mở `skill/references/i18n/en.md` — thêm CÙNG key + English value
+1. Mở `skills/vbs-scan-security/references/i18n/vi.md` — thêm key + Vietnamese value
+2. Mở `skills/vbs-scan-security/references/i18n/en.md` — thêm CÙNG key + English value
 3. Trong file rule / template, reference key (không hardcode string)
 
 **Quy tắc:**
@@ -358,7 +358,7 @@ Trong mô tả PR, bao gồm:
 - [ ] Đã test negative case → KHÔNG false-positive
 - [ ] Đã update `docs/vi/rules.md` + `docs/en/rules.md`
 - [ ] Đã update `SKILL.md` Step 4 table nếu rule mới
-- [ ] Đã update README.vi.md + README.en.md nếu rule mới
+- [ ] Đã update README.vi.md + README.md nếu rule mới
 - [ ] Nếu thêm string mới: cập nhật cả `i18n/vi.md` VÀ `i18n/en.md`
 - [ ] Commit message theo convention bên dưới
 - [ ] PR description có test plan

@@ -1,6 +1,6 @@
 # 21 Rule bảo mật của vbsec
 
-Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đầy đủ reasoning, search pattern và edge case, mở file rule tương ứng trong [`skill/rules/generic/`](../../skill/rules/generic/).
+Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đầy đủ reasoning, search pattern và edge case, mở file rule tương ứng trong [`skills/vbs-scan-security/rules/generic/`](../../skills/vbs-scan-security/rules/generic/).
 
 > **Ký hiệu:**
 > - **Severity max** — mức cao nhất một finding của rule này có thể đạt
@@ -14,7 +14,7 @@ Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đ
 |---|---|---|---|
 | 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | — |
 | 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python, dotnet |
-| 3 | [XSS](#rule-3--xss) | HIGH | typescript, python |
+| 3 | [XSS](#rule-3--xss) | HIGH | typescript |
 | 4 | [IDOR](#rule-4--idor) | HIGH | — |
 | 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | — |
 | 6 | [BRUTE-FORCE](#rule-6--brute-force) | HIGH | — |
@@ -54,14 +54,14 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // .env không commit, .env.example chứa key giả
 ```
 
-[Đầy đủ →](../../skill/rules/generic/01-hardcoded-secret.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/01-hardcoded-secret.md)
 
 ---
 
 ### Rule 2 — SQL-INJECTION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ go, php)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 User input ghép trực tiếp vào câu SQL bằng concatenation hoặc f-string. Hacker chèn `' OR 1=1--` là dump cả DB. Chỉ parameterized query mới an toàn.
 
@@ -76,14 +76,14 @@ cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
 cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ```
 
-[Đầy đủ →](../../skill/rules/generic/02-sql-injection.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/02-sql-injection.md)
 
 ---
 
 ### Rule 3 — XSS
 
 **Severity max:** HIGH
-**Applies to:** all (+ php)
+**Applies to:** all (+ typescript)
 
 Render user input ra HTML mà không escape. Hacker chèn `<script>` đánh cắp cookie / session. Framework hiện đại (React, Vue) auto-escape — chỉ nguy hiểm khi dùng `dangerouslySetInnerHTML` / `v-html` / `innerHTML`.
 
@@ -98,7 +98,7 @@ Render user input ra HTML mà không escape. Hacker chèn `<script>` đánh cắ
 // hoặc sanitize trước với DOMPurify
 ```
 
-[Đầy đủ →](../../skill/rules/generic/03-xss.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/03-xss.md)
 
 ---
 
@@ -126,7 +126,7 @@ app.get('/orders/:id', async (req, res) => {
 });
 ```
 
-[Đầy đủ →](../../skill/rules/generic/04-idor.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/04-idor.md)
 
 ---
 
@@ -150,7 +150,7 @@ AI hallucinate tên package không tồn tại (ví dụ `requests-fast`, `react
 - Dùng `npm view <name>` để check tồn tại + maintainer reputation
 - Pin version cụ thể, audit bằng `npm audit`
 
-[Đầy đủ →](../../skill/rules/generic/05-slopsquatting.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/05-slopsquatting.md)
 
 ---
 
@@ -179,14 +179,14 @@ def login():
     # ... + lock account sau 5 lần fail liên tiếp
 ```
 
-[Đầy đủ →](../../skill/rules/generic/06-brute-force.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/06-brute-force.md)
 
 ---
 
 ### Rule 7 — MASS-ASSIGNMENT
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ typescript, python, dotnet)
 
 Endpoint update user dùng `User.update(req.body)` — attacker thêm `{"is_admin": true}` vào request body là tự promote thành admin. Phải whitelist field cho phép update.
 
@@ -203,14 +203,14 @@ const { name, bio } = req.body;  // whitelist
 await User.findByIdAndUpdate(req.user.id, { name, bio });
 ```
 
-[Đầy đủ →](../../skill/rules/generic/07-mass-assignment.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/07-mass-assignment.md)
 
 ---
 
 ### Rule 8 — INSECURE-DESERIALIZATION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 `pickle.loads()`, `yaml.load()` (không `SafeLoader`), `unserialize()` của PHP với user input → RCE. Deserialize có thể trigger object construction → execute arbitrary code.
 
@@ -227,14 +227,14 @@ session_data = json.loads(request.cookies.get('session'))
 # Hoặc dùng signed cookies (Flask: itsdangerous)
 ```
 
-[Đầy đủ →](../../skill/rules/generic/08-insecure-deserialization.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/08-insecure-deserialization.md)
 
 ---
 
 ### Rule 9 — SSRF
 
 **Severity max:** HIGH
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, typescript, python)
 
 Server-Side Request Forgery — server fetch URL do user nhập. Hacker nhập `http://169.254.169.254/...` (AWS metadata) hoặc `http://localhost:8500/...` (internal services) để lấy credentials.
 
@@ -256,7 +256,7 @@ if (!ALLOWED_HOSTS.includes(url.hostname)) {
 // + block private IP ranges (169.254.*, 127.*, 10.*)
 ```
 
-[Đầy đủ →](../../skill/rules/generic/09-ssrf.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/09-ssrf.md)
 
 ---
 
@@ -284,14 +284,14 @@ if (!requested.startsWith('/var/www/uploads/')) {
 res.sendFile(requested);
 ```
 
-[Đầy đủ →](../../skill/rules/generic/10-path-traversal.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/10-path-traversal.md)
 
 ---
 
 ### Rule 11 — CSRF
 
 **Severity max:** HIGH
-**Applies to:** all (+ php)
+**Applies to:** all (+ php, typescript, python)
 
 Endpoint thay đổi state (POST/PUT/DELETE) không kiểm tra CSRF token. Trang web độc tạo form auto-submit → trình duyệt user gửi request kèm cookie session → server tưởng là legit.
 
@@ -313,7 +313,7 @@ app.post('/transfer', (req, res) => {
 });
 ```
 
-[Đầy đủ →](../../skill/rules/generic/11-csrf.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/11-csrf.md)
 
 ---
 
@@ -341,14 +341,14 @@ def delete_user(id):
     User.query.get(id).delete()
 ```
 
-[Đầy đủ →](../../skill/rules/generic/12-broken-access-control.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/12-broken-access-control.md)
 
 ---
 
 ### Rule 13 — WEAK-PASSWORD-HASHING
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all
 
 Lưu password bằng MD5, SHA1, SHA256 thuần, hoặc plain text. Crack được trong vài phút khi DB rò rỉ. Phải dùng bcrypt / argon2 / scrypt.
 
@@ -363,14 +363,14 @@ $hash = password_hash($_POST['password'], PASSWORD_BCRYPT);
 // Verify: password_verify($input, $hash)
 ```
 
-[Đầy đủ →](../../skill/rules/generic/13-weak-password-hashing.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/13-weak-password-hashing.md)
 
 ---
 
 ### Rule 14 — JWT-NONE-ALGORITHM
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ typescript, python)
 
 JWT verify chấp nhận `alg=none` (không signature), hoặc secret là chuỗi yếu (`'secret'`, `'changeme'`). Hacker tự forge token admin.
 
@@ -389,14 +389,14 @@ const decoded = jwt.verify(token, process.env.JWT_SECRET, {
 // JWT_SECRET phải là random 32+ bytes
 ```
 
-[Đầy đủ →](../../skill/rules/generic/14-jwt-none-algorithm.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/14-jwt-none-algorithm.md)
 
 ---
 
 ### Rule 15 — CORS-MISCONFIG
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ typescript, python)
 
 `Access-Control-Allow-Origin: *` kết hợp `Allow-Credentials: true` — hoặc reflect Origin header không validate. Trang web độc đọc được response API có cookie của user.
 
@@ -414,14 +414,14 @@ app.use(cors({
 }));
 ```
 
-[Đầy đủ →](../../skill/rules/generic/15-cors-misconfig.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/15-cors-misconfig.md)
 
 ---
 
 ### Rule 16 — UNRESTRICTED-FILE-UPLOAD
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all
 
 Upload không validate extension/MIME, lưu vào webroot. User upload `shell.php` → access `https://site/uploads/shell.php` → RCE.
 
@@ -439,14 +439,14 @@ move_uploaded_file($_FILES['file']['tmp_name'], '/var/uploads-private/' . $newNa
 // Serve qua endpoint riêng, KHÔNG để trong webroot
 ```
 
-[Đầy đủ →](../../skill/rules/generic/16-unrestricted-file-upload.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/16-unrestricted-file-upload.md)
 
 ---
 
 ### Rule 17 — VERBOSE-ERROR-DEBUG-MODE
 
 **Severity max:** HIGH
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, php, typescript, python)
 
 `DEBUG=true` ở production, stack trace lộ ra response, error chi tiết về DB query / file path. Hacker dùng thông tin này để mapping attack surface.
 
@@ -463,7 +463,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 # Production: DEBUG=False, ALLOWED_HOSTS=example.com
 ```
 
-[Đầy đủ →](../../skill/rules/generic/17-verbose-error-debug-mode.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/17-verbose-error-debug-mode.md)
 
 ---
 
@@ -489,7 +489,7 @@ const searchLimit = rateLimit({ windowMs: 60_000, max: 30 });
 app.get('/api/search', searchLimit, async (req, res) => { ... });
 ```
 
-[Đầy đủ →](../../skill/rules/generic/18-missing-rate-limit.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/18-missing-rate-limit.md)
 
 ---
 
@@ -519,7 +519,7 @@ tx.Exec("UPDATE accounts SET balance=balance-? WHERE id=?", amount, userID)
 tx.Commit()
 ```
 
-[Đầy đủ →](../../skill/rules/generic/19-race-condition.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/19-race-condition.md)
 
 ---
 
@@ -545,14 +545,14 @@ npm update
 # Set up Dependabot / Renovate cho update tự động
 ```
 
-[Đầy đủ →](../../skill/rules/generic/20-outdated-dependency.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/20-outdated-dependency.md)
 
 ---
 
 ### Rule 21 — COMMAND-INJECTION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 `exec()`, `os.system()`, `shell=True`, `child_process.exec()` với user input → arbitrary code execution. User gửi `; rm -rf /` là server toang.
 
@@ -570,7 +570,7 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 # Không shell=True, truyền argv list, validate filename trước
 ```
 
-[Đầy đủ →](../../skill/rules/generic/21-command-injection.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/21-command-injection.md)
 
 ---
 
@@ -580,11 +580,13 @@ Một số rule có override chuyên sâu cho ngôn ngữ cụ thể. Khi vbsec 
 
 | Ngôn ngữ | Folder | Override rule |
 |---|---|---|
-| Go | [`skill/rules/languages/go/`](../../skill/rules/languages/go/) | SQL-INJECTION (GORM Raw), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
-| PHP | [`skill/rules/languages/php/`](../../skill/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), XSS (echo $_GET), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), WEAK-PASSWORD-HASHING (md5), UNRESTRICTED-FILE-UPLOAD (move_uploaded_file) |
-| .NET / C# | [`skill/rules/languages/dotnet/`](../../skill/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/formatter cũ), COMMAND-INJECTION (Process.Start) |
+| Go | [`skills/vbs-scan-security/rules/languages/go/`](../../skills/vbs-scan-security/rules/languages/go/) | SQL-INJECTION (GORM Raw), INSECURE-DESERIALIZATION (gob/yaml), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
+| PHP | [`skills/vbs-scan-security/rules/languages/php/`](../../skills/vbs-scan-security/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), VERBOSE-ERROR (display_errors), COMMAND-INJECTION (exec/system) |
+| TypeScript / JS | [`skills/vbs-scan-security/rules/languages/typescript/`](../../skills/vbs-scan-security/rules/languages/typescript/) | SQL-INJECTION (Sequelize/Prisma/TypeORM/Mongoose), XSS (React/Vue/Angular), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (js-yaml), SSRF, CSRF, JWT-NONE-ALGORITHM, CORS-MISCONFIG, VERBOSE-ERROR, COMMAND-INJECTION (child_process) |
+| Python | [`skills/vbs-scan-security/rules/languages/python/`](../../skills/vbs-scan-security/rules/languages/python/) | SQL-INJECTION (SQLAlchemy text/Django raw), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (pickle/yaml.load), SSRF, CSRF (Django), JWT-NONE-ALGORITHM (PyJWT), CORS-MISCONFIG, VERBOSE-ERROR (Flask/Django debug), COMMAND-INJECTION (subprocess shell=True) |
+| .NET / C# | [`skills/vbs-scan-security/rules/languages/dotnet/`](../../skills/vbs-scan-security/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/formatter cũ), COMMAND-INJECTION (Process.Start) |
 
-Muốn add language khác (Ruby, Java, JS/TS, Python, Rust)? Đọc [contributing.md](contributing.md).
+Muốn add language khác (Ruby, Java, Rust)? Đọc [contributing.md](contributing.md).
 
 ---
 
@@ -594,5 +596,5 @@ Nếu bạn thêm rule mới (22, 23...) hoặc cập nhật severity, nhớ upd
 
 1. File này (`docs/vi/rules.md`)
 2. [`docs/en/rules.md`](../en/rules.md)
-3. Bảng trong [SKILL.md](../../skill/SKILL.md) Step 4
-4. README.vi.md + README.en.md (section "Danh sách 21 lỗi")
+3. Bảng trong [SKILL.md](../../skills/vbs-scan-security/SKILL.md) Step 4
+4. README.vi.md + README.md (section "Danh sách 21 lỗi")
