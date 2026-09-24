@@ -169,3 +169,10 @@ Key→text mapping for report output when `lang=en`. SKILL.md and workflows must
 | `msg_gitignore_warning_title` | Recommendation |
 | `msg_gitignore_warning_text` | The `vbsec-reports/` directory is not listed in `.gitignore`. To avoid committing scan reports to Git, add `vbsec-reports/` to `.gitignore`. |
 | `msg_reports_dir_created` | Created `vbsec-reports/` directory for persisted reports |
+
+## Hardening notes
+
+| Key | Text |
+|---|---|
+| `header_hardening_title` | Hardening notes (not vulnerabilities) |
+| `msg_hardening_intro` | The items below are not exploitable; they are optional defense-in-depth suggestions and do not affect the verdict. |

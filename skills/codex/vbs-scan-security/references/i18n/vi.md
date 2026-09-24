@@ -169,3 +169,10 @@ Bảng key → text cho output report khi `lang=vi`. SKILL.md và workflows ph�
 | `msg_gitignore_warning_title` | Khuyến nghị |
 | `msg_gitignore_warning_text` | Thư mục `vbsec-reports/` chưa có trong `.gitignore`. Để tránh commit báo cáo vào Git, thêm dòng `vbsec-reports/` vào `.gitignore`. |
 | `msg_reports_dir_created` | Đã tạo thư mục `vbsec-reports/` để lưu báo cáo |
+
+## Hardening notes
+
+| Key | Text |
+|---|---|
+| `header_hardening_title` | Gợi ý tăng cường (không phải lỗ hổng) |
+| `msg_hardening_intro` | Các điểm dưới đây không khai thác được, chỉ là gợi ý phòng thủ thêm. Không tính vào kết quả. |
