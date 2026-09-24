@@ -125,6 +125,8 @@ SCOPE=$(echo "$ARGS" | sed -E 's/(lang=(vi|en)|--vi|--en)//g' | xargs)
 
 # 3) Gather files
 NO_GIT_NOTE=""
+SCAN_REF=""
+SCAN_ROOT="."
 case "$SCOPE" in
   "staged"|"uncommitted"|"diff"|"commit within "*|"commit id "*|"pr id "*)
     if [ "$IS_GIT_REPO" = false ]; then
@@ -132,11 +134,26 @@ case "$SCOPE" in
       exit 1
     fi
     case "$SCOPE" in
-      "staged")             FILES=$(git diff --cached --name-only) ;;
-      "uncommitted"|"diff") FILES=$(git diff --name-only HEAD); [ -z "$FILES" ] && FILES=$(git diff --cached --name-only) ;;
-      "commit within "*)    DAYS=$(echo "$SCOPE" | grep -oE '[0-9]+'); FILES=$(git log --since="${DAYS} days ago" --name-only --pretty=format: | sort -u | grep -v '^$') ;;
-      "commit id "*)        SHA=$(echo "$SCOPE" | sed 's/commit id //'); FILES=$(git diff-tree --no-commit-id --name-only -r "$SHA") ;;
-      "pr id "*)            PR=$(echo "$SCOPE" | sed 's/pr id //'); FILES=$(gh pr diff "$PR" --name-only) ;;
+      "staged")             FILES=$(git diff --cached --name-only --diff-filter=d) ;;
+      "uncommitted"|"diff")
+        # staged + unstaged (so với HEAD) + file mới chưa `git add`; bỏ file đã xoá
+        FILES=$( { git diff --name-only --diff-filter=d HEAD 2>/dev/null || git diff --cached --name-only --diff-filter=d; git ls-files --others --exclude-standard; } | sort -u | grep -v '^$' || true) ;;
+      "commit within "*)
+        DAYS=$(echo "$SCOPE" | grep -oE '[0-9]+')
+        # Đọc bản hiện tại trên đĩa → bỏ file đã bị xoá sau đó
+        FILES=$(git log --since="${DAYS} days ago" --name-only --pretty=format: | sort -u | grep -v '^$' | while IFS= read -r f; do [ -f "$f" ] && echo "$f"; done || true) ;;
+      "commit id "*)
+        SHA=$(echo "$SCOPE" | sed 's/commit id //')
+        git cat-file -e "${SHA}^{commit}" 2>/dev/null || { echo "Unknown commit: $SHA"; exit 1; }
+        FILES=$(git diff-tree --root --no-commit-id --name-only -r --diff-filter=d "$SHA")
+        SCAN_REF="$SHA" ;;
+      "pr id "*)
+        PR=$(echo "$SCOPE" | sed 's/pr id //')
+        FILES=$(gh pr diff "$PR" --name-only) || exit 1
+        git fetch -q origin "pull/${PR}/head" 2>/dev/null || git fetch -q "$(gh repo view --json url -q .url)" "pull/${PR}/head" || { echo "Cannot fetch PR #$PR"; exit 1; }
+        SCAN_REF=$(git rev-parse FETCH_HEAD)
+        # Bỏ file PR đã xoá (không còn ở head của PR)
+        FILES=$(echo "$FILES" | while IFS= read -r f; do git cat-file -e "${SCAN_REF}:$f" 2>/dev/null && echo "$f"; done || true) ;;
     esac
     ;;
   "all"|"")
@@ -169,6 +186,13 @@ case "$SCOPE" in
     ;;
 esac
 
+# 3b) Scope theo commit/PR: extract snapshot đúng ref ra thư mục tạm.
+#     Thư mục hiện tại có thể đang ở branch khác → đọc ở đó sẽ quét sai code.
+if [ -n "$SCAN_REF" ]; then
+  TMP_BASE="${TMPDIR:-/tmp}"; SCAN_ROOT=$(mktemp -d "${TMP_BASE%/}/vbsec-scan.XXXXXX")
+  git archive "$SCAN_REF" | tar -x -C "$SCAN_ROOT"
+fi
+
 # 4) Strip noise (double-protect — vd git ls-files có thể trả file ở submodule vendored)
 FILES=$(echo "$FILES" | grep -vE '(^|/)(node_modules|vendor|dist|build|\.next|\.nuxt|target|\.venv|__pycache__|\.git|vbsec-reports)/' || true)
 
@@ -193,12 +217,14 @@ echo "Lang: $LANG"
 echo "Git repo: $IS_GIT_REPO"
 echo "Files: $(echo "$FILES" | wc -l)"
 echo "Report file: $REPORT_FILE"
+echo "Scan root: $SCAN_ROOT"
 [ "$NO_GIT_NOTE" = "true" ] && echo "Note: non-git folder — scanning all files via find"
 [ "$GITIGNORE_WARNING" = "missing" ] && echo "Note: vbsec-reports/ not in .gitignore — will warn user at end"
 ```
 
 **Quan trọng:**
 - `vbsec-reports/` được excluded khỏi scan list — không scan chính báo cáo của mình
+- **Scan root:** nếu `Scan root` khác `.` (scope `commit id`, `pr id`), mọi Read/Grep phải đọc file tại `$SCAN_ROOT/<path>`. Đó là snapshot đúng commit/PR; KHÔNG đọc bản trong thư mục hiện tại (có thể đang ở branch khác). Report vẫn ghi path gốc `<path>`, không kèm prefix `$SCAN_ROOT`. LARGE mode: truyền `$SCAN_ROOT` làm `{repo_path}` cho từng chunk. Render report xong → `rm -rf "$SCAN_ROOT"`.
 - Path output `vbsec-reports/scan-<timestamp>.md` cần được mkdir trước khi scan, để workflows save vào
 - **v0.5.1+**: skill chạy được trên cả non-git folder. Default scope (`all`) dùng `find` thay `git ls-files`. Các scope dựa vào git (`staged`, `uncommitted`, `commit within`, `commit id`, `pr id`) BẮT BUỘC git — báo `msg_scope_needs_git` rồi exit.
 - Nếu `NO_GIT_NOTE=true`, report header phải in `{msg_no_git_note}` để user biết folder không có git → không lọc theo `.gitignore`.
