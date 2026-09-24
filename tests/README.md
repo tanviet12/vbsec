@@ -4,8 +4,9 @@ Bộ code mẫu có lỗi biết trước, dùng để đo skill bắt được 
 
 ```
 tests/
-├── fixtures/<lang>/     # code mẫu: python, typescript, go, php, dotnet
-└── expected/<lang>.json # đáp án cho từng bộ
+├── fixtures/<lang>/      # câu dễ: python, typescript, go, php, dotnet
+├── fixtures/<lang>-hard/ # câu khó: go-hard, typescript-hard, php-hard
+└── expected/<set>.json   # đáp án cho từng bộ
 ```
 
 Code trong `fixtures/` **cố tình có lỗ hổng**. Không copy đi dùng, không deploy.
@@ -17,11 +18,16 @@ Code trong `fixtures/` **cố tình có lỗ hổng**. Không copy đi dùng, kh
 - **Mỗi bộ có cả bẫy false positive:** file trông giống lỗi nhưng an toàn (query có bind param, `yaml.safe_load`, `htmlspecialchars`...).
 - **Secret giả không theo format thật** của nhà cung cấp (Stripe, AWS...), để không bị GitHub push protection chặn.
 
-## Đáp án (`expected/<lang>.json`)
+## Câu dễ và câu khó
+
+- **Câu dễ** (`<lang>/`): lỗi dạng sách giáo khoa, input đi thẳng từ request vào chỗ nguy hiểm trong cùng 1 hàm. Dùng để bắt regression thô.
+- **Câu khó** (`<lang>-hard/`): lỗi giống code thật. Input đi qua 2-3 file (handler → service → repo), hàm "làm sạch" viết sai (`HasPrefix` sau `Join`, `endsWith("example.com")`, check `..` trước `decodeURIComponent`), second-order SQL injection, race condition khi trừ số dư, middleware phân quyền đặt sai chỗ. Kèm bẫy an toàn trông rất giống lỗi (`fmt.Sprintf` với allowlist, `Prisma.sql`, `DOMPurify`).
+
+## Đáp án (`expected/<set>.json`)
 
 | Field | Ý nghĩa |
 |---|---|
-| `must_find` | Finding bắt buộc có: `file` + `rule_id` (string hoặc list các ID chấp nhận được) + `min_severity` |
+| `must_find` | Finding bắt buộc có: `file` + `rule_id` (string hoặc list các ID chấp nhận được) + `min_severity`. Thêm `lines: [start, end]` khi 1 file có cả đoạn lỗi lẫn đoạn an toàn cùng loại |
 | `must_not_find` | Finding KHÔNG được có, kèm `reason` |
 | `clean_files` | File không được có finding nào |
 

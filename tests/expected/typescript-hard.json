@@ -1,0 +1,60 @@
+{
+  "fixture": "tests/fixtures/typescript-hard",
+  "must_find": [
+    {
+      "file": "server/services/userService.ts",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "server/middleware/auth.ts",
+      "rule_id": [
+        "JWT-NONE-ALGORITHM",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "server/routes/import.ts",
+      "rule_id": "SSRF",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "server/routes/files.ts",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "server/routes/transfer.ts",
+      "rule_id": "RACE-CONDITION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "server/routes/admin.ts",
+      "rule_id": "BROKEN-ACCESS-CONTROL",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "web/components/SearchResult.vue",
+      "rule_id": "XSS",
+      "min_severity": "HIGH"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "server/services/reportService.ts",
+      "rule_id": "SQL-INJECTION",
+      "reason": "Prisma.sql tagged template là parameterized"
+    },
+    {
+      "file": "web/components/ArticleBody.vue",
+      "rule_id": "XSS",
+      "reason": "v-html qua DOMPurify.sanitize"
+    }
+  ],
+  "clean_files": [
+    "server/services/reportService.ts",
+    "web/components/ArticleBody.vue",
+    "server/routes/reports.ts"
+  ]
+}

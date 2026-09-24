@@ -3,7 +3,8 @@
 
 Đọc JSON summary (block ```json cuối cùng) trong report .md, so với
 tests/expected/<lang>.json:
-  - must_find      : finding bắt buộc phải có (file + rule_id, severity >= min_severity)
+  - must_find      : finding bắt buộc phải có (file + rule_id, severity >= min_severity,
+                     tuỳ chọn lines = [start, end] khi 1 file có cả đoạn lỗi lẫn đoạn an toàn)
   - must_not_find  : finding KHÔNG được có (bẫy false positive)
   - clean_files    : file không được có finding nào
 
@@ -48,6 +49,17 @@ def norm_path(path, fixture):
     return path[len(prefix):] if path.startswith(prefix) else path
 
 
+def in_lines(entry, finding):
+    """entry["lines"] = [start, end] (tuỳ chọn): finding phải nằm trong khoảng dòng này."""
+    if "lines" not in entry:
+        return True
+    try:
+        line = int(finding.get("line"))
+    except (TypeError, ValueError):
+        return False
+    return entry["lines"][0] <= line <= entry["lines"][1]
+
+
 def rule_ids(entry):
     rid = entry["rule_id"]
     return rid if isinstance(rid, list) else [rid]
@@ -73,7 +85,7 @@ def check(lang, report_path):
     matched = set()
     for exp in expected["must_find"]:
         ids = rule_ids(exp)
-        cands = [i for i, f in enumerate(findings) if f["file"] == exp["file"] and f["rule_id"] in ids]
+        cands = [i for i, f in enumerate(findings) if f["file"] == exp["file"] and f["rule_id"] in ids and in_lines(exp, f)]
         if not cands:
             missed.append(exp)
             continue
@@ -85,10 +97,13 @@ def check(lang, report_path):
 
     false_pos = [
         (bad, f) for bad in expected["must_not_find"] for f in findings
-        if f["file"] == bad["file"] and f["rule_id"] in rule_ids(bad)
+        if f["file"] == bad["file"] and f["rule_id"] in rule_ids(bad) and in_lines(bad, f)
     ]
     dirty = [f for f in findings if f["file"] in expected["clean_files"]]
-    extra = [f for i, f in enumerate(findings) if i not in matched and f["file"] not in expected["clean_files"]]
+    extra = [
+        f for i, f in enumerate(findings)
+        if i not in matched and f["file"] not in expected["clean_files"] and not any(f is fp for _, fp in false_pos)
+    ]
 
     total = len(expected["must_find"])
     print(f"   recall: {hit}/{total} ({hit * 100 // total}%)")
