@@ -1,0 +1,5 @@
+flask==2.3.3
+sqlalchemy==2.0.25
+pyjwt==2.8.0
+requests==2.31.0
+pyyaml==5.3

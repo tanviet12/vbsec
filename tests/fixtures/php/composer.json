@@ -1,0 +1,7 @@
+{
+    "name": "example/shop",
+    "require": {
+        "php": ">=8.1",
+        "guzzlehttp/guzzle": "7.4.1"
+    }
+}

@@ -1,0 +1,84 @@
+{
+  "fixture": "tests/fixtures/python",
+  "must_find": [
+    {
+      "file": "app/users.py",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/tasks.py",
+      "rule_id": "COMMAND-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/cache.py",
+      "rule_id": "INSECURE-DESERIALIZATION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/auth.py",
+      "rule_id": "WEAK-PASSWORD-HASHING",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/auth.py",
+      "rule_id": [
+        "JWT-NONE-ALGORITHM",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/fetch.py",
+      "rule_id": "SSRF",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/files.py",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "app/orders.py",
+      "rule_id": "IDOR",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "run.py",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "requirements.txt",
+      "rule_id": "OUTDATED-DEPENDENCY",
+      "min_severity": "MEDIUM"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "app/orders.py",
+      "rule_id": "SQL-INJECTION",
+      "reason": "text() với bind param :uid/:status"
+    },
+    {
+      "file": "app/profile.py",
+      "rule_id": "INSECURE-DESERIALIZATION",
+      "reason": "yaml.safe_load"
+    },
+    {
+      "file": "app/profile.py",
+      "rule_id": "SSRF",
+      "reason": "URL cố định, user chỉ điều khiển query param"
+    },
+    {
+      "file": "app/backup.py",
+      "rule_id": "COMMAND-INJECTION",
+      "reason": "subprocess dạng list, không có input user"
+    }
+  ],
+  "clean_files": [
+    "app/backup.py",
+    "app/profile.py"
+  ]
+}

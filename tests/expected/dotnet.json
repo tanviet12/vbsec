@@ -1,0 +1,35 @@
+{
+  "fixture": "tests/fixtures/dotnet",
+  "must_find": [
+    {
+      "file": "Controllers/UsersController.cs",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "Controllers/ProfileController.cs",
+      "rule_id": "MASS-ASSIGNMENT",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "Controllers/CartController.cs",
+      "rule_id": "INSECURE-DESERIALIZATION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "Controllers/ToolsController.cs",
+      "rule_id": "COMMAND-INJECTION",
+      "min_severity": "HIGH"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "Controllers/OrdersController.cs",
+      "rule_id": "SQL-INJECTION",
+      "reason": "FromSqlInterpolated parameterized"
+    }
+  ],
+  "clean_files": [
+    "Controllers/OrdersController.cs"
+  ]
+}

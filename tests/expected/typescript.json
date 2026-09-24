@@ -1,0 +1,64 @@
+{
+  "fixture": "tests/fixtures/typescript",
+  "must_find": [
+    {
+      "file": "src/routes/search.ts",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "src/routes/convert.ts",
+      "rule_id": "COMMAND-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "src/routes/account.ts",
+      "rule_id": "MASS-ASSIGNMENT",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "src/components/Comment.tsx",
+      "rule_id": "XSS",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "src/app.ts",
+      "rule_id": "CORS-MISCONFIG",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "src/lib/auth.ts",
+      "rule_id": [
+        "JWT-NONE-ALGORITHM",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "src/lib/config.ts",
+      "rule_id": "HARDCODED-SECRET",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "package.json",
+      "rule_id": "OUTDATED-DEPENDENCY",
+      "min_severity": "MEDIUM"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "src/routes/products.ts",
+      "rule_id": "SQL-INJECTION",
+      "reason": "replacements parameterized"
+    },
+    {
+      "file": "src/components/Bio.tsx",
+      "rule_id": "XSS",
+      "reason": "React tự escape {bio}"
+    }
+  ],
+  "clean_files": [
+    "src/routes/products.ts",
+    "src/components/Bio.tsx"
+  ]
+}
