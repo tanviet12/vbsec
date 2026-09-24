@@ -21,3 +21,6 @@ sepay-wiki-bot/
 
 # Python bytecode cache (scripts/check-fixtures.py, validate-report.py)
 __pycache__/
+
+# Token usage log của run-fixtures.sh (số liệu máy local)
+tests/usage.log
