@@ -85,6 +85,7 @@ if ! [ "$PART" -ge 1 ] 2>/dev/null || [ "$PART" -gt "$total_parts" ]; then
   exit 1
 fi
 
+echo "=== vbsec rules — PART $PART/$total_parts. Đọc toàn bộ output này; không cắt bằng head/tail ==="
 for i in "${!FILES_SELECTED[@]}"; do
   [ "${part_of[$i]}" -eq "$PART" ] && detection "${FILES_SELECTED[$i]}"
 done
