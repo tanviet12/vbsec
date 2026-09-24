@@ -25,7 +25,7 @@ vbsec đưa quy trình rà soát bảo mật cấp production vào trong vòng l
 
 vbsec đã được chạy thử trên các ứng dụng mã nguồn mở có chủ đích chứa lỗ hổng dùng cho mục đích đào tạo (như OWASP Juice Shop) — và phát hiện được các lỗ hổng tương ứng với những challenge đã được tài liệu hoá: SQL Injection, NoSQL Injection, JWT misuse, Broken Access Control, Mass Assignment, RCE qua deserialization, và nhiều nhóm khác.
 
-Bộ quy tắc chung áp dụng cho mọi ngôn ngữ lập trình. Các quy tắc chuyên sâu theo ngôn ngữ hiện có cho Go, PHP, TypeScript/JavaScript và Python, bao phủ các framework phổ biến: React, Vue, Angular, Express, NestJS, Next.js, Django, Flask, FastAPI, SQLAlchemy, Sequelize, Prisma, Mongoose. Các ngôn ngữ khác đang nằm trong lộ trình phát triển.
+Bộ quy tắc chung áp dụng cho mọi ngôn ngữ lập trình. Các quy tắc chuyên sâu theo ngôn ngữ hiện có cho Go, PHP, TypeScript/JavaScript, Python và .NET/C#, bao phủ các framework phổ biến: React, Vue, Angular, Express, NestJS, Next.js, Django, Flask, FastAPI, SQLAlchemy, Sequelize, Prisma, Mongoose, ASP.NET Core, EF Core, Newtonsoft.Json. Các ngôn ngữ khác đang nằm trong lộ trình phát triển.
 
 ## Tác giả
 
@@ -137,26 +137,26 @@ Xem [docs/vi/usage.md](docs/vi/usage.md) để biết toàn bộ tuỳ chọn, b
 | # | Mã quy tắc | Mức độ cao nhất | Có quy tắc chuyên sâu cho |
 |---|---|---|---|
 | 1 | `HARDCODED-SECRET` | NGHIÊM TRỌNG | — |
-| 2 | `SQL-INJECTION` | NGHIÊM TRỌNG | go, php, typescript |
+| 2 | `SQL-INJECTION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
 | 3 | `XSS` | CAO | typescript |
 | 4 | `IDOR` | CAO | — |
 | 5 | `SLOPSQUATTING` | NGHIÊM TRỌNG | — |
 | 6 | `BRUTE-FORCE` | CAO | — |
-| 7 | `MASS-ASSIGNMENT` | NGHIÊM TRỌNG | typescript |
-| 8 | `INSECURE-DESERIALIZATION` | NGHIÊM TRỌNG | go, php, typescript |
-| 9 | `SSRF` | CAO | go, typescript |
+| 7 | `MASS-ASSIGNMENT` | NGHIÊM TRỌNG | typescript, python, dotnet |
+| 8 | `INSECURE-DESERIALIZATION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
+| 9 | `SSRF` | CAO | go, typescript, python |
 | 10 | `PATH-TRAVERSAL` | CAO | — |
-| 11 | `CSRF` | CAO | php, typescript |
+| 11 | `CSRF` | CAO | php, typescript, python |
 | 12 | `BROKEN-ACCESS-CONTROL` | NGHIÊM TRỌNG | — |
 | 13 | `WEAK-PASSWORD-HASHING` | NGHIÊM TRỌNG | — |
-| 14 | `JWT-NONE-ALGORITHM` | NGHIÊM TRỌNG | typescript |
-| 15 | `CORS-MISCONFIG` | CAO | typescript |
+| 14 | `JWT-NONE-ALGORITHM` | NGHIÊM TRỌNG | typescript, python |
+| 15 | `CORS-MISCONFIG` | CAO | typescript, python |
 | 16 | `UNRESTRICTED-FILE-UPLOAD` | NGHIÊM TRỌNG | — |
-| 17 | `VERBOSE-ERROR-DEBUG-MODE` | CAO | go, php, typescript |
+| 17 | `VERBOSE-ERROR-DEBUG-MODE` | CAO | go, php, typescript, python |
 | 18 | `MISSING-RATE-LIMIT` | CAO | — |
 | 19 | `RACE-CONDITION` | CAO | — |
 | 20 | `OUTDATED-DEPENDENCY` | CAO | — |
-| 21 | `COMMAND-INJECTION` | NGHIÊM TRỌNG | go, php, typescript |
+| 21 | `COMMAND-INJECTION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
 
 Danh sách hiện tại có 21 quy tắc và sẽ tiếp tục mở rộng.
 
@@ -167,6 +167,8 @@ Danh sách hiện tại có 21 quy tắc và sẽ tiếp tục mở rộng.
 - [Danh mục quy tắc đầy đủ](docs/vi/rules.md)
 - [Đóng góp](docs/vi/contributing.md)
 
+Repo luôn chào đón đóng góp: báo lỗi, sửa rule, thêm chuyên sâu cho ngôn ngữ mới qua issue hoặc pull request.
+
 ## Lộ trình
 
 - v0.1 — Bộ quy tắc chung + chuyên sâu Go + PHP + báo cáo song ngữ ✅
@@ -174,6 +176,7 @@ Danh sách hiện tại có 21 quy tắc và sẽ tiếp tục mở rộng.
 - v0.3 — Phạm vi mặc định chuyển sang toàn repo, lưu báo cáo cố định, giải thích chi tiết cho từng finding ✅
 - v0.4 — Chuyên sâu Python (SQLAlchemy/Django ORM SQLi, pickle/yaml deserialization RCE, Werkzeug debugger, FastAPI/Flask/Django CSRF + CORS, PyJWT algorithms, subprocess shell=True) ✅
 - v0.5 (hiện tại) — Hỗ trợ đa nền tảng: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, chia sẻ bộ rule, `install.sh` + `sync-skills.sh`) ✅
+- Chuyên sâu .NET/C# (EF Core raw SQL, ASP.NET Core model binding, deserialization Newtonsoft.Json/formatter cũ, Process.Start) ✅
 - v0.6+ — Ruby, Java, Rust — theo nhu cầu cộng đồng
 
 ## Miễn trừ trách nhiệm

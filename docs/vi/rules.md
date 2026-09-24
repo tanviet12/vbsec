@@ -14,7 +14,7 @@ Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đ
 |---|---|---|---|
 | 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | — |
 | 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python, dotnet |
-| 3 | [XSS](#rule-3--xss) | HIGH | typescript, python |
+| 3 | [XSS](#rule-3--xss) | HIGH | typescript |
 | 4 | [IDOR](#rule-4--idor) | HIGH | — |
 | 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | — |
 | 6 | [BRUTE-FORCE](#rule-6--brute-force) | HIGH | — |
@@ -61,7 +61,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 ### Rule 2 — SQL-INJECTION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ go, php)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 User input ghép trực tiếp vào câu SQL bằng concatenation hoặc f-string. Hacker chèn `' OR 1=1--` là dump cả DB. Chỉ parameterized query mới an toàn.
 
@@ -83,7 +83,7 @@ cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ### Rule 3 — XSS
 
 **Severity max:** HIGH
-**Applies to:** all (+ php)
+**Applies to:** all (+ typescript)
 
 Render user input ra HTML mà không escape. Hacker chèn `<script>` đánh cắp cookie / session. Framework hiện đại (React, Vue) auto-escape — chỉ nguy hiểm khi dùng `dangerouslySetInnerHTML` / `v-html` / `innerHTML`.
 
@@ -186,7 +186,7 @@ def login():
 ### Rule 7 — MASS-ASSIGNMENT
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ typescript, python, dotnet)
 
 Endpoint update user dùng `User.update(req.body)` — attacker thêm `{"is_admin": true}` vào request body là tự promote thành admin. Phải whitelist field cho phép update.
 
@@ -210,7 +210,7 @@ await User.findByIdAndUpdate(req.user.id, { name, bio });
 ### Rule 8 — INSECURE-DESERIALIZATION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 `pickle.loads()`, `yaml.load()` (không `SafeLoader`), `unserialize()` của PHP với user input → RCE. Deserialize có thể trigger object construction → execute arbitrary code.
 
@@ -234,7 +234,7 @@ session_data = json.loads(request.cookies.get('session'))
 ### Rule 9 — SSRF
 
 **Severity max:** HIGH
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, typescript, python)
 
 Server-Side Request Forgery — server fetch URL do user nhập. Hacker nhập `http://169.254.169.254/...` (AWS metadata) hoặc `http://localhost:8500/...` (internal services) để lấy credentials.
 
@@ -291,7 +291,7 @@ res.sendFile(requested);
 ### Rule 11 — CSRF
 
 **Severity max:** HIGH
-**Applies to:** all (+ php)
+**Applies to:** all (+ php, typescript, python)
 
 Endpoint thay đổi state (POST/PUT/DELETE) không kiểm tra CSRF token. Trang web độc tạo form auto-submit → trình duyệt user gửi request kèm cookie session → server tưởng là legit.
 
@@ -348,7 +348,7 @@ def delete_user(id):
 ### Rule 13 — WEAK-PASSWORD-HASHING
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all
 
 Lưu password bằng MD5, SHA1, SHA256 thuần, hoặc plain text. Crack được trong vài phút khi DB rò rỉ. Phải dùng bcrypt / argon2 / scrypt.
 
@@ -370,7 +370,7 @@ $hash = password_hash($_POST['password'], PASSWORD_BCRYPT);
 ### Rule 14 — JWT-NONE-ALGORITHM
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ typescript, python)
 
 JWT verify chấp nhận `alg=none` (không signature), hoặc secret là chuỗi yếu (`'secret'`, `'changeme'`). Hacker tự forge token admin.
 
@@ -396,7 +396,7 @@ const decoded = jwt.verify(token, process.env.JWT_SECRET, {
 ### Rule 15 — CORS-MISCONFIG
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ typescript, python)
 
 `Access-Control-Allow-Origin: *` kết hợp `Allow-Credentials: true` — hoặc reflect Origin header không validate. Trang web độc đọc được response API có cookie của user.
 
@@ -421,7 +421,7 @@ app.use(cors({
 ### Rule 16 — UNRESTRICTED-FILE-UPLOAD
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all
 
 Upload không validate extension/MIME, lưu vào webroot. User upload `shell.php` → access `https://site/uploads/shell.php` → RCE.
 
@@ -446,7 +446,7 @@ move_uploaded_file($_FILES['file']['tmp_name'], '/var/uploads-private/' . $newNa
 ### Rule 17 — VERBOSE-ERROR-DEBUG-MODE
 
 **Severity max:** HIGH
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, php, typescript, python)
 
 `DEBUG=true` ở production, stack trace lộ ra response, error chi tiết về DB query / file path. Hacker dùng thông tin này để mapping attack surface.
 
@@ -552,7 +552,7 @@ npm update
 ### Rule 21 — COMMAND-INJECTION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 `exec()`, `os.system()`, `shell=True`, `child_process.exec()` với user input → arbitrary code execution. User gửi `; rm -rf /` là server toang.
 
@@ -580,11 +580,13 @@ Một số rule có override chuyên sâu cho ngôn ngữ cụ thể. Khi vbsec 
 
 | Ngôn ngữ | Folder | Override rule |
 |---|---|---|
-| Go | [`skills/vbs-scan-security/rules/languages/go/`](../../skills/vbs-scan-security/rules/languages/go/) | SQL-INJECTION (GORM Raw), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
-| PHP | [`skills/vbs-scan-security/rules/languages/php/`](../../skills/vbs-scan-security/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), XSS (echo $_GET), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), WEAK-PASSWORD-HASHING (md5), UNRESTRICTED-FILE-UPLOAD (move_uploaded_file) |
+| Go | [`skills/vbs-scan-security/rules/languages/go/`](../../skills/vbs-scan-security/rules/languages/go/) | SQL-INJECTION (GORM Raw), INSECURE-DESERIALIZATION (gob/yaml), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
+| PHP | [`skills/vbs-scan-security/rules/languages/php/`](../../skills/vbs-scan-security/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), VERBOSE-ERROR (display_errors), COMMAND-INJECTION (exec/system) |
+| TypeScript / JS | [`skills/vbs-scan-security/rules/languages/typescript/`](../../skills/vbs-scan-security/rules/languages/typescript/) | SQL-INJECTION (Sequelize/Prisma/TypeORM/Mongoose), XSS (React/Vue/Angular), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (js-yaml), SSRF, CSRF, JWT-NONE-ALGORITHM, CORS-MISCONFIG, VERBOSE-ERROR, COMMAND-INJECTION (child_process) |
+| Python | [`skills/vbs-scan-security/rules/languages/python/`](../../skills/vbs-scan-security/rules/languages/python/) | SQL-INJECTION (SQLAlchemy text/Django raw), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (pickle/yaml.load), SSRF, CSRF (Django), JWT-NONE-ALGORITHM (PyJWT), CORS-MISCONFIG, VERBOSE-ERROR (Flask/Django debug), COMMAND-INJECTION (subprocess shell=True) |
 | .NET / C# | [`skills/vbs-scan-security/rules/languages/dotnet/`](../../skills/vbs-scan-security/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/formatter cũ), COMMAND-INJECTION (Process.Start) |
 
-Muốn add language khác (Ruby, Java, JS/TS, Python, Rust)? Đọc [contributing.md](contributing.md).
+Muốn add language khác (Ruby, Java, Rust)? Đọc [contributing.md](contributing.md).
 
 ---
 

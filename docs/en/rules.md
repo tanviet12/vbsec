@@ -14,7 +14,7 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 |---|---|---|---|
 | 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | — |
 | 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python, dotnet |
-| 3 | [XSS](#rule-3--xss) | HIGH | typescript, python |
+| 3 | [XSS](#rule-3--xss) | HIGH | typescript |
 | 4 | [IDOR](#rule-4--idor) | HIGH | — |
 | 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | — |
 | 6 | [BRUTE-FORCE](#rule-6--brute-force) | HIGH | — |
@@ -61,7 +61,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 ### Rule 2 — SQL-INJECTION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ go, php)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 User input concatenated into an SQL string via `+` or f-strings. Attacker injects `' OR 1=1--` and dumps the whole DB. Only parameterized queries are safe.
 
@@ -83,7 +83,7 @@ cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ### Rule 3 — XSS
 
 **Severity max:** HIGH
-**Applies to:** all (+ php)
+**Applies to:** all (+ typescript)
 
 Rendering user input into HTML without escaping. Attacker injects `<script>` to steal cookies / sessions. Modern frameworks (React, Vue) auto-escape — danger appears with `dangerouslySetInnerHTML` / `v-html` / `innerHTML`.
 
@@ -186,7 +186,7 @@ def login():
 ### Rule 7 — MASS-ASSIGNMENT
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ typescript, python, dotnet)
 
 User update endpoint takes `User.update(req.body)` blindly. Attacker adds `{"is_admin": true}` to the request body and self-promotes. Always whitelist updatable fields.
 
@@ -210,7 +210,7 @@ await User.findByIdAndUpdate(req.user.id, { name, bio });
 ### Rule 8 — INSECURE-DESERIALIZATION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 `pickle.loads()`, `yaml.load()` without `SafeLoader`, PHP's `unserialize()` on user input → RCE. Deserialization can trigger object construction → arbitrary code execution.
 
@@ -234,7 +234,7 @@ session_data = json.loads(request.cookies.get('session'))
 ### Rule 9 — SSRF
 
 **Severity max:** HIGH
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, typescript, python)
 
 Server-Side Request Forgery — server fetches a user-supplied URL. Attacker submits `http://169.254.169.254/...` (AWS metadata) or `http://localhost:8500/...` (internal services) to steal credentials.
 
@@ -291,7 +291,7 @@ res.sendFile(requested);
 ### Rule 11 — CSRF
 
 **Severity max:** HIGH
-**Applies to:** all (+ php)
+**Applies to:** all (+ php, typescript, python)
 
 State-changing endpoint (POST/PUT/DELETE) without a CSRF token check. A malicious site auto-submits a form — the user's browser sends the request with their session cookie → server thinks it's legitimate.
 
@@ -348,7 +348,7 @@ def delete_user(id):
 ### Rule 13 — WEAK-PASSWORD-HASHING
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all
 
 Storing passwords with MD5, SHA1, plain SHA256, or plain text. Crackable in minutes if the DB leaks. Use bcrypt / argon2 / scrypt.
 
@@ -370,7 +370,7 @@ $hash = password_hash($_POST['password'], PASSWORD_BCRYPT);
 ### Rule 14 — JWT-NONE-ALGORITHM
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ typescript, python)
 
 JWT verifier accepts `alg=none` (no signature) or uses a weak secret (`'secret'`, `'changeme'`). Attacker forges admin tokens at will.
 
@@ -396,7 +396,7 @@ const decoded = jwt.verify(token, process.env.JWT_SECRET, {
 ### Rule 15 — CORS-MISCONFIG
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ typescript, python)
 
 `Access-Control-Allow-Origin: *` combined with `Allow-Credentials: true`, or reflecting the Origin header without validation. A malicious site can read your API response complete with the victim's cookies.
 
@@ -421,7 +421,7 @@ app.use(cors({
 ### Rule 16 — UNRESTRICTED-FILE-UPLOAD
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ php)
+**Applies to:** all
 
 Upload endpoint doesn't validate extension/MIME and saves into webroot. Attacker uploads `shell.php` → hits `https://site/uploads/shell.php` → RCE.
 
@@ -446,7 +446,7 @@ move_uploaded_file($_FILES['file']['tmp_name'], '/var/uploads-private/' . $newNa
 ### Rule 17 — VERBOSE-ERROR-DEBUG-MODE
 
 **Severity max:** HIGH
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, php, typescript, python)
 
 `DEBUG=true` in production, stack traces leaking to responses, detailed errors revealing DB query / file paths. Attackers map attack surface from this info.
 
@@ -552,7 +552,7 @@ npm update
 ### Rule 21 — COMMAND-INJECTION
 
 **Severity max:** CRITICAL
-**Applies to:** all (+ go)
+**Applies to:** all (+ go, php, typescript, python, dotnet)
 
 `exec()`, `os.system()`, `shell=True`, `child_process.exec()` with user input → arbitrary code execution. User sends `; rm -rf /` and your server's gone.
 
@@ -580,11 +580,13 @@ Some rules have language-specific overrides that catch idioms more accurately. W
 
 | Language | Folder | Overridden rules |
 |---|---|---|
-| Go | [`skills/vbs-scan-security/rules/languages/go/`](../../skills/vbs-scan-security/rules/languages/go/) | SQL-INJECTION (GORM Raw), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
-| PHP | [`skills/vbs-scan-security/rules/languages/php/`](../../skills/vbs-scan-security/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), XSS (echo $_GET), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), WEAK-PASSWORD-HASHING (md5), UNRESTRICTED-FILE-UPLOAD (move_uploaded_file) |
+| Go | [`skills/vbs-scan-security/rules/languages/go/`](../../skills/vbs-scan-security/rules/languages/go/) | SQL-INJECTION (GORM Raw), INSECURE-DESERIALIZATION (gob/yaml), SSRF (Colly), VERBOSE-ERROR (gin Debug), COMMAND-INJECTION (exec.Command) |
+| PHP | [`skills/vbs-scan-security/rules/languages/php/`](../../skills/vbs-scan-security/rules/languages/php/) | SQL-INJECTION (mysqli/PDO), INSECURE-DESERIALIZATION (unserialize), CSRF (Laravel), VERBOSE-ERROR (display_errors), COMMAND-INJECTION (exec/system) |
+| TypeScript / JS | [`skills/vbs-scan-security/rules/languages/typescript/`](../../skills/vbs-scan-security/rules/languages/typescript/) | SQL-INJECTION (Sequelize/Prisma/TypeORM/Mongoose), XSS (React/Vue/Angular), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (js-yaml), SSRF, CSRF, JWT-NONE-ALGORITHM, CORS-MISCONFIG, VERBOSE-ERROR, COMMAND-INJECTION (child_process) |
+| Python | [`skills/vbs-scan-security/rules/languages/python/`](../../skills/vbs-scan-security/rules/languages/python/) | SQL-INJECTION (SQLAlchemy text/Django raw), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (pickle/yaml.load), SSRF, CSRF (Django), JWT-NONE-ALGORITHM (PyJWT), CORS-MISCONFIG, VERBOSE-ERROR (Flask/Django debug), COMMAND-INJECTION (subprocess shell=True) |
 | .NET / C# | [`skills/vbs-scan-security/rules/languages/dotnet/`](../../skills/vbs-scan-security/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/legacy formatters), COMMAND-INJECTION (Process.Start) |
 
-Want to add another language (Ruby, Java, JS/TS, Python, Rust)? See [contributing.md](contributing.md).
+Want to add another language (Ruby, Java, Rust)? See [contributing.md](contributing.md).
 
 ---
 

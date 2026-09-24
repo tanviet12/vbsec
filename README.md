@@ -25,7 +25,7 @@ vbsec brings production-grade security review into the AI coding loop. It runs a
 
 vbsec has been exercised against intentionally vulnerable open-source training apps such as OWASP Juice Shop — and identifies findings that line up with the documented vulnerability challenges across SQL injection, NoSQL injection, JWT misuse, broken access control, mass assignment, deserialization RCE, and more.
 
-Generic rules apply to every language. Specialized rule overlays exist for Go, PHP, TypeScript/JavaScript, and Python, covering common frameworks: React, Vue, Angular, Express, NestJS, Next.js, Django, Flask, FastAPI, SQLAlchemy, Sequelize, Prisma, and Mongoose. Additional language overlays are on the roadmap.
+Generic rules apply to every language. Specialized rule overlays exist for Go, PHP, TypeScript/JavaScript, Python, and .NET/C#, covering common frameworks: React, Vue, Angular, Express, NestJS, Next.js, Django, Flask, FastAPI, SQLAlchemy, Sequelize, Prisma, Mongoose, ASP.NET Core, EF Core, and Newtonsoft.Json. Additional language overlays are on the roadmap.
 
 ## Authors
 
@@ -137,26 +137,26 @@ See [docs/en/usage.md](docs/en/usage.md) for all options including `staged`, sin
 | # | Rule ID | Severity max | Specialized for |
 |---|---|---|---|
 | 1 | `HARDCODED-SECRET` | CRITICAL | — |
-| 2 | `SQL-INJECTION` | CRITICAL | go, php, typescript |
+| 2 | `SQL-INJECTION` | CRITICAL | go, php, typescript, python, dotnet |
 | 3 | `XSS` | HIGH | typescript |
 | 4 | `IDOR` | HIGH | — |
 | 5 | `SLOPSQUATTING` | CRITICAL | — |
 | 6 | `BRUTE-FORCE` | HIGH | — |
-| 7 | `MASS-ASSIGNMENT` | CRITICAL | typescript |
-| 8 | `INSECURE-DESERIALIZATION` | CRITICAL | go, php, typescript |
-| 9 | `SSRF` | HIGH | go, typescript |
+| 7 | `MASS-ASSIGNMENT` | CRITICAL | typescript, python, dotnet |
+| 8 | `INSECURE-DESERIALIZATION` | CRITICAL | go, php, typescript, python, dotnet |
+| 9 | `SSRF` | HIGH | go, typescript, python |
 | 10 | `PATH-TRAVERSAL` | HIGH | — |
-| 11 | `CSRF` | HIGH | php, typescript |
+| 11 | `CSRF` | HIGH | php, typescript, python |
 | 12 | `BROKEN-ACCESS-CONTROL` | CRITICAL | — |
 | 13 | `WEAK-PASSWORD-HASHING` | CRITICAL | — |
-| 14 | `JWT-NONE-ALGORITHM` | CRITICAL | typescript |
-| 15 | `CORS-MISCONFIG` | HIGH | typescript |
+| 14 | `JWT-NONE-ALGORITHM` | CRITICAL | typescript, python |
+| 15 | `CORS-MISCONFIG` | HIGH | typescript, python |
 | 16 | `UNRESTRICTED-FILE-UPLOAD` | CRITICAL | — |
-| 17 | `VERBOSE-ERROR-DEBUG-MODE` | HIGH | go, php, typescript |
+| 17 | `VERBOSE-ERROR-DEBUG-MODE` | HIGH | go, php, typescript, python |
 | 18 | `MISSING-RATE-LIMIT` | HIGH | — |
 | 19 | `RACE-CONDITION` | HIGH | — |
 | 20 | `OUTDATED-DEPENDENCY` | HIGH | — |
-| 21 | `COMMAND-INJECTION` | CRITICAL | go, php, typescript |
+| 21 | `COMMAND-INJECTION` | CRITICAL | go, php, typescript, python, dotnet |
 
 The list currently contains 21 rules and will continue to expand.
 
@@ -167,6 +167,8 @@ The list currently contains 21 rules and will continue to expand.
 - [Full rule catalog](docs/en/rules.md)
 - [Contributing](docs/en/contributing.md)
 
+Contributions are welcome: bug reports, rule fixes, and new language overlays via issues or pull requests.
+
 ## Roadmap
 
 - v0.1 — Generic rule set + Go + PHP specialization + bilingual output ✅
@@ -174,6 +176,7 @@ The list currently contains 21 rules and will continue to expand.
 - v0.3 — Default scope changed to full-repo, persistent reports, verbose per-finding explanations ✅
 - v0.4 — Python specialization (SQLAlchemy/Django ORM SQLi, pickle/yaml deserialization RCE, Werkzeug debugger, FastAPI/Flask/Django CSRF + CORS, PyJWT algorithms, subprocess shell=True) ✅
 - v0.5 (current) — Multi-platform support: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, shared rule set, `install.sh` + `sync-skills.sh`) ✅
+- .NET/C# specialization (EF Core raw SQL, ASP.NET Core model binding, Newtonsoft.Json/legacy formatter deserialization, Process.Start) ✅
 - v0.6+ — Ruby, Java, Rust — community-driven
 
 ## Disclaimer
