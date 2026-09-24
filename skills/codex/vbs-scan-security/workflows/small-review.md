@@ -18,22 +18,18 @@ Inline scan workflow cho repo nhỏ-vừa (≤20 main-lang files VÀ ≤30 total
 
 ### Step S1 — Load applicable rules
 
-1. **Generic rules (luôn load):**
-   ```
-   rules/generic/01-hardcoded-secret.md
-   rules/generic/02-sql-injection.md
-   ...
-   rules/generic/21-command-injection.md
+1. **Nạp phần phát hiện của bộ rule hiệu lực qua script (vài lệnh Bash, mỗi lệnh 1 phần):**
+
+   ```bash
+   bash <skill-dir>/references/load-rules.sh --part 1 <primary_lang> [<lang2> ...]
    ```
 
-   Đọc TẤT CẢ 21 file bằng Read tool.
+   (`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → bỏ tham số lang.) Dòng cuối output cho biết tổng số phần (`PART 1/4`...) → chạy tiếp `--part 2`, `--part 3`... (chạy song song được) tới khi thấy "đã in đủ". Output chia phần vì Bash tool cắt output dài; **KHÔNG pipe qua `head`/`tail`**. Gộp lại, script in đủ 21 rule, mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
 
-2. **Specialized overlay (nếu `$OVERLAY_AVAILABLE`):**
-   ```
-   rules/languages/<primary_lang>/*.md
-   ```
-
-   Với mỗi file overlay có cùng `id` với rule generic, **rule chuyên sâu thay thế hoàn toàn** rule generic cho lang đó. Ghi nhớ id nào đã override.
+2. **Phần chi tiết (Examples, Fix recommendation, Cross-references) chỉ đọc khi cần:**
+   - Rule có finding **CRITICAL/HIGH** → Read file theo path ở header `=== RULE <id> (source: ...) ===` để lấy code fix và ví dụ cho verbose block trong report.
+   - Phân vân một match là lỗi thật hay false positive → được Read phần Examples của rule đó để đối chiếu ví dụ an toàn / không an toàn.
+   - Finding MEDIUM/LOW chỉ cần bảng compact → không cần đọc phần chi tiết.
 
 ### Step S2 — Apply rules per file
 
@@ -131,7 +127,7 @@ LƯU Ý: i18n key `msg_report_saved` và `msg_gitignore_warning_*` đã có tron
 
 ## Tips để giảm context burn
 
-- **Đọc rule files 1 lần**, giữ trong context xuyên suốt
+- **Nạp rule 1 lần qua `load-rules.sh`** (chỉ phần phát hiện), giữ trong context xuyên suốt. Phần chi tiết chỉ đọc cho rule có finding CRITICAL/HIGH
 - **Không read file 2 lần** trong cùng scan — nếu đã đọc 1 file vì rule X, dùng lại context khi check rule Y
 - **Grep trước, Read sau**: tìm hot spots bằng Grep (rẻ), chỉ Read khi cần verify
 - **Skip aggressive**: file đã đọc và không có pattern khả nghi → mark "scanned" và move on

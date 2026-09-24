@@ -141,3 +141,4 @@ Currently override is binary (full replace). Future direction: allow language fi
 - At least 3 CRITICAL/HIGH examples + 2 NOT-critical (safe) examples
 - Cross-references to other relevant rules
 - Fix recommendations are actionable (specific function/config, not "use safe practices")
+- **Section order matters** (applies to generic rules too): detection sections first (`## Intent`, `## Khi nào ...`, reasoning, `## Search patterns`), then detail sections (`## Examples`, `## Fix recommendation`, `## Cross-references`). `references/load-rules.sh` loads only the text before the first detail heading during scanning; detail is read later only for rules with CRITICAL/HIGH findings. Anything the scanner needs to *detect* the issue must be above `## Examples`.
