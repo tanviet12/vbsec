@@ -1,0 +1,56 @@
+{
+  "fixture": "tests/fixtures/php",
+  "must_find": [
+    {
+      "file": "search.php",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "cart.php",
+      "rule_id": "INSECURE-DESERIALIZATION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "tools.php",
+      "rule_id": "COMMAND-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "comment.php",
+      "rule_id": "XSS",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "config.php",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "composer.json",
+      "rule_id": "OUTDATED-DEPENDENCY",
+      "min_severity": "MEDIUM"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "product.php",
+      "rule_id": "SQL-INJECTION",
+      "reason": "PDO prepare"
+    },
+    {
+      "file": "page.php",
+      "rule_id": "XSS",
+      "reason": "htmlspecialchars ENT_QUOTES"
+    },
+    {
+      "file": "tools.php",
+      "rule_id": "XSS",
+      "reason": "output đã htmlspecialchars"
+    }
+  ],
+  "clean_files": [
+    "product.php",
+    "page.php"
+  ]
+}

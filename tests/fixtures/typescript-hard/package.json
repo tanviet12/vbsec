@@ -1,0 +1,11 @@
+{
+  "name": "wallet-web",
+  "private": true,
+  "dependencies": {
+    "@prisma/client": "5.10.2",
+    "dompurify": "3.0.9",
+    "express": "4.19.2",
+    "jsonwebtoken": "9.0.2",
+    "vue": "3.4.21"
+  }
+}

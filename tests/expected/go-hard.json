@@ -1,0 +1,94 @@
+{
+  "fixture": "tests/fixtures/go-hard",
+  "must_find": [
+    {
+      "file": "internal/repo/product.go",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH",
+      "lines": [
+        37,
+        42
+      ]
+    },
+    {
+      "file": "internal/httpapi/files.go",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "HIGH",
+      "lines": [
+        17,
+        24
+      ]
+    },
+    {
+      "file": "internal/httpapi/webhook.go",
+      "rule_id": "SSRF",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "internal/httpapi/cors.go",
+      "rule_id": "CORS-MISCONFIG",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "internal/httpapi/orders.go",
+      "rule_id": [
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        27,
+        45
+      ]
+    },
+    {
+      "file": "internal/service/wallet.go",
+      "rule_id": "RACE-CONDITION",
+      "min_severity": "HIGH"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "internal/repo/product.go",
+      "rule_id": "SQL-INJECTION",
+      "reason": "ORDER BY lấy từ allowlist map, LIKE dùng placeholder",
+      "lines": [
+        26,
+        35
+      ]
+    },
+    {
+      "file": "internal/httpapi/files.go",
+      "rule_id": "PATH-TRAVERSAL",
+      "reason": "filepath.Base + regex ^[a-f0-9]{32}\\.png$",
+      "lines": [
+        26,
+        33
+      ]
+    },
+    {
+      "file": "internal/httpapi/orders.go",
+      "rule_id": "COMMAND-INJECTION",
+      "reason": "exec.Command không qua shell, tham số do server tạo"
+    },
+    {
+      "file": "internal/httpapi/orders.go",
+      "rule_id": "IDOR",
+      "reason": "GetOrder có kiểm tra UserID",
+      "lines": [
+        13,
+        25
+      ]
+    },
+    {
+      "file": "internal/httpapi/orders.go",
+      "rule_id": "IDOR",
+      "reason": "Invoice có kiểm tra UserID",
+      "lines": [
+        47,
+        71
+      ]
+    }
+  ],
+  "clean_files": []
+}

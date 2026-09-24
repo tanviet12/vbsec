@@ -1,0 +1,69 @@
+{
+  "fixture": "tests/fixtures/php-hard",
+  "must_find": [
+    {
+      "file": "src/InvoiceRepository.php",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH",
+      "lines": [
+        8,
+        17
+      ]
+    },
+    {
+      "file": "public/export.php",
+      "rule_id": "COMMAND-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "public/avatar.php",
+      "rule_id": "UNRESTRICTED-FILE-UPLOAD",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "public/login.php",
+      "rule_id": "WEAK-PASSWORD-HASHING",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "public/help.php",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "public/unsubscribe.php",
+      "rule_id": [
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "MEDIUM"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "src/InvoiceRepository.php",
+      "rule_id": "SQL-INJECTION",
+      "reason": "ORDER BY qua in_array strict allowlist",
+      "lines": [
+        19,
+        26
+      ]
+    },
+    {
+      "file": "public/greet.php",
+      "rule_id": "XSS",
+      "reason": "Content-Type JSON + JSON_HEX_TAG"
+    },
+    {
+      "file": "src/ProfileRepository.php",
+      "rule_id": "SQL-INJECTION",
+      "reason": "prepare + execute"
+    }
+  ],
+  "clean_files": [
+    "src/Db.php",
+    "src/Auth.php",
+    "src/ProfileRepository.php",
+    "public/greet.php"
+  ]
+}

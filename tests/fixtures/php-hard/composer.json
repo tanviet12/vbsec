@@ -1,0 +1,9 @@
+{
+    "name": "example/billing",
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": { "App\\": "src/" }
+    }
+}

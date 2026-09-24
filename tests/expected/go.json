@@ -1,0 +1,52 @@
+{
+  "fixture": "tests/fixtures/go",
+  "must_find": [
+    {
+      "file": "handlers/user.go",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "handlers/ping.go",
+      "rule_id": "COMMAND-INJECTION",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "handlers/proxy.go",
+      "rule_id": "SSRF",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "main.go",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "go.mod",
+      "rule_id": "OUTDATED-DEPENDENCY",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "handlers/user.go",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "MEDIUM"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "handlers/order.go",
+      "rule_id": "SQL-INJECTION",
+      "reason": "Where với placeholder ?"
+    },
+    {
+      "file": "handlers/order.go",
+      "rule_id": "IDOR",
+      "reason": "có điều kiện user_id"
+    }
+  ],
+  "clean_files": [
+    "handlers/order.go",
+    "handlers/health.go",
+    "handlers/auth.go"
+  ]
+}
