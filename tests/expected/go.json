@@ -25,6 +25,11 @@
       "file": "go.mod",
       "rule_id": "OUTDATED-DEPENDENCY",
       "min_severity": "MEDIUM"
+    },
+    {
+      "file": "handlers/user.go",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "MEDIUM"
     }
   ],
   "must_not_find": [
@@ -41,6 +46,7 @@
   ],
   "clean_files": [
     "handlers/order.go",
-    "handlers/health.go"
+    "handlers/health.go",
+    "handlers/auth.go"
   ]
 }

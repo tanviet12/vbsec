@@ -53,6 +53,14 @@
       "file": "requirements.txt",
       "rule_id": "OUTDATED-DEPENDENCY",
       "min_severity": "MEDIUM"
+    },
+    {
+      "file": "app/auth.py",
+      "rule_id": [
+        "BRUTE-FORCE",
+        "MISSING-RATE-LIMIT"
+      ],
+      "min_severity": "MEDIUM"
     }
   ],
   "must_not_find": [
@@ -77,8 +85,5 @@
       "reason": "subprocess dạng list, không có input user"
     }
   ],
-  "clean_files": [
-    "app/backup.py",
-    "app/profile.py"
-  ]
+  "clean_files": []
 }

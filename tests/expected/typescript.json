@@ -43,6 +43,11 @@
       "file": "package.json",
       "rule_id": "OUTDATED-DEPENDENCY",
       "min_severity": "MEDIUM"
+    },
+    {
+      "file": "src/routes/convert.ts",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "HIGH"
     }
   ],
   "must_not_find": [

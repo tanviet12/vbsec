@@ -19,7 +19,7 @@ func main() {
 	h := handlers.New(db)
 	r := gin.Default()
 	r.GET("/users/search", h.SearchUsers)
-	r.GET("/orders/:id", h.GetOrder)
+	r.GET("/orders/:id", h.RequireUser, h.GetOrder)
 	r.POST("/tools/ping", h.Ping)
 	r.GET("/proxy", h.Proxy)
 	r.GET("/healthz", h.Health)
