@@ -138,14 +138,24 @@ LANG="vi"
 if echo "$ARGS" | grep -qE 'lang=en|--en|\ben\b'; then LANG="en"; fi
 if echo "$ARGS" | grep -qE 'lang=vi|--vi'; then LANG="vi"; fi
 
-# 1b) Extract --auto-fix / --sca flags (v0.7+, default off)
+# 1b) Extract --auto-fix / --sca flags (v0.7+, default off) + scope.
+#     Duyệt từng từ thay vì sed \b — BSD sed trên macOS không hỗ trợ \b.
 AUTO_FIX=false
-if echo "$ARGS" | grep -qE '\-\-auto-fix|\bauto-fix\b'; then AUTO_FIX=true; fi
 SCA=false
-if echo "$ARGS" | grep -qE '\-\-sca|\bsca\b'; then SCA=true; fi
+SCOPE_WORDS=""
+set -f  # không expand glob khi tách từ
+for w in $ARGS; do
+  case "$w" in
+    --auto-fix|auto-fix)       AUTO_FIX=true ;;
+    --sca|sca)                 SCA=true ;;
+    lang=vi|lang=en|--vi|--en) ;;
+    *)                         SCOPE_WORDS="$SCOPE_WORDS $w" ;;
+  esac
+done
+set +f
 
-# 2) Extract scope (strip lang + auto-fix/sca flags first)
-SCOPE=$(echo "$ARGS" | sed -E 's/(lang=(vi|en)|--vi|--en|--auto-fix|\bauto-fix\b|--sca|\bsca\b)//g' | xargs)
+# 2) Scope = các từ còn lại (đã bỏ lang + auto-fix/sca)
+SCOPE=$(echo "$SCOPE_WORDS" | xargs)
 
 # 3) Gather files
 NO_GIT_NOTE=""
