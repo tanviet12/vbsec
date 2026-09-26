@@ -38,6 +38,7 @@ Chạy khi `$SCAN_ROOT` là `.`. Mục đích: biết chắc có verify được
    command -v dotnet >/dev/null 2>&1 || VERIFY_TOOL_MISSING=true   # vd lang = dotnet
    ```
    Thiếu tool → KHÔNG apply patch nào: mọi finding CRITICAL/HIGH đi thẳng Bước 4 (`suggested_only`), note "thiếu `<tool>`, không verify được".
+   Với finding `VULNERABLE-DEPENDENCY`, kiểm tra thêm package manager dùng để resolve (`npm`, `go`, `composer`, `dotnet` — bảng "Patch sửa dependency" ở Bước 3). Thiếu → finding đó đi thẳng Bước 4, không apply vào manifest.
 2. **Build baseline.** Chạy verify command 1 lần trên code hiện tại, chưa patch gì:
    - Verify cấp dự án (`dotnet build`, `go build ./...`, `npx tsc --noEmit`): chạy 1 lần. Fail → project vốn đã build lỗi, không phân biệt được lỗi do patch hay lỗi có sẵn → mọi finding đi thẳng Bước 4 (`suggested_only`), note "build baseline fail".
    - Verify cấp file (`php -l`, `python -m py_compile`, `node --check`): chạy trên từng file trước khi patch file đó. Fail → finding của file đó đi thẳng Bước 4.
