@@ -103,7 +103,9 @@ fix_summary: "Nâng cấp lên <fixed_version>"
 cve_id, osv_id, package, ecosystem, installed_version, fixed_version, severity_source, cvss_vector (nếu có)
 ```
 
-Nếu 1 package có nhiều vuln id → tạo nhiều finding riêng (đúng nguyên tắc "1 finding = 1 rule_id" đã áp dụng cho toàn skill, mỗi vuln là 1 finding dù cùng `rule_id: VULNERABLE-DEPENDENCY`).
+Nếu 1 package có nhiều lỗ hổng khác nhau → tạo nhiều finding riêng (đúng nguyên tắc "1 finding = 1 rule_id" đã áp dụng cho toàn skill, mỗi lỗ hổng là 1 finding dù cùng `rule_id: VULNERABLE-DEPENDENCY`).
+
+**Gộp alias trước khi tạo finding (BẮT BUỘC):** OSV thường trả cùng 1 lỗ hổng dưới nhiều id cho cùng package (vd `GO-2023-2102` và `GHSA-4374-p667-p6c8`, hoặc `PYSEC-*` và `GHSA-*`). Hai vuln id được coi là 1 lỗ hổng nếu có chung `cve_id`, hoặc id này nằm trong `aliases[]` của id kia. Mỗi nhóm chỉ tạo 1 finding, giữ bản ghi có `severity_source` tốt nhất (`osv` > `ghsa_alias` > `default`). Không gộp thì report bị đếm trùng: thử trên repo mẫu 7 package, OSV trả 59 vuln id nhưng chỉ có 43 lỗ hổng thật.
 
 **Ưu tiên rule 22 hơn rule 20:** nếu cùng 1 package/version vừa nằm trong static list của rule 20 VÀ được OSV live xác nhận, chỉ tạo finding rule 22 (bỏ finding rule 20 trùng) — rule 22 có data chính xác hơn (fixed_version thật từ OSV thay vì static list có thể lỗi thời).
 
