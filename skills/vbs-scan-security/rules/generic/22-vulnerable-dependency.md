@@ -42,16 +42,16 @@ curl -s -X POST https://api.osv.dev/v1/querybatch -H "Content-Type: application/
 
 ## Examples
 
-### CRITICAL — flag
+### HIGH — flag
 
 ```json
-// composer.lock — guzzlehttp/guzzle 7.4.1, OSV xác nhận GHSA (CVE-2022-31091, CVSS 7.5 -> nhưng ví dụ dưới giả định 1 CVE RCE khác CVSS 9.8)
+// composer.lock — guzzlehttp/guzzle 7.4.1, OSV xác nhận GHSA (CVE-2022-31091, CVSS 7.5)
 {
   "name": "guzzlehttp/guzzle",
   "version": "7.4.1"
 }
 ```
-→ OSV trả `severity: CRITICAL`, `fixed: "7.4.5"`, `aliases: ["CVE-2022-31091"]` → finding CRITICAL, fix = nâng lên `7.4.5`.
+→ OSV trả `severity: HIGH`, `fixed: "7.4.5"`, `aliases: ["CVE-2022-31091"]` → finding HIGH, fix = nâng lên `7.4.5`.
 
 ### NOT critical — không flag
 
