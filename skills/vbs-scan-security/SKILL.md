@@ -380,7 +380,7 @@ Chỉ chạy khi `$AUTO_FIX=true`. Chạy **TRƯỚC** khi render report ở Ste
 2. Chỉ xử lý finding CRITICAL/HIGH (từ cả rule 1-21 và rule 22 nếu có `--sca`).
 3. Preflight 1 lần: `command -v` build tool + build baseline. Thiếu tool hoặc baseline fail → không apply gì, mọi finding là `suggested_only`.
 4. Với mỗi finding: harvest context → generate unified diff → `git apply --check` → snapshot các file sắp bị ghi → `git apply` → chạy build command theo `$PRIMARY_LANG` → khôi phục từ snapshot + retry (tối đa 2 lần) nếu fail. KHÔNG revert bằng `git checkout` (mất thay đổi chưa commit của user).
-5. Patch dependency chỉ được ghi manifest + lockfile (npm/Go/Composer/dotnet, xem bảng trong workflow). Dependency Python (`pip`) luôn là `suggested_only`.
+5. Patch dependency chỉ `applied` khi build + test của project pass trên version mới (Go, dotnet; project phải có test). npm/Composer/PyPI luôn là `suggested_only`.
 6. Gắn `patch_status` vào từng finding đã xử lý — dùng ở Step 5 khi render JSON + section Auto-fix.
 
 ---

@@ -38,7 +38,7 @@ Chạy khi `$SCAN_ROOT` là `.`. Mục đích: biết chắc có verify được
    command -v dotnet >/dev/null 2>&1 || VERIFY_TOOL_MISSING=true   # vd lang = dotnet
    ```
    Thiếu tool → KHÔNG apply patch nào: mọi finding CRITICAL/HIGH đi thẳng Bước 4 (`suggested_only`), note "thiếu `<tool>`, không verify được".
-   Với finding `VULNERABLE-DEPENDENCY`, kiểm tra thêm package manager dùng để resolve (`npm`, `go`, `composer`, `dotnet` — bảng "Patch sửa dependency" ở Bước 3). Thiếu → finding đó đi thẳng Bước 4, không apply vào manifest.
+   Với finding `VULNERABLE-DEPENDENCY` của Go/dotnet, kiểm tra thêm `go` / `dotnet` (bảng "Patch sửa dependency" ở Bước 3). Thiếu → finding đó đi thẳng Bước 4, không apply vào manifest.
 2. **Build baseline.** Chạy verify command 1 lần trên code hiện tại, chưa patch gì:
    - Verify cấp dự án (`dotnet build`, `go build ./...`, `npx tsc --noEmit`): chạy 1 lần. Fail → project vốn đã build lỗi, không phân biệt được lỗi do patch hay lỗi có sẵn → mọi finding đi thẳng Bước 4 (`suggested_only`), note "build baseline fail".
    - Verify cấp file (`php -l`, `python -m py_compile`, `node --check`): chạy trên từng file trước khi patch file đó. Fail → finding của file đó đi thẳng Bước 4.
@@ -116,18 +116,19 @@ Quy tắc:
    | `python` | `python3` hoặc `python` | `python3 -m py_compile <file>` | Chỉ syntax check, không semantic toàn dự án |
    | *(không có overlay / lang khác)* | — | — | Không có verify command tin cậy → KHÔNG auto-apply, xem Bước 4 |
 
-   **Patch sửa dependency (`VULNERABLE-DEPENDENCY`)** — lệnh resolve chỉ được ghi vào manifest + lockfile của repo (đã snapshot ở bước 2), không cài package vào `node_modules/`/`vendor/`, không chạy install script, không đụng môi trường global:
+   **Patch sửa dependency (`VULNERABLE-DEPENDENCY`)** — build pass chỉ chứng minh version mới resolve được, không chứng minh code vẫn tương thích (bản mới có thể có breaking change). Vì vậy bump dependency chỉ được `applied` khi **test của project** chạy pass trên version mới. Ecosystem nào không build + test được với version mới thì chỉ gợi ý patch:
 
-   | Ecosystem | Snapshot thêm | Lệnh resolve + verify | Khi fail |
+   | Ecosystem | Snapshot thêm | Resolve + build + test | Kết quả |
    |---|---|---|---|
-   | npm (có `package-lock.json`) | `package.json`, `package-lock.json` | `npm install --package-lock-only --ignore-scripts` | Khôi phục 2 file |
-   | Go | `go.mod`, `go.sum` | `go get <module>@<fixed_version> && go build ./...` | Khôi phục 2 file (module cache của Go là cache chung, không ảnh hưởng repo) |
-   | Composer | `composer.json`, `composer.lock` | `composer update <package> --with-dependencies --no-install --no-scripts` | Khôi phục 2 file |
-   | dotnet | `.csproj` bị patch, `packages.lock.json`, `Directory.Packages.props` (nếu có) | `dotnet restore && dotnet build` | Khôi phục file, rồi chạy lại `dotnet restore` để `obj/` khớp với manifest cũ |
-   | PyPI (`requirements.txt`, `pyproject.toml`...) | — | KHÔNG chạy `pip install` (sửa thẳng môi trường Python của user, không hoàn tác được) | Luôn đi Bước 4 (`suggested_only`) |
-   | npm dùng `yarn.lock` / `pnpm-lock.yaml`, hoặc không có lockfile | — | Chưa hỗ trợ resolve an toàn | Luôn đi Bước 4 (`suggested_only`) |
+   | Go | `go.mod`, `go.sum` | `go get <module>@<fixed_version> && go build ./... && go test ./...` | Test pass → `applied` |
+   | dotnet | `.csproj` bị patch, `packages.lock.json`, `Directory.Packages.props` (nếu có) | `dotnet restore && dotnet build && dotnet test` | Test pass → `applied`. Khi khôi phục, chạy lại `dotnet restore` để `obj/` khớp manifest cũ |
+   | npm, Composer | — | Không chạy. Muốn test phải cài package vào `node_modules/`/`vendor/` và chạy install script — không hoàn tác gọn được | Luôn Bước 4 (`suggested_only`) |
+   | PyPI | — | KHÔNG chạy `pip install` (sửa thẳng môi trường Python của user, không hoàn tác được) | Luôn Bước 4 (`suggested_only`) |
 
-   Resolve thành công chỉ chứng minh version mới tồn tại và khớp ràng buộc, không chứng minh code vẫn tương thích. Vì vậy với dependency, ghi chú thêm "cần chạy test của project" cạnh `applied` trong report.
+   Quy tắc cho Go/dotnet:
+   - **Project không có test** (Go: không có file `*_test.go`; dotnet: không có project nào tham chiếu `Microsoft.NET.Test.Sdk`) → không verify được tương thích → Bước 4 (`suggested_only`), không apply.
+   - **Test baseline:** chạy `go test ./...` / `dotnet test` 1 lần TRƯỚC khi bump (cùng lúc với build baseline ở Bước 0, chỉ khi có finding dependency của Go/dotnet). Baseline fail → không phân biệt được lỗi do bump hay lỗi có sẵn → Bước 4.
+   - **Resolve, build hoặc test fail sau khi bump** → khôi phục từ snapshot (mục 6 bên dưới), `patch_status: "failed_verification"`, note "bản <fixed_version> không tương thích, cần sửa code khi nâng cấp". KHÔNG retry: patch bump version là cố định, sinh lại cũng ra đúng patch đó.
 
 5. **Build thành công** → giữ patch, `patch_status: "applied"`, xoá snapshot của các file này khỏi `$AF_BAK`, qua finding tiếp theo.
 
@@ -147,11 +148,11 @@ Quy tắc:
 
 ## Bước 4 — Không apply (chỉ gợi ý patch)
 
-Các trường hợp: `$SCAN_ROOT` khác `.` (Gate 4); `$PRIMARY_LANG` không có verify command tin cậy; thiếu build tool hoặc build baseline fail (Bước 0); dependency PyPI hoặc ecosystem chưa hỗ trợ resolve an toàn (Bước 3).
+Các trường hợp: `$SCAN_ROOT` khác `.` (Gate 4); `$PRIMARY_LANG` không có verify command tin cậy; thiếu build tool hoặc build baseline fail (Bước 0); dependency npm/Composer/PyPI, hoặc dependency Go/dotnet khi project không có test hoặc test baseline fail (Bước 3).
 
 1. KHÔNG áp dụng patch vào file thật.
 2. Ghi diff ra file: `vbsec-reports/patches/<file-slug>-<line>.patch` (dùng Write tool).
-3. `patch_status: "suggested_only"`, kèm lý do ngắn trong report (vd "thiếu `dotnet`", "build baseline fail", "dependency Python").
+3. `patch_status: "suggested_only"`, kèm lý do ngắn trong report (vd "thiếu `dotnet`", "build baseline fail", "dependency npm: không verify được tương thích", "không có test").
 
 ## Bước 5 — Reporting
 
@@ -166,7 +167,7 @@ Thêm 1 section Markdown mới vào report, đặt **trước** JSON summary (sa
 |---|---|---|---|
 | 1 | `api/users.ts:42` | SQL-INJECTION | ✅ {autofix_status_applied} |
 | 2 | `auth.ts:18` | WEAK-PASSWORD-HASHING | ❌ {autofix_status_failed} |
-| 3 | `requirements.txt:5` | VULNERABLE-DEPENDENCY | 📄 {autofix_status_suggested} |
+| 3 | `package.json:12` | VULNERABLE-DEPENDENCY | 📄 {autofix_status_suggested} |
 ```
 
 `{msg_autofix_summary}`: 1 dòng tổng kết (vd "Đã tự sửa 5/8 lỗi CRITICAL+HIGH. 2 lỗi cần sửa tay, 1 lỗi chỉ có gợi ý patch (xem vbsec-reports/patches/).").

@@ -430,7 +430,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 - **Requires a git repository** — patches are checked and applied with `git apply`. No git → the step is skipped automatically, with a warning.
 - **Safe revert** — before each patch, vbsec snapshots every file it is about to write (including uncommitted edits and untracked files). On build failure it restores exactly the pre-patch content; it never uses `git checkout`.
 - **Preflight before applying** — if the build tool is missing (e.g. no `dotnet`) or the project already fails to build, nothing is applied; patches are only written as suggestions.
-- **Dependencies** — only the manifest + lockfile are written (npm `--package-lock-only`, Composer `--no-install`, `go get`, `dotnet restore`), no install scripts run. Python dependencies only get a patch suggestion; `pip install` is never run.
+- **Dependencies** — a version bump is only kept when the project's own tests pass on the new version (Go: `go test ./...`, .NET: `dotnet test`); without tests it stays a suggestion. npm, Composer and Python dependencies always get a patch suggestion only: testing them would mean installing packages and running install scripts, which cannot be cleanly undone.
 - **Commit or back up your working tree first** — auto-fix writes directly to source files on disk (build verification reduces risk, but it's still a real mutation).
 - Only CRITICAL/HIGH findings are auto-fixed; MEDIUM/LOW are always left untouched.
 - Languages without a reliable build command (anything outside .NET/Go/TypeScript/PHP/Python) only get a suggested patch saved to `vbsec-reports/patches/` — vbsec never overwrites source for those.
