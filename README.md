@@ -54,7 +54,7 @@ vbsec is engineered around a small set of design choices that distinguish it fro
 
 - **Optional auto-fix loop (`--auto-fix`, off by default).** For CRITICAL/HIGH findings, vbsec can generate a unified-diff patch, apply it via `git apply`, run a language-appropriate build command to verify it, and revert + retry (up to 2 times) if the build fails. This is the one place in the skill allowed to write to your source tree, and it requires a git repository.
 
-- **Optional live CVE lookup via OSV.dev (`--sca`, off by default).** Instead of relying only on an offline static list, vbsec can query [OSV.dev](https://osv.dev) live for your dependency manifests (NuGet, Go, npm, Composer, PyPI) and enrich findings with the confirmed CVE id, CVSS score, and exact fixed version — so CI/CD can gate on real data.
+- **Optional live CVE lookup via OSV.dev (`--sca`, off by default).** Instead of relying only on an offline static list, vbsec can query [OSV.dev](https://osv.dev) live for your dependency manifests (NuGet, Go, npm, Composer, PyPI) and enrich findings with the confirmed CVE id, the advisory's severity (plus raw CVSS vector), and exact fixed version — so CI/CD can gate on real data.
 
 ## Multi-platform support
 

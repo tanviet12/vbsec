@@ -580,7 +580,7 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 **Severity max:** CRITICAL
 **Applies to:** all — **only runs with the `--sca` flag** (opt-in, default off, needs network)
 
-The live counterpart to rule 20: queries [OSV.dev](https://osv.dev) for the exact package/version pairs found in your manifest (NuGet, Go, npm, Composer, PyPI), and only flags when OSV confirms a real CVE — with the exact `fixed_version` and CVSS score, not a static guess. See [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) for the full parsing + query flow.
+The live counterpart to rule 20: queries [OSV.dev](https://osv.dev) for the exact package/version pairs found in your manifest (NuGet, Go, npm, Composer, PyPI), and only flags when OSV confirms a real CVE — with the exact `fixed_version` and the advisory's own severity, not a static guess. See [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) for the full parsing + query flow.
 
 **Unsafe (`composer.lock`):**
 ```json

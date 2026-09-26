@@ -386,7 +386,8 @@ Không cần cho rule không applicable (vd: PHP rules trên repo Node — khôn
 | `ecosystem` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `NuGet`\|`Go`\|`npm`\|`Packagist`\|`PyPI` |
 | `installed_version` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Version hiện tại trong manifest |
 | `fixed_version` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Version tối thiểu đã fix theo OSV |
-| `cvss_score` | Khi `rule_id: VULNERABLE-DEPENDENCY` và OSV có trả CVSS số | Float, dùng để map severity (xem `dependency-scan.md` Bước 3) |
+| `severity_source` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `"osv"` \| `"ghsa_alias"` \| `"default"` — severity lấy từ đâu (xem `dependency-scan.md` Bước 3) |
+| `cvss_vector` | Khi `rule_id: VULNERABLE-DEPENDENCY` và OSV có `severity[]` | String, nguyên chuỗi vector từ OSV (vd `CVSS:3.1/AV:N/AC:L/...`). Chỉ để tham khảo, không dùng để tính severity |
 
 **Schema bắt buộc cho mỗi entry trong `findings[]` — tên key phải CHÍNH XÁC:**
 

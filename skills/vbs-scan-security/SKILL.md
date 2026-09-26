@@ -364,7 +364,7 @@ Chỉ chạy khi `$SCA=true`. Đọc [`references/dependency-scan.md`](reference
 
 1. Parse manifest dependency theo ecosystem tương ứng `$PRIMARY_LANG` (NuGet/.NET, Go, npm/TypeScript, Composer/PHP, PyPI/Python) — có thể nhiều ecosystem nếu multi-lang repo.
 2. Query live `https://api.osv.dev/v1/querybatch` rồi `v1/vulns/{id}` cho từng package (dùng Bash tool, đây là 1 trong 2 chỗ duy nhất trong skill được phép gọi network thật — chỗ còn lại là `gh pr diff`).
-3. Map CVSS → severity, tạo finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`.
+3. Xác định severity từ `database_specific.severity` (không tự tính điểm từ CVSS vector), tạo finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`.
 4. Network fail/không có manifest → in `{msg_sca_unavailable}`/`{msg_sca_no_manifest}`, KHÔNG fail scan, fallback sang rule 20 (đã chạy sẵn ở Step 4).
 5. Merge findings rule 22 vào cùng danh sách trước khi qua Step 5. Nếu trùng package/version với finding rule 20, chỉ giữ rule 22.
 6. **LARGE mode:** đây là bước main agent tự chạy 1 lần cho toàn repo, KHÔNG delegate cho sub-agent theo chunk (dependency manifest không chia theo folder được) — xem [`references/sub-agent-prompts.md`](references/sub-agent-prompts.md) mục "Aggregate workflow".

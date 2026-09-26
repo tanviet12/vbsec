@@ -236,7 +236,7 @@ The JSON summary always sits at the end of the report, in a `json` fenced code b
 }
 ```
 
-`dependencies_scanned` is only present when `--sca` ran. A finding with `rule_id: VULNERABLE-DEPENDENCY` gets extra `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`cvss_score` fields. A finding processed by `--auto-fix` gets an extra `patch_status` field.
+`dependencies_scanned` is only present when `--sca` ran. A finding with `rule_id: VULNERABLE-DEPENDENCY` gets extra `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source` fields, plus `cvss_vector` (the raw CVSS vector string from OSV, for reference) when available. A finding processed by `--auto-fix` gets an extra `patch_status` field.
 
 ### Parsing JSON from the output
 
@@ -411,9 +411,9 @@ if echo "$CRITICAL_RULES" | grep -q "HARDCODED-SECRET"; then
   exit 1
 fi
 
-# Block on OSV-confirmed CRITICAL CVEs (CVSS >= 9.0) from --sca
-jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .cvss_score >= 9.0)] | length == 0' summary.json \
-  || { echo "CRITICAL CVE (CVSS>=9.0) confirmed via OSV — blocking."; exit 1; }
+# Block on OSV-confirmed CRITICAL CVEs from --sca
+jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="CRITICAL")] | length == 0' summary.json \
+  || { echo "CRITICAL CVE confirmed via OSV — blocking."; exit 1; }
 ```
 
 ---
@@ -447,7 +447,7 @@ Each processed finding gets a `patch_status` field in the JSON summary (`applied
 /vbs-scan-security all --sca
 ```
 
-Result: `rule_id: VULNERABLE-DEPENDENCY` findings with accurate `cve_id`, `fixed_version`, and `cvss_score` straight from OSV — not a guess. If the network is unavailable, vbsec falls back to the static list (rule 20) instead of failing the scan.
+Result: `rule_id: VULNERABLE-DEPENDENCY` findings with accurate `cve_id`, `fixed_version`, and the advisory's own severity (plus the raw `cvss_vector`) straight from OSV — not a guess. If the network is unavailable, vbsec falls back to the static list (rule 20) instead of failing the scan.
 
 Combine both flags to auto-bump vulnerable dependencies and verify the build:
 

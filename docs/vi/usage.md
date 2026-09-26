@@ -236,7 +236,7 @@ JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. S
 }
 ```
 
-`dependencies_scanned` chỉ có khi chạy `--sca`. Finding có `rule_id: VULNERABLE-DEPENDENCY` có thêm `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`cvss_score`. Finding đã qua `--auto-fix` có thêm `patch_status`.
+`dependencies_scanned` chỉ có khi chạy `--sca`. Finding có `rule_id: VULNERABLE-DEPENDENCY` có thêm `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source`, và `cvss_vector` (nguyên chuỗi CVSS vector từ OSV, để tham khảo) nếu có. Finding đã qua `--auto-fix` có thêm `patch_status`.
 
 ### Parse JSON từ output
 
@@ -411,9 +411,9 @@ if echo "$CRITICAL_RULES" | grep -q "HARDCODED-SECRET"; then
   exit 1
 fi
 
-# Block nếu có CVE confirmed từ --sca vượt ngưỡng CVSS
-jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .cvss_score >= 9.0)] | length == 0' summary.json \
-  || { echo "CVE CRITICAL (CVSS>=9.0) confirmed qua OSV — blocking."; exit 1; }
+# Block nếu có CVE CRITICAL confirmed qua OSV từ --sca
+jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="CRITICAL")] | length == 0' summary.json \
+  || { echo "CVE CRITICAL confirmed qua OSV — blocking."; exit 1; }
 ```
 
 ---
@@ -447,7 +447,7 @@ Kết quả từng finding được ghi vào field `patch_status` trong JSON sum
 /vbs-scan-security all --sca
 ```
 
-Kết quả: finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`, `fixed_version`, `cvss_score` chính xác từ OSV — không phải suy đoán. Nếu network không khả dụng, vbsec tự fallback về static list (rule 20), không fail scan.
+Kết quả: finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`, `fixed_version` và severity của chính advisory (cùng nguyên chuỗi `cvss_vector`) lấy từ OSV — không phải suy đoán. Nếu network không khả dụng, vbsec tự fallback về static list (rule 20), không fail scan.
 
 Kết hợp cả 2 flag để tự động nâng version dependency có CVE và verify build:
 

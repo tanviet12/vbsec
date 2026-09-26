@@ -53,7 +53,8 @@ curl -s https://api.osv.dev/v1/vulns/GHSA-5crp-9r3c-p9vr
 
 Trích từ response:
 - `aliases[]` — tìm entry dạng `CVE-YYYY-NNNNN` → dùng làm `cve_id` (nếu không có alias CVE nào, dùng chính OSV id làm `cve_id` fallback)
-- `severity[].score` (CVSS vector, vd `CVSS:3.1/AV:N/...`) hoặc `database_specific.severity` (string `CRITICAL`/`HIGH`/...) — xem Bước 3 để map ra severity
+- `database_specific.severity` (string `CRITICAL`/`HIGH`/`MODERATE`/`LOW`, có ở bản ghi GHSA) — nguồn chính để xác định severity, xem Bước 3
+- `severity[].score` — chuỗi CVSS vector (vd `CVSS:3.1/AV:N/...`), KHÔNG phải điểm số. Chỉ xuất ra làm `cvss_vector`, không dùng để tính severity
 - `affected[].ranges[].events[]` — tìm event có `"fixed": "<version>"` → dùng làm `fixed_version` (lấy version fixed nhỏ nhất lớn hơn version đang dùng, nếu có nhiều range)
 - `summary` — 1 dòng mô tả, dùng cho `issue_summary`
 
@@ -64,16 +65,26 @@ Nếu `curl` không có sẵn, network timeout, DNS fail, hoặc response không
 2. Fallback: dùng static list trong [`../rules/generic/20-outdated-dependency.md`](../rules/generic/20-outdated-dependency.md) — rule đó vẫn chạy độc lập, không phụ thuộc `--sca`.
 3. KHÔNG retry network call nhiều lần (1 lần thử là đủ, tránh treo scan vì mạng chậm).
 
-## Bước 3 — Map CVSS → severity
+## Bước 3 — Xác định severity
 
-| CVSS score | Severity |
+KHÔNG tự tính base score từ CVSS vector. `severity[].score` của OSV là chuỗi vector (vd `CVSS:3.1/AV:N/AC:L/...`), không phải điểm số; tự tính điểm từ vector rất dễ sai. Severity lấy theo thứ tự ưu tiên sau, dừng ở bước đầu tiên có kết quả:
+
+| # | Nguồn | `severity_source` |
+|---|---|---|
+| 1 | `database_specific.severity` của chính vuln (có sẵn ở bản ghi GHSA) | `"osv"` |
+| 2 | Vuln không có (bản ghi `GO-*`, `PYSEC-*`...) nhưng `aliases[]` có id `GHSA-*` → `GET /v1/vulns/<GHSA-id>` (dedup như Bước 2b), lấy `database_specific.severity` của bản ghi GHSA đó | `"ghsa_alias"` |
+| 3 | Không có nguồn nào ở trên | `"default"` → severity `MEDIUM`, ghi "OSV không có severity, mặc định MEDIUM" trong `issue_summary` |
+
+Map giá trị string sang severity vbsec:
+
+| `database_specific.severity` | Severity |
 |---|---|
-| ≥ 9.0 | CRITICAL |
-| ≥ 7.0 | HIGH |
-| ≥ 4.0 | MEDIUM |
-| < 4.0 | LOW |
+| `CRITICAL` | CRITICAL |
+| `HIGH` | HIGH |
+| `MODERATE` / `MEDIUM` | MEDIUM |
+| `LOW` | LOW |
 
-Nếu OSV response có `database_specific.severity` dạng string sẵn (`CRITICAL`/`HIGH`/`MODERATE`/`LOW`) mà không có CVSS score số, dùng trực tiếp (map `MODERATE` → `MEDIUM`). Nếu không có severity nào cả (một số advisory cũ) → mặc định `MEDIUM`, note "severity không rõ, mặc định MEDIUM" trong `issue_summary`.
+**`cvss_vector`:** nếu vuln (hoặc bản ghi GHSA alias ở nguồn 2) có `severity[]`, xuất nguyên chuỗi `score` làm `cvss_vector` để người dùng/CI tự tra cứu. Ưu tiên `type: CVSS_V3`, rồi `CVSS_V4`, rồi `CVSS_V2`. `cvss_vector` chỉ để tham khảo, KHÔNG dùng để suy ra severity.
 
 Severity cuối cùng vẫn bị cap bởi `severity_max: CRITICAL` của rule 22 (xem rule file) — nhưng vì cap đã là CRITICAL, mapping trên áp dụng nguyên vẹn.
 
@@ -85,11 +96,11 @@ Với mỗi `(package, version)` có ≥1 vuln xác nhận từ OSV:
 rule_id: VULNERABLE-DEPENDENCY
 file: <đường dẫn manifest, vd api/pkg.csproj>
 line: <dòng chứa PackageReference/dependency đó trong manifest>
-severity: <map từ Bước 3>
+severity: <xác định ở Bước 3>
 issue_summary: "<package>@<installed_version> có <cve_id> (<summary ngắn>)"
 fix_summary: "Nâng cấp lên <fixed_version>"
 # Fields riêng cho JSON canonical (xem output-format.md):
-cve_id, osv_id, package, ecosystem, installed_version, fixed_version, cvss_score
+cve_id, osv_id, package, ecosystem, installed_version, fixed_version, severity_source, cvss_vector (nếu có)
 ```
 
 Nếu 1 package có nhiều vuln id → tạo nhiều finding riêng (đúng nguyên tắc "1 finding = 1 rule_id" đã áp dụng cho toàn skill, mỗi vuln là 1 finding dù cùng `rule_id: VULNERABLE-DEPENDENCY`).

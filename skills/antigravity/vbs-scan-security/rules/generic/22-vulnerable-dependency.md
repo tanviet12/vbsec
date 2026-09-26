@@ -8,7 +8,7 @@ applies_to: all
 
 ## Intent
 
-Rule này khác với `20-outdated-dependency`: đây là finding **đã xác nhận** qua tra cứu live tới [OSV.dev](https://osv.dev), có `cve_id` cụ thể, `fixed_version` chính xác, và điểm CVSS — không phải suy đoán từ static list offline. Chỉ chạy khi user truyền flag `--sca` (xem [`../../references/dependency-scan.md`](../../references/dependency-scan.md) cho toàn bộ cơ chế parse manifest + gọi API).
+Rule này khác với `20-outdated-dependency`: đây là finding **đã xác nhận** qua tra cứu live tới [OSV.dev](https://osv.dev), có `cve_id` cụ thể, `fixed_version` chính xác, và severity lấy từ advisory — không phải suy đoán từ static list offline. Chỉ chạy khi user truyền flag `--sca` (xem [`../../references/dependency-scan.md`](../../references/dependency-scan.md) cho toàn bộ cơ chế parse manifest + gọi API).
 
 Vibe coder pin version dependency từ tutorial/template cũ, không track CVE. Với data live từ OSV, vbsec biết chính xác: package nào, version nào, CVE nào, và version nào cần nâng cấp lên — đủ để CI/CD chặn merge một cách có cơ sở, không phải "nghi ngờ".
 
@@ -16,17 +16,19 @@ Vibe coder pin version dependency từ tutorial/template cũ, không track CVE. 
 
 | Condition | Severity |
 |---|---|
-| OSV trả CVSS ≥ 9.0, hoặc `database_specific.severity: CRITICAL` | CRITICAL |
-| OSV trả CVSS 7.0–8.9, hoặc `severity: HIGH` | HIGH |
-| OSV trả CVSS 4.0–6.9, hoặc `severity: MODERATE`/`MEDIUM` | MEDIUM |
-| OSV trả CVSS < 4.0, hoặc `severity: LOW` | LOW |
-| Không có severity nào trong response OSV | MEDIUM (mặc định, ghi rõ lý do trong `issue_summary`) |
+| `database_specific.severity: CRITICAL` (của vuln, hoặc của bản ghi GHSA alias) | CRITICAL |
+| `database_specific.severity: HIGH` | HIGH |
+| `database_specific.severity: MODERATE`/`MEDIUM` | MEDIUM |
+| `database_specific.severity: LOW` | LOW |
+| Không có severity nào (kể cả qua GHSA alias) | MEDIUM (mặc định, `severity_source: "default"`, ghi rõ lý do trong `issue_summary`) |
+
+KHÔNG tự tính điểm từ CVSS vector trong `severity[].score` — chỉ xuất nguyên chuỗi làm `cvss_vector`. Chi tiết thứ tự ưu tiên ở [`dependency-scan.md`](../../references/dependency-scan.md) Bước 3.
 
 ## Reasoning
 
 1. Đọc [`dependency-scan.md`](../../references/dependency-scan.md) để biết cách parse manifest cho ecosystem tương ứng (`NuGet`, `Go`, `npm`, `Packagist`, `PyPI`).
 2. Gọi `POST /v1/querybatch` lấy vuln ID, rồi `GET /v1/vulns/{id}` lấy chi tiết (severity, fixed version, CVE alias).
-3. Map CVSS/severity string sang severity vbsec (bảng trên).
+3. Xác định severity từ `database_specific.severity` (tra qua GHSA alias nếu cần), theo bảng trên.
 4. Chỉ flag khi OSV **thực sự trả về ≥1 vuln** cho `(package, installed_version)` — không suy đoán, không dùng static list ở đây (đó là việc của rule 20).
 5. Nếu network không khả dụng, rule này KHÔNG chạy (không có gì để flag) — rule 20 vẫn chạy độc lập làm fallback offline.
 6. Nếu cùng package/version match cả rule này và rule 20, chỉ giữ finding của rule này (data chính xác hơn), bỏ finding trùng của rule 20.
@@ -51,7 +53,7 @@ curl -s -X POST https://api.osv.dev/v1/querybatch -H "Content-Type: application/
   "version": "7.4.1"
 }
 ```
-→ OSV trả `severity: HIGH`, `fixed: "7.4.5"`, `aliases: ["CVE-2022-31091"]` → finding HIGH, fix = nâng lên `7.4.5`.
+→ OSV trả `database_specific.severity: "HIGH"`, `fixed: "7.4.5"`, `aliases: ["CVE-2022-31091"]` → finding HIGH (`severity_source: "osv"`), fix = nâng lên `7.4.5`.
 
 ### NOT critical — không flag
 

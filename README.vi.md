@@ -54,7 +54,7 @@ vbsec được thiết kế xoay quanh một số quyết định kỹ thuật g
 
 - **Vòng lặp auto-fix tùy chọn (`--auto-fix`, mặc định TẮT).** Với finding CRITICAL/HIGH, vbsec có thể tự sinh patch (unified diff), apply qua `git apply`, chạy build command tương ứng ngôn ngữ để verify, và revert + thử lại (tối đa 2 lần) nếu build fail. Đây là nơi duy nhất trong skill được phép ghi đè source tree, và cần git repository.
 
-- **Tra CVE live qua OSV.dev tùy chọn (`--sca`, mặc định TẮT).** Thay vì chỉ dựa vào static list offline, vbsec có thể tra cứu live qua [OSV.dev](https://osv.dev) cho manifest dependency (NuGet, Go, npm, Composer, PyPI) và làm giàu finding với CVE id đã xác nhận, điểm CVSS, và version fix chính xác — để CI/CD gate dựa trên data thật.
+- **Tra CVE live qua OSV.dev tùy chọn (`--sca`, mặc định TẮT).** Thay vì chỉ dựa vào static list offline, vbsec có thể tra cứu live qua [OSV.dev](https://osv.dev) cho manifest dependency (NuGet, Go, npm, Composer, PyPI) và làm giàu finding với CVE id đã xác nhận, severity của advisory (kèm nguyên CVSS vector), và version fix chính xác — để CI/CD gate dựa trên data thật.
 
 ## Hỗ trợ đa nền tảng
 

@@ -324,7 +324,7 @@ Rule 22 chỉ chạy khi `$SCA=true` — xem Step 4b.
 
 ## Step 4b: SCA Scan (optional — `--sca`)
 
-Chỉ chạy khi `$SCA=true`. Đọc [`references/dependency-scan.md`](references/dependency-scan.md): parse manifest theo ecosystem (NuGet/.NET, Go, npm/TS, Composer/PHP, PyPI), query `https://api.osv.dev/v1/querybatch` rồi `v1/vulns/{id}`, map CVSS → severity, tạo finding `VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`. Network fail/không có manifest → note `{msg_sca_unavailable}`/`{msg_sca_no_manifest}`, KHÔNG fail scan, fallback rule 20. Chạy 1 lần cho toàn repo (không chunk theo folder).
+Chỉ chạy khi `$SCA=true`. Đọc [`references/dependency-scan.md`](references/dependency-scan.md): parse manifest theo ecosystem (NuGet/.NET, Go, npm/TS, Composer/PHP, PyPI), query `https://api.osv.dev/v1/querybatch` rồi `v1/vulns/{id}`, lấy severity từ `database_specific.severity` (không tự tính điểm từ CVSS vector), tạo finding `VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`. Network fail/không có manifest → note `{msg_sca_unavailable}`/`{msg_sca_no_manifest}`, KHÔNG fail scan, fallback rule 20. Chạy 1 lần cho toàn repo (không chunk theo folder).
 
 ## Step 4c: Auto-fix (optional — `--auto-fix`)
 
