@@ -1,4 +1,4 @@
-# 21 Rule bảo mật của vbsec
+# Rule bảo mật của vbsec (21 rule chính + 1 rule optional)
 
 Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đầy đủ reasoning, search pattern và edge case, mở file rule tương ứng trong [`skills/vbs-scan-security/rules/generic/`](../../skills/vbs-scan-security/rules/generic/).
 
@@ -33,6 +33,7 @@ Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đ
 | 19 | [RACE-CONDITION](#rule-19--race-condition) | HIGH | — |
 | 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | — |
 | 21 | [COMMAND-INJECTION](#rule-21--command-injection) | CRITICAL | go, php, typescript, python, dotnet |
+| 22 | [VULNERABLE-DEPENDENCY](#rule-22--vulnerable-dependency) | CRITICAL | all (chỉ khi có `--sca`) |
 
 ---
 
@@ -574,6 +575,29 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 
 ---
 
+### Rule 22 — VULNERABLE-DEPENDENCY
+
+**Severity max:** CRITICAL
+**Applies to:** all — **chỉ chạy khi có flag `--sca`** (opt-in, mặc định tắt, cần network)
+
+Bản "live" của rule 20: tra cứu [OSV.dev](https://osv.dev) cho đúng package/version tìm được trong manifest (NuGet, Go, npm, Composer, PyPI), chỉ flag khi OSV xác nhận CVE thật — kèm `fixed_version` chính xác và severity của chính advisory, không phải đoán từ static list. Xem [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) để biết toàn bộ cơ chế parse + query.
+
+**Unsafe (`composer.lock`):**
+```json
+{"name": "guzzlehttp/guzzle", "version": "7.4.1"}
+```
+OSV xác nhận CVE cho version này → finding CRITICAL/HIGH kèm `fixed_version`.
+
+**Safe:**
+```bash
+composer require guzzlehttp/guzzle:<fixed_version>
+composer update guzzlehttp/guzzle
+```
+
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/22-vulnerable-dependency.md)
+
+---
+
 ## Specialization
 
 Một số rule có override chuyên sâu cho ngôn ngữ cụ thể. Khi vbsec detect ngôn ngữ chính, nó tự load overlay:
@@ -592,7 +616,7 @@ Muốn add language khác (Ruby, Java, Rust)? Đọc [contributing.md](contribut
 
 ## Cập nhật rule list này
 
-Nếu bạn thêm rule mới (22, 23...) hoặc cập nhật severity, nhớ update:
+Nếu bạn thêm rule mới (23, 24...) hoặc cập nhật severity, nhớ update:
 
 1. File này (`docs/vi/rules.md`)
 2. [`docs/en/rules.md`](../en/rules.md)

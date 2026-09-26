@@ -21,7 +21,7 @@ Skill agent đa nền tảng, quét bảo mật chuyên sâu và phát hiện h�
 
 Mã nguồn do AI sinh ra hiện chiếm tỷ trọng đáng kể trong các commit mới của ngành phần mềm. Các trợ lý lập trình hiện đại rất giỏi tạo ra mã nguồn *chạy được*, nhưng chúng vẫn thường xuyên xuất ra mã mắc những lỗi bảo mật kinh điển: Hardcoded Secret, SQL Injection, Broken Access Control, Weak Password Hashing, JWT misuse, CORS misconfiguration. Những lỗi này hiếm khi lộ ra trong kiểm thử chức năng — chúng chỉ lộ ra khi đã xảy ra sự cố.
 
-vbsec đưa quy trình rà soát bảo mật cấp production vào trong vòng lặp lập trình với AI. Skill chạy native trên ba nền tảng — gõ `/vbs-scan-security` trong Claude Code, `$vbs-scan-security` (hoặc `/skills`) trong OpenAI Codex CLI, hoặc đơn giản nói *"scan security cho repo này"* với Google Antigravity — và nhận một báo cáo có cấu trúc rõ ràng, bao phủ hơn 20 nhóm lỗ hổng phổ biến. Không gọi API ngoài, không cần cài thêm công cụ, không cần duy trì hạ tầng phụ trợ.
+vbsec đưa quy trình rà soát bảo mật cấp production vào trong vòng lặp lập trình với AI. Skill chạy native trên ba nền tảng — gõ `/vbs-scan-security` trong Claude Code, `$vbs-scan-security` (hoặc `/skills`) trong OpenAI Codex CLI, hoặc đơn giản nói *"scan security cho repo này"* với Google Antigravity — và nhận một báo cáo có cấu trúc rõ ràng, bao phủ hơn 20 nhóm lỗ hổng phổ biến. Mặc định không gọi API ngoài, không cần cài thêm công cụ, không cần duy trì hạ tầng phụ trợ — network chỉ được gọi khi user chủ động dùng flag `--sca` để tra CVE live (xem [Miễn trừ trách nhiệm](#miễn-trừ-trách-nhiệm)).
 
 vbsec đã được chạy thử trên các ứng dụng mã nguồn mở có chủ đích chứa lỗ hổng dùng cho mục đích đào tạo (như OWASP Juice Shop) — và phát hiện được các lỗ hổng tương ứng với những challenge đã được tài liệu hoá: SQL Injection, NoSQL Injection, JWT misuse, Broken Access Control, Mass Assignment, RCE qua deserialization, và nhiều nhóm khác.
 
@@ -52,6 +52,10 @@ vbsec được thiết kế xoay quanh một số quyết định kỹ thuật g
 
 - **Đa nền tảng.** Một bộ rule canonical, ba bản platform variant. Claude Code dùng sub-agent song song cho scan lớn; Codex và Antigravity dùng sequential chunking với output identical. Script `sync-skills.sh` giữ rule đồng bộ trên cả ba.
 
+- **Vòng lặp auto-fix tùy chọn (`--auto-fix`, mặc định TẮT).** Với finding CRITICAL/HIGH, vbsec có thể tự sinh patch (unified diff), apply qua `git apply`, chạy build command tương ứng ngôn ngữ để verify, và revert + thử lại (tối đa 2 lần) nếu build fail. Đây là nơi duy nhất trong skill được phép ghi đè source tree, và cần git repository.
+
+- **Tra CVE live qua OSV.dev tùy chọn (`--sca`, mặc định TẮT).** Thay vì chỉ dựa vào static list offline, vbsec có thể tra cứu live qua [OSV.dev](https://osv.dev) cho manifest dependency (NuGet, Go, npm, Composer, PyPI) và làm giàu finding với CVE id đã xác nhận, severity của advisory (kèm nguyên CVSS vector), và version fix chính xác — để CI/CD gate dựa trên data thật.
+
 ## Hỗ trợ đa nền tảng
 
 vbsec ship ba bản variant từ một nguồn duy nhất:
@@ -62,7 +66,7 @@ vbsec ship ba bản variant từ một nguồn duy nhất:
 | OpenAI Codex CLI | `skills/codex/vbs-scan-security/` | `~/.agents/skills/vbs-scan-security` | Sequential chunking |
 | Google Antigravity | `skills/antigravity/vbs-scan-security/` | `~/.gemini/antigravity/skills/vbs-scan-security` | Sequential chunking |
 
-Cả ba chia sẻ cùng 21 rule, language overlay, chuỗi i18n và format output. Findings identical; chỉ chiến lược thực thi khác. Sequential variant chậm hơn ~3× wall-clock so với parallel mode của Claude Code trên repo lớn, nhưng tạo ra cùng JSON summary và cùng báo cáo Markdown.
+Cả ba chia sẻ cùng 22 rule (21 rule generic luôn chạy + 1 rule optional cho `--sca`), language overlay, chuỗi i18n và format output. Findings identical; chỉ chiến lược thực thi khác. Sequential variant chậm hơn ~3× wall-clock so với parallel mode của Claude Code trên repo lớn, nhưng tạo ra cùng JSON summary và cùng báo cáo Markdown.
 
 Người contribute: sửa rule trong `skills/vbs-scan-security/` (folder canonical của Claude), rồi chạy `./scripts/sync-skills.sh` để propagate sang Codex và Antigravity. File platform-specific (`SKILL.md`, `workflows/large-review*.md`) maintain riêng từng platform.
 
@@ -124,6 +128,8 @@ Phạm vi mặc định là toàn bộ folder. Đây là thay đổi có chủ �
 /vbs-scan-security uncommitted           # chỉ quét thay đổi chưa commit
 /vbs-scan-security pr id 42 lang=en      # quét PR số 42, báo cáo tiếng Anh
 /vbs-scan-security commit within 7days   # quét các commit trong 7 ngày gần nhất
+/vbs-scan-security all --sca             # + tra CVE live qua OSV.dev (cần network)
+/vbs-scan-security uncommitted --auto-fix # + tự patch finding CRITICAL/HIGH (cần git)
 ```
 
 **Chạy được mà không cần git.** Vibe coder thường không `git init` trước khi paste code AI sinh vào folder. Scope mặc định (`/vbs-scan-security`) sẽ walk filesystem trực tiếp khi không có `.git/` — các folder build/vendored thông dụng được loại tự động. Các scope phụ thuộc git (`uncommitted`, `staged`, `commit within`, `commit id`, `pr id`) vẫn cần git repository và sẽ in message gợi ý dùng scope mặc định hoặc init git.
@@ -157,8 +163,9 @@ Xem [docs/vi/usage.md](docs/vi/usage.md) để biết toàn bộ tuỳ chọn, b
 | 19 | `RACE-CONDITION` | CAO | — |
 | 20 | `OUTDATED-DEPENDENCY` | CAO | — |
 | 21 | `COMMAND-INJECTION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
+| 22 | `VULNERABLE-DEPENDENCY` | NGHIÊM TRỌNG | all (chỉ khi có `--sca`, tra live qua OSV.dev) |
 
-Danh sách hiện tại có 21 quy tắc và sẽ tiếp tục mở rộng.
+Danh sách hiện tại có 22 quy tắc (21 rule generic luôn chạy + `VULNERABLE-DEPENDENCY` chỉ chạy khi có `--sca`) và sẽ tiếp tục mở rộng.
 
 ## Tài liệu
 
@@ -175,9 +182,10 @@ Repo luôn chào đón đóng góp: báo lỗi, sửa rule, thêm chuyên sâu c
 - v0.2 — Chuyên sâu TypeScript/JavaScript (Sequelize/Prisma/Mongoose, React/Vue/Angular, Express/NestJS/Next.js) ✅
 - v0.3 — Phạm vi mặc định chuyển sang toàn repo, lưu báo cáo cố định, giải thích chi tiết cho từng finding ✅
 - v0.4 — Chuyên sâu Python (SQLAlchemy/Django ORM SQLi, pickle/yaml deserialization RCE, Werkzeug debugger, FastAPI/Flask/Django CSRF + CORS, PyJWT algorithms, subprocess shell=True) ✅
-- v0.5 (hiện tại) — Hỗ trợ đa nền tảng: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, chia sẻ bộ rule, `install.sh` + `sync-skills.sh`) ✅
-- Chuyên sâu .NET/C# (EF Core raw SQL, ASP.NET Core model binding, deserialization Newtonsoft.Json/formatter cũ, Process.Start) ✅
-- v0.6+ — Ruby, Java, Rust — theo nhu cầu cộng đồng
+- v0.5 — Hỗ trợ đa nền tảng: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, chia sẻ bộ rule, `install.sh` + `sync-skills.sh`) ✅
+- v0.6 — Chuyên sâu .NET/C# (EF Core raw SQL, ASP.NET Core model binding, deserialization Newtonsoft.Json/formatter cũ, Process.Start) ✅
+- v0.7 (hiện tại) — `--auto-fix` (vòng lặp patch + build-verify + retry) và `--sca` (tra CVE live qua OSV.dev, rule 22 `VULNERABLE-DEPENDENCY`) ✅
+- v0.8+ — Ruby, Java, Rust — theo nhu cầu cộng đồng
 
 ## Miễn trừ trách nhiệm
 
@@ -185,7 +193,8 @@ vbsec là một trình quét tham khảo. Skill bắt được những lỗi ph�
 
 - KHÔNG thay thế cho một đợt rà soát bảo mật chuyên nghiệp do chuyên gia thực hiện
 - KHÔNG đảm bảo phát hiện 100% lỗ hổng
-- KHÔNG tải dữ liệu CVE trực tuyến (cần chạy `npm audit` / `pip-audit` / `govulncheck` riêng cho mục đích này)
+- Mặc định KHÔNG tải dữ liệu CVE trực tuyến (cần chạy `npm audit` / `pip-audit` / `govulncheck` riêng cho mục đích này) — dùng flag `--sca` để opt-in tra live qua [OSV.dev](https://osv.dev) (cần network; xem [usage.md](docs/vi/usage.md#quét-dependency-live---sca))
+- `--auto-fix` ghi đè trực tiếp file nguồn (có build-verify + revert nếu fail) — mặc định TẮT, cần git repository; xem [usage.md](docs/vi/usage.md#auto-fix---auto-fix)
 
 Hãy dùng vbsec như **lớp phòng thủ đầu tiên**, không phải bằng chứng về tính an toàn của hệ thống.
 

@@ -55,8 +55,9 @@ git init
 | Improving an existing rule (more patterns, fewer false positives) | High | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Fixing reasoning bugs in a rule | High | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Adding test cases (positive + negative) | Medium | `tests/` (no infra yet — bundle in PR description) |
-| Adding a brand-new rule (22, 23...) | Medium | Discuss via issue first |
-| CVE list updates for OUTDATED-DEPENDENCY | Medium | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
+| Adding a brand-new rule (23, 24...) | Medium | Discuss via issue first |
+| CVE list updates for OUTDATED-DEPENDENCY (offline fallback) | Medium | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
+| Adding a new SCA ecosystem for `--sca`/VULNERABLE-DEPENDENCY | Medium | `skills/vbs-scan-security/references/dependency-scan.md` |
 | Docs (typos, examples, workflow improvements) | Low-Medium | `docs/`, `README.*.md` |
 
 **Before large PRs (new rule, new language):** open an issue first to avoid duplication of effort.
@@ -89,9 +90,9 @@ git init
 
 ### 1. Pick a name + number
 
-The next rule number is **22**. ID is `UPPERCASE-KEBAB-CASE`, e.g.: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
+The next rule number is **23** (22 is `VULNERABLE-DEPENDENCY`, added in v0.7 for the `--sca` live OSV lookup). ID is `UPPERCASE-KEBAB-CASE`, e.g.: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
 
-File: `skills/vbs-scan-security/rules/generic/22-open-redirect.md`
+File: `skills/vbs-scan-security/rules/generic/23-open-redirect.md`
 
 ### 2. Frontmatter template
 
@@ -154,10 +155,10 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | What to do |
 |---|---|
-| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Add a row to the rules table in Step 4 (renumber from "21 rules" to "22 rules") |
-| [`docs/vi/rules.md`](../vi/rules.md) | Add a `### Rule 22 — OPEN-REDIRECT` section |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Add a row to the rules table in Step 4 (renumber from "22 rules" to "23 rules") |
+| [`docs/vi/rules.md`](../vi/rules.md) | Add a `### Rule 23 — OPEN-REDIRECT` section |
 | [`docs/en/rules.md`](rules.md) | Same |
-| [`README.vi.md`](../../README.vi.md) | Update the 21→22 list (the table) |
+| [`README.vi.md`](../../README.vi.md) | Update the 22→23 list (the table) |
 | [`README.md`](../../README.md) | Same |
 
 ### 4. Test
@@ -306,6 +307,13 @@ git add app.py
 
 Many patterns look vulnerable but are safe in context. Example: `f"SELECT * FROM users WHERE id={user_id}"` is SAFE if `user_id` is an internal L3 variable (hardcoded const, framework-provided). Make sure your rule doesn't flag these.
 
+### Testing `--auto-fix` / `--sca` changes
+
+These two flags mutate files and call the network, respectively — test the failure paths explicitly, not just the happy path:
+
+- **`--auto-fix`:** run it on a repo with an intentionally *unfixable* CRITICAL finding (e.g. one whose only correct fix needs a dependency that's not installed, so the build always fails). Confirm: the file is reverted to its original content after the retry budget is exhausted, `patch_status: "failed_verification"` is set, and the working tree is clean (`git diff` empty for that file). Repeat with an *uncommitted* edit in the same file (`uncommitted --auto-fix`) and confirm the edit is still there afterwards. Also run once without the build tool on `PATH` (e.g. no `dotnet`) and confirm nothing is applied (`suggested_only`).
+- **`--sca`:** run once with network available (confirm `scan_source: "osv.dev live"`) and once with network blocked, e.g. `--sca` combined with an unreachable DNS/proxy config (confirm graceful fallback: `scan_source: "static list (offline)"`, no crash, `{msg_sca_unavailable}` printed).
+
 ### Document the test plan in the PR
 
 Include in the PR description:
@@ -366,7 +374,7 @@ Include in the PR description:
 
 | Prefix | When to use | Example |
 |---|---|---|
-| `feat:` | Add a feature / new rule | `feat: add OPEN-REDIRECT rule (22)` |
+| `feat:` | Add a feature / new rule | `feat: add OPEN-REDIRECT rule (23)` |
 | `fix:` | Bug fix, false-positive reduction | `fix: reduce false positive in SQL-INJECTION for parameterized GORM` |
 | `docs:` | Docs / README updates | `docs: clarify SMALL vs LARGE thresholds` |
 | `lang:` | Add/modify a language specialization | `lang: add Ruby specialization for SQL-INJECTION` |

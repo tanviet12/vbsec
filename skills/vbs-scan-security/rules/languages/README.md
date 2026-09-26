@@ -75,7 +75,9 @@ See `references/language-detection.md` for the detection heuristic. In short:
 | Python | `python/` | 9 | Stable (v0.4) — `.py` and `.pyw` |
 | .NET / C# | `dotnet/` | 4 | Stable (v0.6) — ASP.NET Core / EF Core |
 
-**Phase v0.7+** (planned): Ruby, Rust, Java/Kotlin.
+**v0.7**: `--auto-fix` (agentic patch loop) + `--sca` (live CVE via OSV.dev, rule 22 `VULNERABLE-DEPENDENCY`) — not a language overlay, cross-cutting feature.
+
+**Phase v0.8+** (planned): Ruby, Rust, Java/Kotlin.
 
 ## Why specialize?
 

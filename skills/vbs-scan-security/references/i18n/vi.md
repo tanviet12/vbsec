@@ -176,3 +176,27 @@ Bảng key → text cho output report khi `lang=vi`. SKILL.md và workflows ph�
 |---|---|
 | `header_hardening_title` | Gợi ý tăng cường (không phải lỗ hổng) |
 | `msg_hardening_intro` | Các điểm dưới đây không khai thác được, chỉ là gợi ý phòng thủ thêm. Không tính vào kết quả. |
+
+## Auto-fix (`--auto-fix`, v0.7+)
+
+| Key | Text |
+|---|---|
+| `header_autofix_title` | Kết quả tự động sửa lỗi |
+| `msg_autofix_needs_git` | ⚠️ `--auto-fix` yêu cầu git repository (patch được kiểm tra và apply qua `git apply`). Bỏ qua bước auto-fix. |
+| `msg_autofix_dirty_tree` | ⚠️ Working tree có thay đổi chưa commit ngoài phạm vi quét. Khuyến nghị commit hoặc backup trước khi chạy `--auto-fix`. |
+| `msg_autofix_snapshot_scope` | ℹ️ Scope `commit id`/`pr id` quét trên snapshot tạm, không phải working tree — auto-fix chỉ ghi gợi ý patch ra `vbsec-reports/patches/`, không sửa file nào. |
+| `autofix_status_applied` | Đã sửa và verify build thành công |
+| `autofix_status_failed` | Không sửa được sau {n} lần thử — cần sửa tay |
+| `autofix_status_suggested` | Chỉ tạo gợi ý patch (chưa có lệnh build để verify) — xem `vbsec-reports/patches/` |
+| `autofix_status_skipped` | Bỏ qua (severity MEDIUM/LOW, không auto-fix) |
+| `msg_autofix_summary` | Đã tự sửa {applied}/{total} lỗi CRITICAL+HIGH. {failed} lỗi cần sửa tay, {suggested} lỗi chỉ có gợi ý patch. |
+
+## SCA / Live CVE (`--sca`, v0.7+)
+
+| Key | Text |
+|---|---|
+| `header_sca_title` | Quét dependency (SCA — OSV.dev live) |
+| `msg_sca_unavailable` | ⚠️ Không kết nối được OSV.dev — dùng static list offline (rule OUTDATED-DEPENDENCY) thay thế. |
+| `msg_sca_no_manifest` | Không tìm thấy manifest dependency cho ngôn ngữ {lang} — bỏ qua SCA cho ngôn ngữ này. |
+| `col_cve` | CVE |
+| `col_installed_fixed` | Version hiện tại → Version fix |

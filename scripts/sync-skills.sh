@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# sync-skills.sh — copy shared content (rules/, references/, workflows/small-review.md)
-# từ canonical Claude skill sang Codex và Antigravity variants.
+# sync-skills.sh — copy shared content (rules/, references/,
+# workflows/{small-review,auto-fix}.md) từ canonical Claude skill sang
+# Codex và Antigravity variants.
 #
 # CHẠY MỖI KHI sửa rule hoặc reference ở canonical.
 #
@@ -38,12 +39,15 @@ for target in "${targets[@]}"; do
   # Sync references/ — identical across platforms
   rsync -a --delete "$CANONICAL/references/" "$target/references/"
 
-  # Sync small-review.md only (large-review variant differs per platform)
+  # Sync small-review.md + auto-fix.md only (large-review variant differs per platform;
+  # auto-fix.md has no sub-agent dependency, so it's shared across all 3 platforms)
   cp "$CANONICAL/workflows/small-review.md" "$target/workflows/small-review.md"
+  cp "$CANONICAL/workflows/auto-fix.md" "$target/workflows/auto-fix.md"
 
   echo "  ✓ rules/ ($(find "$target/rules" -name '*.md' | wc -l | xargs) files)"
   echo "  ✓ references/ ($(find "$target/references" -name '*.md' | wc -l | xargs) files)"
   echo "  ✓ workflows/small-review.md"
+  echo "  ✓ workflows/auto-fix.md"
 done
 
 echo ""

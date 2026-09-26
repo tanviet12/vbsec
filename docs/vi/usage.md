@@ -16,6 +16,8 @@ Hướng dẫn chi tiết cách gọi `/vbs-scan-security`, chọn scope, hiểu
 - [JSON summary cho tooling](#json-summary-cho-tooling)
 - [Performance expectations](#performance-expectations)
 - [Resume khi LARGE mode bị interrupt](#resume-khi-large-mode-bị-interrupt)
+- [Auto-fix (--auto-fix)](#auto-fix---auto-fix)
+- [Quét dependency live (--sca)](#quét-dependency-live---sca)
 - [Tích hợp CI/CD](#tích-hợp-cicd)
 
 ---
@@ -167,15 +169,17 @@ Có lỗi NGHIÊM TRỌNG. KHÔNG được deploy đến khi sửa hết.
 ```json
 {
   "verdict": "FAIL",
+  "summary": {"critical": 2, "high": 1, "medium": 0, "low": 0, "passed": 14},
   "scope": "uncommitted",
-  "files_scanned": 12,
+  "files_reviewed": 12,
   "primary_language": "typescript",
-  "mode": "SMALL",
-  "counts": {"critical": 2, "high": 1, "medium": 0, "low": 0},
+  "specialized_rules_used": true,
+  "mode": "small",
+  "date": "2026-05-13",
   "findings": [
-    {"file": "api/users.ts", "line": 42, "rule": "SQL-INJECTION", "severity": "CRITICAL"},
-    {"file": ".env", "line": 1, "rule": "HARDCODED-SECRET", "severity": "CRITICAL"},
-    {"file": "auth.ts", "line": 18, "rule": "WEAK-PASSWORD-HASHING", "severity": "HIGH"}
+    {"file": "api/users.ts", "line": 42, "rule_id": "SQL-INJECTION", "severity": "CRITICAL", "issue_summary": "req.body.id ghép thẳng vào SQL", "fix_summary": "Dùng parameterized query"},
+    {"file": ".env", "line": 1, "rule_id": "HARDCODED-SECRET", "severity": "CRITICAL", "issue_summary": "Stripe live key đã commit", "fix_summary": "Xoay key + .gitignore"},
+    {"file": "auth.ts", "line": 18, "rule_id": "WEAK-PASSWORD-HASHING", "severity": "HIGH", "issue_summary": "MD5 dùng để hash password", "fix_summary": "Dùng bcrypt/argon2"}
   ]
 }
 ```
@@ -206,31 +210,33 @@ WARN **không** có nghĩa là "approve". Đội security/tech lead vẫn phải
 
 ## JSON summary cho tooling
 
-JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. Schema cố định:
+JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. Schema cố định (xem đầy đủ ở [`output-format.md`](../../skills/vbs-scan-security/references/output-format.md)):
 
 ```json
 {
   "verdict": "PASS" | "WARN" | "FAIL",
+  "summary": {"critical": <int>, "high": <int>, "medium": <int>, "low": <int>, "passed": <int>},
   "scope": "uncommitted" | "staged" | "commit_within_Ndays" | "commit_id_<sha>" | "pr_<num>" | "all",
-  "files_scanned": <int>,
+  "files_reviewed": <int>,
   "primary_language": <string>,
-  "mode": "SMALL" | "LARGE",
-  "counts": {
-    "critical": <int>,
-    "high": <int>,
-    "medium": <int>,
-    "low": <int>
-  },
+  "specialized_rules_used": <bool>,
+  "mode": "small" | "large",
+  "date": <ISO 8601 date>,
   "findings": [
     {
       "file": <string>,
       "line": <int>,
-      "rule": <string>,
-      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+      "rule_id": <string>,
+      "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+      "issue_summary": <string>,
+      "fix_summary": <string>
     }
-  ]
+  ],
+  "dependencies_scanned": { "total": <int>, "ecosystems": [<string>], "vulnerable_count": <int>, "scan_source": "osv.dev live" | "static list (offline)" }
 }
 ```
+
+`dependencies_scanned` chỉ có khi chạy `--sca`. Finding có `rule_id: VULNERABLE-DEPENDENCY` có thêm `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source`, và `cvss_vector` (nguyên chuỗi CVSS vector từ OSV, để tham khảo) nếu có. Finding đã qua `--auto-fix` có thêm `patch_status`.
 
 ### Parse JSON từ output
 
@@ -392,23 +398,66 @@ Bạn có thể parse JSON summary và áp policy riêng:
 
 ```bash
 # Chỉ block nếu có ≥3 HIGH issues
-HIGH_COUNT=$(jq -r '.counts.high' summary.json)
+HIGH_COUNT=$(jq -r '.summary.high' summary.json)
 if [ "$HIGH_COUNT" -ge 3 ]; then
   echo "Too many HIGH issues ($HIGH_COUNT). Blocking."
   exit 1
 fi
 
 # Hoặc: chỉ block 1 số rule cụ thể
-CRITICAL_RULES=$(jq -r '.findings[] | select(.severity=="CRITICAL") | .rule' summary.json)
+CRITICAL_RULES=$(jq -r '.findings[] | select(.severity=="CRITICAL") | .rule_id' summary.json)
 if echo "$CRITICAL_RULES" | grep -q "HARDCODED-SECRET"; then
   echo "Hardcoded secret detected — blocking deploy."
   exit 1
 fi
+
+# Block nếu có CVE CRITICAL confirmed qua OSV từ --sca
+jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="CRITICAL")] | length == 0' summary.json \
+  || { echo "CVE CRITICAL confirmed qua OSV — blocking."; exit 1; }
+```
+
+---
+
+## Auto-fix (`--auto-fix`)
+
+**v0.7+, mặc định TẮT.** Sau khi scan, vbsec tự sinh patch (unified diff) cho từng finding CRITICAL/HIGH, apply thử qua `git apply`, chạy build command tương ứng ngôn ngữ (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`) để verify, và revert + thử lại (tối đa 2 lần) nếu build fail.
+
+```
+/vbs-scan-security uncommitted --auto-fix
+```
+
+**Trước khi dùng:**
+- **Bắt buộc git repo** — patch được kiểm tra và apply qua `git apply`. Không có git → skill tự skip bước này, chỉ báo warning.
+- **Revert an toàn** — trước mỗi patch, vbsec snapshot các file sắp bị ghi (gồm cả thay đổi chưa commit và file untracked). Build fail → khôi phục đúng bản trước patch, không dùng `git checkout`.
+- **Kiểm tra trước khi apply** — thiếu build tool (vd không có `dotnet`) hoặc project vốn đã build lỗi → không apply gì, chỉ ghi gợi ý patch.
+- **Dependency** — bản nâng version chỉ được giữ khi test của chính project pass trên version mới (Go: `go test ./...`, .NET: `dotnet test`); project không có test thì chỉ gợi ý patch. Dependency npm, Composer, Python luôn chỉ có gợi ý patch: muốn test phải cài package và chạy install script, không hoàn tác gọn được.
+- **Commit hoặc backup working tree trước** — auto-fix ghi đè trực tiếp file nguồn (dù có build verify, đây vẫn là thay đổi thật trên đĩa).
+- Chỉ CRITICAL/HIGH được auto-fix; MEDIUM/LOW luôn để nguyên.
+- Ngôn ngữ chưa có build command tin cậy (ngoài .NET/Go/TS/PHP/Python) → vbsec chỉ ghi gợi ý patch vào `vbsec-reports/patches/`, không tự ghi đè.
+
+Kết quả từng finding được ghi vào field `patch_status` trong JSON summary (`applied`/`failed_verification`/`suggested_only`/`skipped_low_severity`) — CI có thể gate tiếp trên field này (vd fail nếu còn `failed_verification`).
+
+---
+
+## Quét dependency live (`--sca`)
+
+**v0.7+, mặc định TẮT, cần network.** Thay vì chỉ dùng static list offline (rule `OUTDATED-DEPENDENCY`), `--sca` tra cứu **live** qua [OSV.dev](https://osv.dev) cho dependency manifest của 5 ecosystem: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python).
+
+```
+/vbs-scan-security all --sca
+```
+
+Kết quả: finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`, `fixed_version` và severity của chính advisory (cùng nguyên chuỗi `cvss_vector`) lấy từ OSV — không phải suy đoán. Nếu network không khả dụng, vbsec tự fallback về static list (rule 20), không fail scan.
+
+Kết hợp cả 2 flag để tự động nâng version dependency có CVE và verify build:
+
+```
+/vbs-scan-security all --sca --auto-fix
 ```
 
 ---
 
 ## Bước tiếp theo
 
-- Đọc [rules.md](rules.md) để hiểu chi tiết 21 rule
+- Đọc [rules.md](rules.md) để hiểu chi tiết 21 rule chính + rule 22 (SCA)
 - Muốn thêm rule mới hoặc support ngôn ngữ mới? Xem [contributing.md](contributing.md)
