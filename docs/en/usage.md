@@ -210,7 +210,7 @@ WARN is **not** approval. Security/tech lead should still review HIGH issues.
 
 ## JSON summary for tooling
 
-The JSON summary always sits at the end of the report, in a `json` fenced code block. Schema is stable (full reference in [`output-format.md`](../../skill/references/output-format.md)):
+The JSON summary always sits at the end of the report, in a `json` fenced code block. Schema is stable (full reference in [`output-format.md`](../../skills/vbs-scan-security/references/output-format.md)):
 
 ```json
 {

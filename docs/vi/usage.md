@@ -210,7 +210,7 @@ WARN **không** có nghĩa là "approve". Đội security/tech lead vẫn phải
 
 ## JSON summary cho tooling
 
-JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. Schema cố định (xem đầy đủ ở [`output-format.md`](../../skill/references/output-format.md)):
+JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. Schema cố định (xem đầy đủ ở [`output-format.md`](../../skills/vbs-scan-security/references/output-format.md)):
 
 ```json
 {

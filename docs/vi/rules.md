@@ -580,7 +580,7 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 **Severity max:** CRITICAL
 **Applies to:** all — **chỉ chạy khi có flag `--sca`** (opt-in, mặc định tắt, cần network)
 
-Bản "live" của rule 20: tra cứu [OSV.dev](https://osv.dev) cho đúng package/version tìm được trong manifest (NuGet, Go, npm, Composer, PyPI), chỉ flag khi OSV xác nhận CVE thật — kèm `fixed_version` và điểm CVSS chính xác, không phải đoán từ static list. Xem [`dependency-scan.md`](../../skill/references/dependency-scan.md) để biết toàn bộ cơ chế parse + query.
+Bản "live" của rule 20: tra cứu [OSV.dev](https://osv.dev) cho đúng package/version tìm được trong manifest (NuGet, Go, npm, Composer, PyPI), chỉ flag khi OSV xác nhận CVE thật — kèm `fixed_version` và điểm CVSS chính xác, không phải đoán từ static list. Xem [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) để biết toàn bộ cơ chế parse + query.
 
 **Unsafe (`composer.lock`):**
 ```json
@@ -594,7 +594,7 @@ composer require guzzlehttp/guzzle:<fixed_version>
 composer update guzzlehttp/guzzle
 ```
 
-[Đầy đủ →](../../skill/rules/generic/22-vulnerable-dependency.md)
+[Đầy đủ →](../../skills/vbs-scan-security/rules/generic/22-vulnerable-dependency.md)
 
 ---
 
