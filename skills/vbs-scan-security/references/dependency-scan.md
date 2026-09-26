@@ -115,4 +115,4 @@ Thêm block top-level vào JSON summary cuối report (xem chi tiết field ở 
 
 - [`../rules/generic/22-vulnerable-dependency.md`](../rules/generic/22-vulnerable-dependency.md) — rule chính dùng data từ file này
 - [`../rules/generic/20-outdated-dependency.md`](../rules/generic/20-outdated-dependency.md) — fallback offline, cross-check tránh double-report
-- [`../workflows/auto-fix.md`](../workflows/auto-fix.md) — khi kết hợp `--sca --auto-fix`, finding `VULNERABLE-DEPENDENCY` được auto-fix bằng cách bump version trong manifest + `restore`/`install` lại trước khi build verify
+- [`../workflows/auto-fix.md`](../workflows/auto-fix.md) — khi kết hợp `--sca --auto-fix`, finding `VULNERABLE-DEPENDENCY` được auto-fix bằng cách bump version trong manifest rồi resolve lại lockfile (chỉ ghi manifest + lockfile, có snapshot để khôi phục khi fail); dependency PyPI chỉ có gợi ý patch (`suggested_only`)

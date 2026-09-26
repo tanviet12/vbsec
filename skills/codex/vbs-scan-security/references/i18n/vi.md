@@ -182,7 +182,7 @@ Bảng key → text cho output report khi `lang=vi`. SKILL.md và workflows ph�
 | Key | Text |
 |---|---|
 | `header_autofix_title` | Kết quả tự động sửa lỗi |
-| `msg_autofix_needs_git` | ⚠️ `--auto-fix` yêu cầu git repository (cần khả năng revert an toàn khi build fail). Bỏ qua bước auto-fix. |
+| `msg_autofix_needs_git` | ⚠️ `--auto-fix` yêu cầu git repository (patch được kiểm tra và apply qua `git apply`). Bỏ qua bước auto-fix. |
 | `msg_autofix_dirty_tree` | ⚠️ Working tree có thay đổi chưa commit ngoài phạm vi quét. Khuyến nghị commit hoặc backup trước khi chạy `--auto-fix`. |
 | `msg_autofix_snapshot_scope` | ℹ️ Scope `commit id`/`pr id` quét trên snapshot tạm, không phải working tree — auto-fix chỉ ghi gợi ý patch ra `vbsec-reports/patches/`, không sửa file nào. |
 | `autofix_status_applied` | Đã sửa và verify build thành công |

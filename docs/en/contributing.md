@@ -311,7 +311,7 @@ Many patterns look vulnerable but are safe in context. Example: `f"SELECT * FROM
 
 These two flags mutate files and call the network, respectively — test the failure paths explicitly, not just the happy path:
 
-- **`--auto-fix`:** run it on a repo with an intentionally *unfixable* CRITICAL finding (e.g. one whose only correct fix needs a dependency that's not installed, so the build always fails). Confirm: the file is reverted to its original content after the retry budget is exhausted, `patch_status: "failed_verification"` is set, and the working tree is clean (`git diff` empty for that file).
+- **`--auto-fix`:** run it on a repo with an intentionally *unfixable* CRITICAL finding (e.g. one whose only correct fix needs a dependency that's not installed, so the build always fails). Confirm: the file is reverted to its original content after the retry budget is exhausted, `patch_status: "failed_verification"` is set, and the working tree is clean (`git diff` empty for that file). Repeat with an *uncommitted* edit in the same file (`uncommitted --auto-fix`) and confirm the edit is still there afterwards. Also run once without the build tool on `PATH` (e.g. no `dotnet`) and confirm nothing is applied (`suggested_only`).
 - **`--sca`:** run once with network available (confirm `scan_source: "osv.dev live"`) and once with network blocked, e.g. `--sca` combined with an unreachable DNS/proxy config (confirm graceful fallback: `scan_source: "static list (offline)"`, no crash, `{msg_sca_unavailable}` printed).
 
 ### Document the test plan in the PR

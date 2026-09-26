@@ -312,7 +312,7 @@ Nhiều pattern trông giống vuln nhưng safe trong context cụ thể. Ví d�
 
 2 flag này mutate file / gọi network — test rõ cả nhánh fail, không chỉ happy path:
 
-- **`--auto-fix`:** chạy trên repo có finding CRITICAL cố tình **không sửa được** (vd fix đúng cần 1 dependency chưa install, nên build luôn fail). Xác nhận: file được revert về nguyên bản sau khi hết retry budget, `patch_status: "failed_verification"`, và working tree sạch (`git diff` rỗng cho file đó).
+- **`--auto-fix`:** chạy trên repo có finding CRITICAL cố tình **không sửa được** (vd fix đúng cần 1 dependency chưa install, nên build luôn fail). Xác nhận: file được revert về nguyên bản sau khi hết retry budget, `patch_status: "failed_verification"`, và working tree sạch (`git diff` rỗng cho file đó). Lặp lại khi file đó đang có thay đổi chưa commit (`uncommitted --auto-fix`) và xác nhận thay đổi đó vẫn còn sau khi chạy. Chạy thêm 1 lần khi không có build tool trong `PATH` (vd không có `dotnet`) và xác nhận không file nào bị sửa (`suggested_only`).
 - **`--sca`:** chạy 1 lần có network (xác nhận `scan_source: "osv.dev live"`) và 1 lần block network, vd kết hợp `--sca` với DNS/proxy không reachable (xác nhận fallback graceful: `scan_source: "static list (offline)"`, không crash, có in `{msg_sca_unavailable}`).
 
 ### Document test plan trong PR

@@ -328,7 +328,7 @@ Chỉ chạy khi `$SCA=true`. Đọc [`references/dependency-scan.md`](reference
 
 ## Step 4c: Auto-fix (optional — `--auto-fix`)
 
-Chỉ chạy khi `$AUTO_FIX=true`, và cần `$IS_GIT_REPO=true` (không có → in `{msg_autofix_needs_git}`, skip). `$SCAN_ROOT` khác `.` → chỉ sinh patch, KHÔNG apply, mọi finding là `suggested_only`. Chạy TRƯỚC Step 5 để `patch_status` kịp vào report. Đọc [`workflows/auto-fix.md`](workflows/auto-fix.md): với mỗi finding CRITICAL/HIGH, harvest context → generate unified diff → `git apply --check` → `git apply` → build verify theo `$PRIMARY_LANG` → revert + retry (tối đa 2 lần) nếu fail.
+Chỉ chạy khi `$AUTO_FIX=true`, và cần `$IS_GIT_REPO=true` (không có → in `{msg_autofix_needs_git}`, skip). `$SCAN_ROOT` khác `.` → chỉ sinh patch, KHÔNG apply, mọi finding là `suggested_only`. Chạy TRƯỚC Step 5 để `patch_status` kịp vào report. Đọc [`workflows/auto-fix.md`](workflows/auto-fix.md): preflight 1 lần (`command -v` build tool + build baseline; thiếu tool hoặc baseline fail → mọi finding `suggested_only`), rồi với mỗi finding CRITICAL/HIGH: harvest context → generate unified diff → `git apply --check` → snapshot file sắp bị ghi → `git apply` → build verify theo `$PRIMARY_LANG` → khôi phục từ snapshot + retry (tối đa 2 lần) nếu fail. KHÔNG revert bằng `git checkout`. Dependency Python luôn `suggested_only`.
 
 ---
 

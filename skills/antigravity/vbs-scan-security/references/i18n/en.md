@@ -182,7 +182,7 @@ Key→text mapping for report output when `lang=en`. SKILL.md and workflows must
 | Key | Text |
 |---|---|
 | `header_autofix_title` | Auto-fix results |
-| `msg_autofix_needs_git` | ⚠️ `--auto-fix` requires a git repository (needed to safely revert on build failure). Skipping auto-fix. |
+| `msg_autofix_needs_git` | ⚠️ `--auto-fix` requires a git repository (patches are checked and applied with `git apply`). Skipping auto-fix. |
 | `msg_autofix_dirty_tree` | ⚠️ Working tree has uncommitted changes outside the scan scope. Recommend committing or backing up before running `--auto-fix`. |
 | `msg_autofix_snapshot_scope` | ℹ️ Scope `commit id`/`pr id` scans a temporary snapshot, not your working tree — auto-fix only writes patch suggestions to `vbsec-reports/patches/` and does not modify any files. |
 | `autofix_status_applied` | Fixed and build verification passed |

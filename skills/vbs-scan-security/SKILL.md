@@ -378,8 +378,10 @@ Chỉ chạy khi `$AUTO_FIX=true`. Chạy **TRƯỚC** khi render report ở Ste
 1. Gate: cần `$IS_GIT_REPO=true`, nếu không → in `{msg_autofix_needs_git}`, skip toàn bộ bước này (report vẫn render bình thường ở Step 5, chỉ thiếu section Auto-fix).
    Nếu `$SCAN_ROOT` khác `.` (scope `commit id`, `pr id`) → chỉ sinh patch, KHÔNG `git apply`/build verify; mọi finding CRITICAL/HIGH là `suggested_only` (xem gate trong workflow).
 2. Chỉ xử lý finding CRITICAL/HIGH (từ cả rule 1-21 và rule 22 nếu có `--sca`).
-3. Với mỗi finding: harvest context → generate unified diff → `git apply --check` → `git apply` → chạy build command theo `$PRIMARY_LANG` → revert + retry (tối đa 2 lần) nếu fail.
-4. Gắn `patch_status` vào từng finding đã xử lý — dùng ở Step 5 khi render JSON + section Auto-fix.
+3. Preflight 1 lần: `command -v` build tool + build baseline. Thiếu tool hoặc baseline fail → không apply gì, mọi finding là `suggested_only`.
+4. Với mỗi finding: harvest context → generate unified diff → `git apply --check` → snapshot các file sắp bị ghi → `git apply` → chạy build command theo `$PRIMARY_LANG` → khôi phục từ snapshot + retry (tối đa 2 lần) nếu fail. KHÔNG revert bằng `git checkout` (mất thay đổi chưa commit của user).
+5. Patch dependency chỉ được ghi manifest + lockfile (npm/Go/Composer/dotnet, xem bảng trong workflow). Dependency Python (`pip`) luôn là `suggested_only`.
+6. Gắn `patch_status` vào từng finding đã xử lý — dùng ở Step 5 khi render JSON + section Auto-fix.
 
 ---
 
