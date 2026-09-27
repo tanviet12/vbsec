@@ -1,198 +1,204 @@
-<div align="center">
+<h1 align="center">vbsec — Quét bảo mật cho code do AI viết</h1>
 
-### 🇬🇧 [Read in English → README.md](README.md)
+<p align="center">Gõ một lệnh trong Claude Code, Codex hoặc Antigravity. Nhận báo cáo lỗ hổng bằng tiếng Việt, kèm cách khai thác và code sửa.<br>Miễn phí · Mã nguồn mở · Không cần API key riêng · Không gửi code đi đâu</p>
 
-</div>
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/gi%E1%BA%A5y%20ph%C3%A9p-MIT-blue" alt="Giấy phép MIT"></a>
+  <a href="https://github.com/tanviet12/vbsec/stargazers"><img src="https://img.shields.io/github/stars/tanviet12/vbsec?style=flat&label=sao&color=2ea44f" alt="Số sao"></a>
+  <img src="https://img.shields.io/badge/Claude%20Code-%E2%9C%93-d97757" alt="Claude Code">
+  <img src="https://img.shields.io/badge/OpenAI%20Codex-%E2%9C%93-black" alt="OpenAI Codex">
+  <img src="https://img.shields.io/badge/Google%20Antigravity-%E2%9C%93-4285f4" alt="Google Antigravity">
+</p>
 
----
+<p align="center">
+  <b><a href="#cài-đặt">Cài đặt</a></b> ·
+  <b><a href="docs/examples/bao-cao-mau.md">Xem báo cáo mẫu</a></b> ·
+  <b><a href="#vbsec-bắt-được-những-lỗi-nào">21 loại lỗi</a></b> ·
+  <b><a href="README.md">English</a></b>
+</p>
 
-# vbsec — Trình quét bảo mật cho mã nguồn
+<p align="center">
+  <a href="docs/examples/bao-cao-mau.md"><img src="docs/images/bao-cao-mau.png" alt="Báo cáo vbsec: kết luận FAIL, bảng lỗi nghiêm trọng, giải thích từng lỗi" width="860"></a><br>
+  <sub>Báo cáo thật khi quét một app Express + React mẫu. Bấm vào ảnh để đọc bản đầy đủ.</sub>
+</p>
 
-Skill agent đa nền tảng, quét bảo mật chuyên sâu và phát hiện hơn 20 lỗ hổng bảo mật phổ biến nhất trong mã nguồn. Chạy native trên **Claude Code**, **OpenAI Codex CLI** và **Google Antigravity**.
+## vbsec làm được gì
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blue)](https://docs.claude.com/claude-code)
-[![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-Skill-black)](https://developers.openai.com/codex/skills)
-[![Google Antigravity](https://img.shields.io/badge/Google%20Antigravity-Skill-orange)](https://antigravity.google/docs/skills)
+- **Tìm lỗ hổng trong code AI viết**: lộ mật khẩu trong code, SQL injection, phân quyền sai, JWT không kiểm chữ ký, CORS mở toang... tổng cộng 21 loại lỗi hay gặp nhất
+- **Giải thích cho người không chuyên bảo mật**: mỗi lỗi có phần vì sao nguy hiểm, hacker khai thác thế nào từng bước, code hiện tại và code sửa lại
+- **Đọc hiểu code, không dò chữ máy móc**: lần theo dữ liệu từ input người dùng tới chỗ nguy hiểm, nên ít báo nhầm hơn công cụ dò mẫu chuỗi
+- **Chuyên sâu 5 ngôn ngữ**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, hiểu framework phổ biến như Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core
+- **Quét đúng phần cần quét**: cả repo, chỉ phần chưa commit, một commit, một pull request, hoặc các commit trong N ngày
+- **Chạy được cả khi chưa có git**: bỏ code AI sinh vào một thư mục rồi quét luôn
+- **Repo lớn vẫn nhanh**: tự chia cho nhiều agent quét song song rồi gộp kết quả
+- **Báo cáo tiếng Việt hoặc tiếng Anh**, lưu thành file trong `vbsec-reports/` để gửi cho người sửa, cuối file có JSON cho CI/CD đọc
 
----
+## Ví dụ: vbsec bắt được gì
 
-## Giới thiệu
+Đoạn code dưới đây chạy đúng chức năng, test tay không thấy lỗi gì. AI viết ra loại code này rất thường xuyên.
 
-Mã nguồn do AI sinh ra hiện chiếm tỷ trọng đáng kể trong các commit mới của ngành phần mềm. Các trợ lý lập trình hiện đại rất giỏi tạo ra mã nguồn *chạy được*, nhưng chúng vẫn thường xuyên xuất ra mã mắc những lỗi bảo mật kinh điển: Hardcoded Secret, SQL Injection, Broken Access Control, Weak Password Hashing, JWT misuse, CORS misconfiguration. Những lỗi này hiếm khi lộ ra trong kiểm thử chức năng — chúng chỉ lộ ra khi đã xảy ra sự cố.
+```typescript
+// src/lib/auth.ts
+const payload = jwt.decode(token);      // chỉ giải mã, KHÔNG kiểm chữ ký
+(req as any).user = payload;
 
-vbsec đưa quy trình rà soát bảo mật cấp production vào trong vòng lặp lập trình với AI. Skill chạy native trên ba nền tảng — gõ `/vbs-scan-security` trong Claude Code, `$vbs-scan-security` (hoặc `/skills`) trong OpenAI Codex CLI, hoặc đơn giản nói *"scan security cho repo này"* với Google Antigravity — và nhận một báo cáo có cấu trúc rõ ràng, bao phủ hơn 20 nhóm lỗ hổng phổ biến. Không gọi API ngoài, không cần cài thêm công cụ, không cần duy trì hạ tầng phụ trợ.
+// src/routes/search.ts
+const rows = await sequelize.query(
+  `SELECT id, name, price FROM products WHERE name LIKE '%${q}%'`   // q lấy từ URL
+);
+```
 
-vbsec đã được chạy thử trên các ứng dụng mã nguồn mở có chủ đích chứa lỗ hổng dùng cho mục đích đào tạo (như OWASP Juice Shop) — và phát hiện được các lỗ hổng tương ứng với những challenge đã được tài liệu hoá: SQL Injection, NoSQL Injection, JWT misuse, Broken Access Control, Mass Assignment, RCE qua deserialization, và nhiều nhóm khác.
+vbsec báo 2 lỗi **NGHIÊM TRỌNG**:
 
-Bộ quy tắc chung áp dụng cho mọi ngôn ngữ lập trình. Các quy tắc chuyên sâu theo ngôn ngữ hiện có cho Go, PHP, TypeScript/JavaScript, Python và .NET/C#, bao phủ các framework phổ biến: React, Vue, Angular, Express, NestJS, Next.js, Django, Flask, FastAPI, SQLAlchemy, Sequelize, Prisma, Mongoose, ASP.NET Core, EF Core, Newtonsoft.Json. Các ngôn ngữ khác đang nằm trong lộ trình phát triển.
+| Lỗi | Hậu quả | Cách sửa vbsec đưa ra |
+|---|---|---|
+| `JWT-NONE-ALGORITHM` | Ai cũng tự tạo được token `role: "admin"` mà không cần khoá bí mật | Dùng `jwt.verify(token, secret, { algorithms: ["HS256"] })` |
+| `SQL-INJECTION` | Gõ `' UNION SELECT email, password_hash...` vào ô tìm kiếm là lấy được cả bảng user | Dùng tham số `replacements: { q: \`%${q}%\` }` thay vì nối chuỗi |
 
-## Tác giả
+Đọc [báo cáo mẫu đầy đủ](docs/examples/bao-cao-mau.md) để xem cách vbsec giải thích từng lỗi.
 
-- **Bùi Tấn Việt** — CEO, [SePay](https://sepay.vn) & [123HOST](https://123host.vn)
-- **Phan Quốc Hiên** — CTO, [SePay](https://sepay.vn) & [123HOST](https://123host.vn)
+## Kết quả thử nghiệm
 
-## Cách thức hoạt động
+Repo có sẵn 8 bộ code mẫu cài lỗi biết trước (Go, PHP, TypeScript, Python, .NET, gồm cả câu khó: dữ liệu đi qua nhiều file, hàm làm sạch viết sai, race condition khi trừ số dư). Mỗi bộ có thêm bẫy trông giống lỗi nhưng an toàn, để đo báo nhầm.
 
-vbsec được thiết kế xoay quanh một số quyết định kỹ thuật giúp phân biệt nó với các scanner truyền thống chỉ đếm pattern (mẫu chuỗi).
+| | Kết quả lần chạy gần nhất |
+|---|---|
+| Bắt được | **54/55** lỗi cài sẵn |
+| Báo nhầm bẫy an toàn | **0** |
 
-- **Suy luận trước, không chỉ đếm pattern.** vbsec không grep máy móc các chuỗi như `eval(` hay `query(`. Mỗi finding tiềm năng đều được xác minh bằng cách đọc context xung quanh, lần theo luồng dữ liệu (từ L1 — input không tin cậy từ phía người dùng — đến L4 — dữ liệu hệ thống đáng tin), và xác nhận dữ liệu thật sự đi tới một sink nguy hiểm mà không được sanitize. Cách tiếp cận này loại bỏ hiện tượng "báo nhầm" (false positive) tràn lan đặc trưng của các scanner dựa trên regex.
-
-- **Định tuyến theo quy mô.** Phạm vi quét nhỏ (≤20 file ngôn ngữ chính VÀ ≤30 file tổng) được quét trực tiếp trong 30-60 giây. Phạm vi lớn hơn được tự động uỷ quyền cho các sub-agent chạy song song — mỗi sub-agent phụ trách một thư mục cấp một — rồi tổng hợp kết quả tại một điểm trung tâm. Trải nghiệm người dùng không đổi, chỉ có chiến lược thực thi bên trong thay đổi.
-
-- **Uỷ quyền sub-agent cho repo lớn.** Với repo hàng trăm file, vbsec khởi tạo tối đa 3 sub-agent chạy song song thông qua general-purpose agent của Claude Code. Mỗi sub-agent quét một phần file độc lập, và các finding được khử trùng lặp và tổng hợp theo bộ ba `(file, dòng, mã quy tắc)`. Cách này giúp thời gian thực thi có giới hạn ngay cả trên monorepo.
-
-- **Hệ thống quy tắc chuyên sâu theo ngôn ngữ.** Khi vbsec phát hiện ngôn ngữ chính của mã nguồn, nó tự động nạp các quy tắc chuyên sâu cho ngôn ngữ đó để thay thế quy tắc chung. Cơ chế này bắt được những pattern đặc thù của từng framework: NoSQL Injection qua `$where` của Mongoose, XSS qua `bypassSecurityTrustHtml` của Angular, SQL Injection qua template literal của Sequelize, JWT algorithm confusion, Gin debug mode bật trong bản production.
-
-- **Phân loại luồng dữ liệu L1–L4.** Input được phân loại theo mức độ tin cậy. Một câu lệnh `db.query(\`SELECT ${x}\`)` chỉ được báo là lỗi khi `x` xuất phát từ L1 (input do người dùng kiểm soát) và đi tới sink SQL mà không qua tham số hoá. Hằng số, biến môi trường và dữ liệu từ nguồn tin cậy không tạo ra false positive.
-
-- **Một finding, một quy tắc.** Một dòng mã đồng thời vi phạm hai quy tắc (ví dụ IDOR và Race Condition) sẽ tạo ra hai finding riêng biệt — không bao giờ là một finding gắn nhiều mã quy tắc cách nhau bằng dấu phẩy. Quy ước này giữ cho số liệu trung thực, báo cáo có thể kiểm chứng, và phần tóm tắt JSON ở cuối báo cáo có thể đọc được bằng máy.
-
-- **Báo cáo song ngữ.** Tiếng Việt là mặc định; tiếng Anh được chọn bằng `lang=en`. Phần tóm tắt JSON ở cuối báo cáo luôn ở tiếng Anh chuẩn để phục vụ tích hợp với hệ thống CI/CD.
-
-- **Đa nền tảng.** Một bộ rule canonical, ba bản platform variant. Claude Code dùng sub-agent song song cho scan lớn; Codex và Antigravity dùng sequential chunking với output identical. Script `sync-skills.sh` giữ rule đồng bộ trên cả ba.
-
-## Hỗ trợ đa nền tảng
-
-vbsec ship ba bản variant từ một nguồn duy nhất:
-
-| Nền tảng | Folder skill | Vị trí cài đặt | Chiến lược LARGE mode |
-|---|---|---|---|
-| Claude Code | `skills/vbs-scan-security/` | `~/.claude/skills/vbs-scan-security` | Sub-agent song song (3 concurrent) |
-| OpenAI Codex CLI | `skills/codex/vbs-scan-security/` | `~/.agents/skills/vbs-scan-security` | Sequential chunking |
-| Google Antigravity | `skills/antigravity/vbs-scan-security/` | `~/.gemini/antigravity/skills/vbs-scan-security` | Sequential chunking |
-
-Cả ba chia sẻ cùng 21 rule, language overlay, chuỗi i18n và format output. Findings identical; chỉ chiến lược thực thi khác. Sequential variant chậm hơn ~3× wall-clock so với parallel mode của Claude Code trên repo lớn, nhưng tạo ra cùng JSON summary và cùng báo cáo Markdown.
-
-Người contribute: sửa rule trong `skills/vbs-scan-security/` (folder canonical của Claude), rồi chạy `./scripts/sync-skills.sh` để propagate sang Codex và Antigravity. File platform-specific (`SKILL.md`, `workflows/large-review*.md`) maintain riêng từng platform.
+Kết quả của AI có thể khác nhau giữa các lần chạy. Tự chạy lại bằng `./scripts/run-fixtures.sh` (xem [`tests/README.md`](tests/README.md)). vbsec cũng đã được thử trên OWASP Juice Shop và bắt được các nhóm lỗi tương ứng với challenge của Juice Shop.
 
 ## Cài đặt
 
-vbsec tự động detect mọi platform hỗ trợ có sẵn trên máy và cấu hình skill. Chạy:
+Cần một trong ba: [Claude Code](https://docs.claude.com/claude-code), [OpenAI Codex CLI](https://developers.openai.com/codex), [Google Antigravity](https://antigravity.google).
 
 ```bash
 git clone https://github.com/tanviet12/vbsec ~/vbsec
-cd ~/vbsec
-./scripts/install.sh         # auto-detect, cài cho platform có sẵn
-./scripts/install.sh --all   # ép cài cho cả 3 platform bất kể detection
+~/vbsec/scripts/install.sh
 ```
 
-Cách detect:
-- **Claude Code** — binary `claude` trong PATH
-- **OpenAI Codex CLI** — binary `codex` trong PATH
-- **Google Antigravity** — app tại `/Applications/Antigravity.app` (macOS) HOẶC CLI tool `agy` trong PATH (cài qua menu trong Antigravity IDE)
+Script tự nhận ra máy đang có công cụ nào và cài skill cho công cụ đó. Cập nhật bản mới: `cd ~/vbsec && git pull`.
 
-Antigravity là IDE (như VS Code), không phải CLI. Với user mới chưa cài Antigravity skill nào, folder `~/.gemini/antigravity/skills/` không tồn tại — installer sẽ tự tạo.
-
-Installer symlink folder skill phù hợp vào vị trí của từng platform. Để cập nhật về sau:
-
-```bash
-cd ~/vbsec && git pull
-```
-
-(Symlink tự load phiên bản mới; khởi động lại CLI/IDE nếu cần.)
-
-**Cài thủ công cho 1 platform:**
-
-```bash
-# Claude Code
-ln -sfn ~/vbsec/skills/vbs-scan-security              ~/.claude/skills/vbs-scan-security
-
-# OpenAI Codex CLI
-ln -sfn ~/vbsec/skills/codex/vbs-scan-security        ~/.agents/skills/vbs-scan-security
-
-# Google Antigravity
-ln -sfn ~/vbsec/skills/antigravity/vbs-scan-security  ~/.gemini/antigravity/skills/vbs-scan-security
-```
-
-Verify trên từng platform:
-
-```
-Claude Code:   /vbs-scan-security
-Codex:         $vbs-scan-security        (hoặc /skills, rồi chọn)
-Antigravity:   "scan security cho repo này"  (auto-trigger qua description)
-```
-
-Xem [docs/vi/installation.md](docs/vi/installation.md) để biết yêu cầu chi tiết, xử lý sự cố và quy trình cập nhật.
+Cài thủ công, cài cho một công cụ cụ thể, xử lý sự cố: [docs/vi/installation.md](docs/vi/installation.md).
 
 ## Sử dụng
 
-Phạm vi mặc định là toàn bộ folder. Đây là thay đổi có chủ đích so với các phiên bản trước và phản ánh đúng cách các đội ngũ thường yêu cầu một đợt rà soát bảo mật.
+| Công cụ | Cách gọi |
+|---|---|
+| Claude Code | `/vbs-scan-security` |
+| OpenAI Codex CLI | `$vbs-scan-security` |
+| Google Antigravity | nói "scan security cho repo này" |
 
 ```bash
-/vbs-scan-security                       # quét toàn bộ folder (mặc định)
-/vbs-scan-security uncommitted           # chỉ quét thay đổi chưa commit
-/vbs-scan-security pr id 42 lang=en      # quét PR số 42, báo cáo tiếng Anh
-/vbs-scan-security commit within 7days   # quét các commit trong 7 ngày gần nhất
+/vbs-scan-security                       # quét cả thư mục (mặc định)
+/vbs-scan-security uncommitted           # chỉ phần chưa commit, nên chạy trước mỗi lần commit
+/vbs-scan-security pr id 42              # quét pull request số 42
+/vbs-scan-security commit within 7days   # các commit trong 7 ngày gần nhất
+/vbs-scan-security lang=en               # báo cáo tiếng Anh
 ```
 
-**Chạy được mà không cần git.** Vibe coder thường không `git init` trước khi paste code AI sinh vào folder. Scope mặc định (`/vbs-scan-security`) sẽ walk filesystem trực tiếp khi không có `.git/` — các folder build/vendored thông dụng được loại tự động. Các scope phụ thuộc git (`uncommitted`, `staged`, `commit within`, `commit id`, `pr id`) vẫn cần git repository và sẽ in message gợi ý dùng scope mặc định hoặc init git.
+Báo cáo lưu ở `vbsec-reports/scan-<thời gian>.md` trong thư mục được quét. Nên thêm `vbsec-reports/` vào `.gitignore`, vbsec sẽ nhắc nếu chưa có.
 
-Báo cáo được lưu tại `vbsec-reports/scan-<timestamp>.md` trong chính folder được quét, phục vụ việc đọc lại, chia sẻ với reviewer và đính kèm vào ticket khắc phục.
+Mọi tuỳ chọn: [docs/vi/usage.md](docs/vi/usage.md).
 
-Xem [docs/vi/usage.md](docs/vi/usage.md) để biết toàn bộ tuỳ chọn, bao gồm `staged`, quét theo commit cụ thể, và quét pull request qua `gh`.
+## vbsec bắt được những lỗi nào
 
-## Các lỗ hổng vbsec phát hiện
+| Nhóm | Lỗi |
+|---|---|
+| Lộ bí mật, cấu hình | `HARDCODED-SECRET` · `VERBOSE-ERROR-DEBUG-MODE` · `CORS-MISCONFIG` |
+| Chèn lệnh | `SQL-INJECTION` · `COMMAND-INJECTION` · `XSS` · `INSECURE-DESERIALIZATION` · `SSRF` · `PATH-TRAVERSAL` |
+| Đăng nhập, phân quyền | `BROKEN-ACCESS-CONTROL` · `IDOR` · `MASS-ASSIGNMENT` · `JWT-NONE-ALGORITHM` · `WEAK-PASSWORD-HASHING` · `CSRF` |
+| Chống lạm dụng | `BRUTE-FORCE` · `MISSING-RATE-LIMIT` · `RACE-CONDITION` · `UNRESTRICTED-FILE-UPLOAD` |
+| Thư viện | `OUTDATED-DEPENDENCY` · `SLOPSQUATTING` (package AI bịa tên, hacker đăng ký trước) |
 
-| # | Mã quy tắc | Mức độ cao nhất | Có quy tắc chuyên sâu cho |
-|---|---|---|---|
-| 1 | `HARDCODED-SECRET` | NGHIÊM TRỌNG | — |
-| 2 | `SQL-INJECTION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
-| 3 | `XSS` | CAO | typescript |
-| 4 | `IDOR` | CAO | — |
-| 5 | `SLOPSQUATTING` | NGHIÊM TRỌNG | — |
-| 6 | `BRUTE-FORCE` | CAO | — |
-| 7 | `MASS-ASSIGNMENT` | NGHIÊM TRỌNG | typescript, python, dotnet |
-| 8 | `INSECURE-DESERIALIZATION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
-| 9 | `SSRF` | CAO | go, typescript, python |
-| 10 | `PATH-TRAVERSAL` | CAO | — |
-| 11 | `CSRF` | CAO | php, typescript, python |
-| 12 | `BROKEN-ACCESS-CONTROL` | NGHIÊM TRỌNG | — |
-| 13 | `WEAK-PASSWORD-HASHING` | NGHIÊM TRỌNG | — |
-| 14 | `JWT-NONE-ALGORITHM` | NGHIÊM TRỌNG | typescript, python |
-| 15 | `CORS-MISCONFIG` | CAO | typescript, python |
-| 16 | `UNRESTRICTED-FILE-UPLOAD` | NGHIÊM TRỌNG | — |
-| 17 | `VERBOSE-ERROR-DEBUG-MODE` | CAO | go, php, typescript, python |
-| 18 | `MISSING-RATE-LIMIT` | CAO | — |
-| 19 | `RACE-CONDITION` | CAO | — |
-| 20 | `OUTDATED-DEPENDENCY` | CAO | — |
-| 21 | `COMMAND-INJECTION` | NGHIÊM TRỌNG | go, php, typescript, python, dotnet |
+Mức độ, ví dụ code lỗi và code an toàn, ngôn ngữ nào có luật chuyên sâu: [docs/vi/rules.md](docs/vi/rules.md).
 
-Danh sách hiện tại có 21 quy tắc và sẽ tiếp tục mở rộng.
+## Giới hạn
 
-## Tài liệu
+vbsec là lớp phòng thủ đầu tiên, không phải bằng chứng hệ thống an toàn.
 
-- [Cài đặt](docs/vi/installation.md)
-- [Hướng dẫn sử dụng](docs/vi/usage.md)
-- [Danh mục quy tắc đầy đủ](docs/vi/rules.md)
-- [Đóng góp](docs/vi/contributing.md)
+- Không thay thế đợt kiểm tra bảo mật do chuyên gia làm
+- Không đảm bảo bắt được 100% lỗ hổng
+- Không tra cơ sở dữ liệu CVE trực tuyến. Kiểm tra thư viện có lỗ hổng bằng `npm audit`, `pip-audit`, `govulncheck`, `composer audit`
 
-Repo luôn chào đón đóng góp: báo lỗi, sửa rule, thêm chuyên sâu cho ngôn ngữ mới qua issue hoặc pull request.
+## Gắn badge cho repo của bạn
 
-## Lộ trình
+Đã quét bằng vbsec và sửa hết lỗi? Gắn badge này vào README:
 
-- v0.1 — Bộ quy tắc chung + chuyên sâu Go + PHP + báo cáo song ngữ ✅
-- v0.2 — Chuyên sâu TypeScript/JavaScript (Sequelize/Prisma/Mongoose, React/Vue/Angular, Express/NestJS/Next.js) ✅
-- v0.3 — Phạm vi mặc định chuyển sang toàn repo, lưu báo cáo cố định, giải thích chi tiết cho từng finding ✅
-- v0.4 — Chuyên sâu Python (SQLAlchemy/Django ORM SQLi, pickle/yaml deserialization RCE, Werkzeug debugger, FastAPI/Flask/Django CSRF + CORS, PyJWT algorithms, subprocess shell=True) ✅
-- v0.5 (hiện tại) — Hỗ trợ đa nền tảng: OpenAI Codex CLI + Google Antigravity (sequential LARGE mode, chia sẻ bộ rule, `install.sh` + `sync-skills.sh`) ✅
-- Chuyên sâu .NET/C# (EF Core raw SQL, ASP.NET Core model binding, deserialization Newtonsoft.Json/formatter cũ, Process.Start) ✅
-- v0.6+ — Ruby, Java, Rust — theo nhu cầu cộng đồng
+[![vbsec: đã quét bảo mật · đạt](https://img.shields.io/badge/vbsec-%C4%91%C3%A3%20qu%C3%A9t%20b%E1%BA%A3o%20m%E1%BA%ADt%20%C2%B7%20%C4%91%E1%BA%A1t-2ea44f)](https://github.com/tanviet12/vbsec)
 
-## Miễn trừ trách nhiệm
+```markdown
+[![vbsec: đã quét bảo mật · đạt](https://img.shields.io/badge/vbsec-%C4%91%C3%A3%20qu%C3%A9t%20b%E1%BA%A3o%20m%E1%BA%ADt%20%C2%B7%20%C4%91%E1%BA%A1t-2ea44f)](https://github.com/tanviet12/vbsec)
+```
 
-vbsec là một trình quét tham khảo. Skill bắt được những lỗi phổ biến trong mã nguồn do AI sinh ra, nhưng:
+Dự án đang dùng: [Sano](https://github.com/tanviet12/sano-sach-noi).
 
-- KHÔNG thay thế cho một đợt rà soát bảo mật chuyên nghiệp do chuyên gia thực hiện
-- KHÔNG đảm bảo phát hiện 100% lỗ hổng
-- KHÔNG tải dữ liệu CVE trực tuyến (cần chạy `npm audit` / `pip-audit` / `govulncheck` riêng cho mục đích này)
+## Đơn vị tài trợ
 
-Hãy dùng vbsec như **lớp phòng thủ đầu tiên**, không phải bằng chứng về tính an toàn của hệ thống.
+vbsec miễn phí và mã nguồn mở nhờ sự tài trợ của:
 
-## Giấy phép & Ghi nhận
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://sepay.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec"><img src="docs/images/sponsor-sepay.svg" alt="SePay" height="44"></a><br>
+      <b><a href="https://sepay.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec">SePay</a></b><br>
+      Nền tảng Open Banking: tự động xác nhận thanh toán chuyển khoản, kết nối API với các ngân hàng Việt Nam
+    </td>
+    <td align="center" width="50%">
+      <a href="https://123host.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec"><img src="docs/images/sponsor-123host.svg" alt="123HOST" height="44"></a><br>
+      <b><a href="https://123host.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec">123HOST</a></b><br>
+      Hosting, VPS, máy chủ và tên miền cho doanh nghiệp, nhà phát triển Việt Nam
+    </td>
+  </tr>
+</table>
 
-Phát hành theo [MIT License](LICENSE).
+## Tác giả
 
-Được xây dựng trên kinh nghiệm bảo mật của [SePay](https://sepay.vn) và [123HOST](https://123host.vn) — hai doanh nghiệp Việt Nam trong lĩnh vực fintech và hosting, vận hành hệ thống production dưới các điều kiện đe doạ thực tế.
+- **[Bùi Tấn Việt](https://www.facebook.com/buitanviet)** — CEO [SePay](https://sepay.vn) và [123HOST](https://123host.vn)
+- **Phan Quốc Hiên** — CTO [SePay](https://sepay.vn) và [123HOST](https://123host.vn)
 
-© 2026 Bùi Tấn Việt & Phan Quốc Hiên.
+vbsec gom kinh nghiệm bảo mật khi vận hành hệ thống thanh toán và hosting thật, nơi bị tấn công hằng ngày, thành một bộ luật để AI tự rà code do chính AI viết.
+
+Dự án mã nguồn mở khác:
+
+- **[Sano](https://github.com/tanviet12/sano-sach-noi)** — tạo sách nói bằng AI từ file Word, giọng đọc tiếng Việt chạy ngay trên máy
+- **[Chat Quality Agent](https://github.com/tanviet12/chat-quality-agent)** — dùng AI chấm chất lượng chăm sóc khách hàng qua Zalo OA, Facebook Messenger
+
+## Dành cho người đóng góp
+
+Mọi đóng góp đều được chào đón: báo lỗi, sửa luật, thêm ngôn ngữ mới. Đọc [docs/vi/contributing.md](docs/vi/contributing.md).
+
+### Cách vbsec hoạt động
+
+1. **Chọn file** theo phạm vi quét, bỏ thư mục build, vendor, `node_modules`.
+2. **Nhận diện ngôn ngữ chính**, nạp luật chung cộng luật chuyên sâu của ngôn ngữ đó (luật chuyên sâu thay luật chung cùng tên).
+3. **Chọn chế độ**: ít file (≤20 file ngôn ngữ chính và ≤30 file tổng) thì quét trực tiếp; nhiều hơn thì chia cho tối đa 3 agent song song.
+4. **Xác minh từng nghi vấn**: lần theo dữ liệu, phân loại nguồn từ L1 (input người dùng) tới L4 (dữ liệu hệ thống tin cậy). Chỉ báo lỗi khi dữ liệu không tin cậy tới được chỗ nguy hiểm mà chưa được làm sạch.
+5. **Ghi báo cáo**: mỗi lỗi một luật, không gộp; JSON cuối báo cáo được kiểm bằng `validate-report.py`.
+
+### Ba nền tảng, một bộ luật
+
+| Nền tảng | Thư mục skill | Repo lớn |
+|---|---|---|
+| Claude Code | `skills/vbs-scan-security/` (bản gốc) | 3 agent song song |
+| OpenAI Codex CLI | `skills/codex/vbs-scan-security/` | Quét lần lượt từng phần |
+| Google Antigravity | `skills/antigravity/vbs-scan-security/` | Quét lần lượt từng phần |
+
+Sửa luật ở bản gốc `skills/vbs-scan-security/`, rồi chạy `./scripts/sync-skills.sh` để chép sang hai bản còn lại. `SKILL.md` và `workflows/large-review*.md` viết riêng cho từng nền tảng.
+
+### Kiểm tra trước khi gửi PR
+
+```bash
+./scripts/sync-skills.sh               # đồng bộ 3 bản skill
+./scripts/run-fixtures.sh typescript   # quét bộ mẫu và chấm điểm (tốn token, chạy ngôn ngữ mình sửa)
+```
+
+### Lộ trình
+
+- Đã có: luật chung, chuyên sâu Go, PHP, TypeScript/JavaScript, Python, .NET/C#; ba nền tảng; quét không cần git
+- Đang làm: tra CVE trực tuyến qua OSV.dev (`--sca`), tự sửa lỗi và kiểm build (`--auto-fix`)
+- Tiếp theo: Ruby, Java, Rust theo nhu cầu cộng đồng
+
+## Giấy phép
+
+[MIT](./LICENSE) · © 2026 Bùi Tấn Việt & Phan Quốc Hiên
