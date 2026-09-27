@@ -1,6 +1,6 @@
 <h1 align="center">vbsec — Quét bảo mật cho code do AI viết</h1>
 
-<p align="center">Gõ một lệnh trong Claude Code, Codex hoặc Antigravity. Nhận báo cáo lỗ hổng bằng tiếng Việt, kèm cách khai thác và code sửa.<br>Miễn phí · Mã nguồn mở · Không cần API key riêng · Không gửi code đi đâu</p>
+<p align="center">Gõ một lệnh trong Claude Code, Codex hoặc Antigravity. Nhận báo cáo lỗ hổng bằng tiếng Việt, kèm cách khai thác và code sửa.<br>Miễn phí · Mã nguồn mở · Không cài thêm phần mềm</p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/gi%E1%BA%A5y%20ph%C3%A9p-MIT-blue" alt="Giấy phép MIT"></a>
