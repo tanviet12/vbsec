@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/examples/bao-cao-mau.md"><img src="docs/images/bao-cao-mau.png" alt="Báo cáo vbsec: kết luận FAIL, bảng lỗi nghiêm trọng, giải thích từng lỗi" width="860"></a><br>
+  <a href="docs/examples/bao-cao-mau.md"><img src="docs/images/bao-cao-mau.png" alt="Báo cáo vbsec: kết luận KHÔNG ĐẠT, bảng 6 lỗi nghiêm trọng" width="760"></a><br>
   <sub>Báo cáo thật khi quét một app Express + React mẫu. Bấm vào ảnh để đọc bản đầy đủ.</sub>
 </p>
 
