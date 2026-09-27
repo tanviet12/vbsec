@@ -68,6 +68,22 @@ Repo có sẵn 8 bộ code mẫu cài lỗi biết trước (Go, PHP, TypeScript
 
 Kết quả của AI có thể khác nhau giữa các lần chạy. Tự chạy lại bằng `./scripts/run-fixtures.sh` (xem [`tests/README.md`](tests/README.md)). vbsec cũng đã được thử trên OWASP Juice Shop và bắt được các nhóm lỗi tương ứng với challenge của Juice Shop.
 
+## Cách vbsec hoạt động
+
+- **Suy luận, không dò chữ máy móc.** vbsec không báo lỗi chỉ vì thấy `eval(` hay `query(`. Mỗi nghi vấn đều được xác minh: đọc code xung quanh, lần theo dữ liệu đi từ đâu tới đâu, và chỉ báo lỗi khi dữ liệu không tin cậy tới được chỗ nguy hiểm mà chưa được làm sạch. Nhờ vậy ít báo nhầm hơn các công cụ dò mẫu chuỗi bằng regex.
+
+- **Phân loại dữ liệu theo 4 mức tin cậy (L1–L4).** L1 là input người dùng kiểm soát được, L4 là dữ liệu hệ thống đáng tin. Câu `db.query(\`SELECT ${x}\`)` chỉ bị báo khi `x` đến từ L1 và đi thẳng vào SQL mà không dùng tham số. Hằng số, biến môi trường, dữ liệu từ nguồn tin cậy không bị báo nhầm.
+
+- **Luật chuyên sâu theo ngôn ngữ.** Khi nhận ra ngôn ngữ chính của repo, vbsec nạp thêm luật riêng cho ngôn ngữ đó, thay cho luật chung cùng tên. Nhờ vậy bắt được lỗi đặc thù của từng framework: NoSQL injection qua `$where` của Mongoose, XSS qua `bypassSecurityTrustHtml` của Angular, SQL injection qua template literal của Sequelize, JWT algorithm confusion, Gin debug mode bật ở production.
+
+- **Tự chọn cách quét theo quy mô.** Phạm vi nhỏ (≤20 file ngôn ngữ chính và ≤30 file tổng) quét trực tiếp trong 30–60 giây. Phạm vi lớn hơn tự chia cho tối đa 3 agent chạy song song, mỗi agent một phần repo, rồi gộp kết quả và bỏ trùng theo `(file, dòng, mã lỗi)`. Monorepo hàng trăm file vẫn quét xong trong thời gian có giới hạn.
+
+- **Mỗi lỗi một mã.** Một dòng code vừa dính IDOR vừa dính race condition sẽ thành 2 lỗi riêng, không gộp chung một dòng có nhiều mã. Số liệu trung thực, báo cáo kiểm chứng được, và JSON cuối báo cáo máy đọc được.
+
+- **Báo cáo song ngữ.** Mặc định tiếng Việt, thêm `lang=en` để ra tiếng Anh. JSON cuối báo cáo luôn bằng tiếng Anh để tích hợp CI/CD.
+
+- **Ba nền tảng, một bộ luật.** Claude Code dùng agent song song cho repo lớn; Codex và Antigravity quét lần lượt từng phần, cho ra cùng kết quả. Script `sync-skills.sh` giữ luật đồng bộ trên cả ba.
+
 ## Cài đặt
 
 Cần một trong ba: [Claude Code](https://docs.claude.com/claude-code), [OpenAI Codex CLI](https://developers.openai.com/codex), [Google Antigravity](https://antigravity.google).
@@ -165,14 +181,6 @@ Dự án mã nguồn mở khác:
 ## Dành cho người đóng góp
 
 Mọi đóng góp đều được chào đón: báo lỗi, sửa luật, thêm ngôn ngữ mới. Đọc [docs/vi/contributing.md](docs/vi/contributing.md).
-
-### Cách vbsec hoạt động
-
-1. **Chọn file** theo phạm vi quét, bỏ thư mục build, vendor, `node_modules`.
-2. **Nhận diện ngôn ngữ chính**, nạp luật chung cộng luật chuyên sâu của ngôn ngữ đó (luật chuyên sâu thay luật chung cùng tên).
-3. **Chọn chế độ**: ít file (≤20 file ngôn ngữ chính và ≤30 file tổng) thì quét trực tiếp; nhiều hơn thì chia cho tối đa 3 agent song song.
-4. **Xác minh từng nghi vấn**: lần theo dữ liệu, phân loại nguồn từ L1 (input người dùng) tới L4 (dữ liệu hệ thống tin cậy). Chỉ báo lỗi khi dữ liệu không tin cậy tới được chỗ nguy hiểm mà chưa được làm sạch.
-5. **Ghi báo cáo**: mỗi lỗi một luật, không gộp; JSON cuối báo cáo được kiểm bằng `validate-report.py`.
 
 ### Ba nền tảng, một bộ luật
 
