@@ -53,7 +53,7 @@ vbsec báo 2 lỗi **NGHIÊM TRỌNG**:
 | Lỗi | Hậu quả | Cách sửa vbsec đưa ra |
 |---|---|---|
 | `JWT-NONE-ALGORITHM` | Ai cũng tự tạo được token `role: "admin"` mà không cần khoá bí mật | Dùng `jwt.verify(token, secret, { algorithms: ["HS256"] })` |
-| `SQL-INJECTION` | Gõ `' UNION SELECT email, password_hash...` vào ô tìm kiếm là lấy được cả bảng user | Dùng tham số `replacements: { q: \`%${q}%\` }` thay vì nối chuỗi |
+| `SQL-INJECTION` | Gõ `' UNION SELECT email, password_hash...` vào ô tìm kiếm là lấy được cả bảng user | Dùng tham số `` replacements: { q: `%${q}%` } `` thay vì nối chuỗi |
 
 Đọc [báo cáo mẫu đầy đủ](docs/examples/bao-cao-mau.md) để xem cách vbsec giải thích từng lỗi.
 
