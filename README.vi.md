@@ -70,19 +70,28 @@ Kết quả của AI có thể khác nhau giữa các lần chạy. Tự chạy 
 
 ## Cách vbsec hoạt động
 
-- **Suy luận, không dò chữ máy móc.** vbsec không báo lỗi chỉ vì thấy `eval(` hay `query(`. Mỗi nghi vấn đều được xác minh: đọc code xung quanh, lần theo dữ liệu đi từ đâu tới đâu, và chỉ báo lỗi khi dữ liệu không tin cậy tới được chỗ nguy hiểm mà chưa được làm sạch. Nhờ vậy ít báo nhầm hơn các công cụ dò mẫu chuỗi bằng regex.
+**Đọc code như người review, không dò chữ.** Nhiều công cụ quét cứ thấy chữ `query(` là báo "có thể bị SQL injection", nên báo nhầm rất nhiều, đọc một lúc là chán. vbsec thì đọc đoạn code đó, xem dữ liệu đưa vào lấy từ đâu, rồi mới kết luận.
 
-- **Phân loại dữ liệu theo 4 mức tin cậy (L1–L4).** L1 là input người dùng kiểm soát được, L4 là dữ liệu hệ thống đáng tin. Câu `` db.query(`SELECT ${x}`) `` chỉ bị báo khi `x` đến từ L1 và đi thẳng vào SQL mà không dùng tham số. Hằng số, biến môi trường, dữ liệu từ nguồn tin cậy không bị báo nhầm.
+Ví dụ với cùng một câu lệnh:
 
-- **Luật chuyên sâu theo ngôn ngữ.** Khi nhận ra ngôn ngữ chính của repo, vbsec nạp thêm luật riêng cho ngôn ngữ đó, thay cho luật chung cùng tên. Nhờ vậy bắt được lỗi đặc thù của từng framework: NoSQL injection qua `$where` của Mongoose, XSS qua `bypassSecurityTrustHtml` của Angular, SQL injection qua template literal của Sequelize, JWT algorithm confusion, Gin debug mode bật ở production.
+```typescript
+db.query(`SELECT * FROM products WHERE name = '${x}'`)
+```
 
-- **Tự chọn cách quét theo quy mô.** Phạm vi nhỏ (≤20 file ngôn ngữ chính và ≤30 file tổng) quét trực tiếp trong 30–60 giây. Phạm vi lớn hơn tự chia cho tối đa 3 agent chạy song song, mỗi agent một phần repo, rồi gộp kết quả và bỏ trùng theo `(file, dòng, mã lỗi)`. Monorepo hàng trăm file vẫn quét xong trong thời gian có giới hạn.
+- Nếu `x` lấy từ ô tìm kiếm người dùng gõ vào (`req.query.q`): **báo lỗi**, vì ai cũng gõ được câu SQL độc vào đó.
+- Nếu `x` là hằng số trong code hoặc giá trị trong file cấu hình: **không báo**, vì người ngoài không đổi được.
 
-- **Mỗi lỗi một mã.** Một dòng code vừa dính IDOR vừa dính race condition sẽ thành 2 lỗi riêng, không gộp chung một dòng có nhiều mã. Số liệu trung thực, báo cáo kiểm chứng được, và JSON cuối báo cáo máy đọc được.
+Để phân biệt, vbsec chia dữ liệu thành 4 mức, từ "người lạ gửi lên" (form, URL, header, file upload) tới "hệ thống tự tạo" (hằng số, biến môi trường). Chỉ dữ liệu từ người lạ, đi tới chỗ nguy hiểm mà chưa được lọc, mới bị báo.
 
-- **Báo cáo song ngữ.** Mặc định tiếng Việt, thêm `lang=en` để ra tiếng Anh. JSON cuối báo cáo luôn bằng tiếng Anh để tích hợp CI/CD.
+**Hiểu từng ngôn ngữ và framework.** Ngoài bộ luật chung, vbsec có luật riêng cho Go, PHP, TypeScript/JavaScript, Python và .NET. Nhờ vậy nó biết những cái bẫy riêng của từng thư viện. Ví dụ `Prisma.sql` là an toàn nhưng `$queryRawUnsafe` thì không, `bypassSecurityTrustHtml` trong Angular tắt luôn lớp chống XSS, Gin quên tắt debug mode khi chạy thật.
 
-- **Ba nền tảng, một bộ luật.** Claude Code dùng agent song song cho repo lớn; Codex và Antigravity quét lần lượt từng phần, cho ra cùng kết quả. Script `sync-skills.sh` giữ luật đồng bộ trên cả ba.
+**Repo nhỏ quét ngay, repo lớn chia việc.** Dưới khoảng 20 file code, vbsec quét trực tiếp, mất chừng 30–60 giây. Repo lớn hơn thì chia thành nhiều phần cho tối đa 3 agent quét song song, xong gộp kết quả lại và bỏ lỗi trùng.
+
+**Mỗi lỗi một dòng riêng.** Một dòng code dính 2 lỗi (vd vừa xem được dữ liệu người khác, vừa bị race condition) sẽ hiện thành 2 lỗi riêng. Đếm số lỗi không bị sai, và từng lỗi sửa xong đánh dấu được.
+
+**Báo cáo tiếng Việt hoặc tiếng Anh.** Mặc định tiếng Việt, thêm `lang=en` để ra tiếng Anh. Cuối báo cáo có một đoạn JSON cố định bằng tiếng Anh, để hệ thống CI/CD đọc và chặn merge khi còn lỗi nghiêm trọng.
+
+**Cùng một bộ luật trên cả ba công cụ.** Claude Code, Codex và Antigravity dùng chung bộ luật nên cho ra cùng kết quả. Khác biệt duy nhất: Claude Code chạy song song nên nhanh hơn với repo lớn.
 
 ## Cài đặt
 
