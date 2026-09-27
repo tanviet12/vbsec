@@ -72,7 +72,7 @@ Kết quả của AI có thể khác nhau giữa các lần chạy. Tự chạy 
 
 - **Suy luận, không dò chữ máy móc.** vbsec không báo lỗi chỉ vì thấy `eval(` hay `query(`. Mỗi nghi vấn đều được xác minh: đọc code xung quanh, lần theo dữ liệu đi từ đâu tới đâu, và chỉ báo lỗi khi dữ liệu không tin cậy tới được chỗ nguy hiểm mà chưa được làm sạch. Nhờ vậy ít báo nhầm hơn các công cụ dò mẫu chuỗi bằng regex.
 
-- **Phân loại dữ liệu theo 4 mức tin cậy (L1–L4).** L1 là input người dùng kiểm soát được, L4 là dữ liệu hệ thống đáng tin. Câu `db.query(\`SELECT ${x}\`)` chỉ bị báo khi `x` đến từ L1 và đi thẳng vào SQL mà không dùng tham số. Hằng số, biến môi trường, dữ liệu từ nguồn tin cậy không bị báo nhầm.
+- **Phân loại dữ liệu theo 4 mức tin cậy (L1–L4).** L1 là input người dùng kiểm soát được, L4 là dữ liệu hệ thống đáng tin. Câu `` db.query(`SELECT ${x}`) `` chỉ bị báo khi `x` đến từ L1 và đi thẳng vào SQL mà không dùng tham số. Hằng số, biến môi trường, dữ liệu từ nguồn tin cậy không bị báo nhầm.
 
 - **Luật chuyên sâu theo ngôn ngữ.** Khi nhận ra ngôn ngữ chính của repo, vbsec nạp thêm luật riêng cho ngôn ngữ đó, thay cho luật chung cùng tên. Nhờ vậy bắt được lỗi đặc thù của từng framework: NoSQL injection qua `$where` của Mongoose, XSS qua `bypassSecurityTrustHtml` của Angular, SQL injection qua template literal của Sequelize, JWT algorithm confusion, Gin debug mode bật ở production.
 
