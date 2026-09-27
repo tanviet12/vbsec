@@ -162,13 +162,13 @@ vbsec miễn phí và mã nguồn mở nhờ sự tài trợ của:
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <a href="https://sepay.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec"><img src="docs/images/sponsor-sepay.svg" alt="SePay" height="44"></a><br>
+    <td align="center" valign="top" width="50%">
+      <a href="https://sepay.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec"><img src="docs/images/sponsor-sepay.svg" alt="SePay" height="42"></a><br>
       <b><a href="https://sepay.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec">SePay</a></b><br>
       Nền tảng Open Banking: tự động xác nhận thanh toán chuyển khoản, kết nối API với các ngân hàng Việt Nam
     </td>
-    <td align="center" width="50%">
-      <a href="https://123host.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec"><img src="docs/images/sponsor-123host.svg" alt="123HOST" height="44"></a><br>
+    <td align="center" valign="top" width="50%">
+      <a href="https://123host.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec"><img src="docs/images/sponsor-123host.svg" alt="123HOST" height="42"></a><br>
       <b><a href="https://123host.vn?utm_source=github&utm_medium=readme&utm_campaign=vbsec">123HOST</a></b><br>
       Hosting, VPS, máy chủ và tên miền cho doanh nghiệp, nhà phát triển Việt Nam
     </td>
