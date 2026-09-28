@@ -38,6 +38,8 @@ Endpoint public (không cần đăng nhập, hoặc đăng nhập tự do) thu�
 - Kiểm mã OTP / mã khuyến mãi / mã mời có không gian nhỏ (4-8 ký tự số) mà không giới hạn số lần thử
 - Tạo giao dịch tài chính hoặc rút tiền
 
+Đây là **finding**, không phải hardening note, kể cả khi cả repo chưa có rate limiter nào và kể cả khi file khác đã có finding CRITICAL. Ví dụ điển hình: `POST /forgot-password` public gọi `sendMail` cho mọi request → HIGH.
+
 ## Khi nào MEDIUM (giảm cấp)
 
 - Có rate limit nhưng quá lỏng so với chi phí (100 req/phút cho LLM endpoint vẫn đốt tiền)

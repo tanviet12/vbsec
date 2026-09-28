@@ -37,6 +37,18 @@
         "BROKEN-ACCESS-CONTROL"
       ],
       "min_severity": "MEDIUM"
+    },
+    {
+      "file": "src/InvoiceRepository.php",
+      "rule_id": [
+        "BROKEN-ACCESS-CONTROL",
+        "IDOR"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        8,
+        17
+      ]
     }
   ],
   "must_not_find": [

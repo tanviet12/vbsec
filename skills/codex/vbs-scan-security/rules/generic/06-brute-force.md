@@ -14,15 +14,23 @@ Vibe code thường quên rate limit vì frontend chỉ cho user click 1 lần �
 
 ## Khi nào HIGH
 
-- Endpoint nhạy cảm KHÔNG có middleware rate-limit: `/login`, `/signup`, `/password-reset`, `/verify-otp`, `/forgot-password`, `/api/auth/*`
-- OTP / verify code 4-6 chữ số mà KHÔNG có lockout sau N lần fail
-- Endpoint coupon / promo code lookup không rate limit (vét cạn 100k mã)
+Chỉ HIGH khi thiếu rate limit **cộng thêm** một yếu tố làm vét cạn chắc chắn thành công hoặc hậu quả lớn:
 
-## Khi nào MEDIUM (giảm cấp)
+- OTP / verify code 4-6 chữ số mà KHÔNG có lockout sau N lần fail (không gian nhỏ, vét cạn trong vài phút)
+- Endpoint coupon / promo / invite code không gian nhỏ, không rate limit (vét cạn 100k mã)
+- Login của **admin panel** hoặc endpoint auth mà đăng nhập xong là có quyền ghi tiền / đổi role
+- Login không rate limit **và** không có MFA **và** mật khẩu lưu bằng hash yếu hoặc không có chính sách độ dài (credential stuffing thành công cao)
 
+## Khi nào MEDIUM (mặc định)
+
+- `/login`, `/signup`, `/forgot-password`, `/api/auth/*` của app thường KHÔNG có rate limit / lockout, không có yếu tố ở mục HIGH → **MEDIUM là mức mặc định** cho lỗi này
 - Có rate limit nhưng quá lỏng (vd: 1000 req/phút cho `/login`)
 - Có CAPTCHA sau N lần fail (chậm bot nhưng không chặn)
-- Endpoint nội bộ chỉ accessible qua VPN
+
+## Khi nào LOW
+
+- Endpoint nội bộ chỉ accessible qua VPN / IP allowlist
+- Có lockout theo tài khoản nhưng thiếu lockout theo IP (hoặc ngược lại)
 
 ## Cách reasoning (KHÔNG pattern-match thuần)
 
