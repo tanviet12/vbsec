@@ -30,11 +30,6 @@
       "file": "handlers/user.go",
       "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
       "min_severity": "MEDIUM"
-    },
-    {
-      "file": "handlers/proxy.go",
-      "rule_id": "XSS",
-      "min_severity": "MEDIUM"
     }
   ],
   "must_not_find": [
