@@ -80,7 +80,7 @@ v0.8 trên 4 bộ SaaS (Claude Opus 5.5, mỗi cấu hình 1 lượt, 16/11/2026
 | lessons-hard (28) | 15–18 | 10 | 19 |
 | **Tổng (61)** | **47–50** | **28** | **51** |
 
-Đọc cho đúng: trên bộ mẫu nhỏ, model mạnh không skill đã tìm được phần lớn lỗi, nên v0.8 chỉ hơn vài điểm; khác biệt lớn là so với v0.7, bản cũ bỏ mọi lỗi ngoài 21 mã. Trên một codebase thật nhiều tenant có máy chủ MCP (riêng tư, không công bố), cùng model không skill bắt 1 / 25 điểm Cao / Vừa đã biết, vbsec v0.8 kèm file luật dự án bắt 21,5 / 25.
+Đọc cho đúng: trên bộ mẫu nhỏ, model mạnh không skill đã tìm được phần lớn lỗi, nên v0.8 chỉ hơn vài điểm; khác biệt lớn là so với v0.7, bản cũ bỏ mọi lỗi ngoài 21 mã.
 
 <!-- v0.8 bench -->
 

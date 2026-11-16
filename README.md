@@ -80,7 +80,7 @@ v0.8 on the 4 SaaS sets (Claude Opus 5.5, 1 run each, 2026-11-16):
 | lessons-hard (28) | 15–18 | 10 | 19 |
 | **Total (61)** | **47–50** | **28** | **51** |
 
-Honest reading: on small synthetic sets a frontier model with no skill already finds most of these bugs, so v0.8 is only a few points ahead of it; the large gain is over v0.7, whose closed rule list dropped anything outside 21 IDs. On a real multi-tenant codebase with an MCP server (private, not published), the same model with no skill caught 1 of 25 known High/Medium issues, vbsec v0.8 with a project rules file caught 21.5 of 25.
+Honest reading: on small synthetic sets a frontier model with no skill already finds most of these bugs, so v0.8 is only a few points ahead of it; the large gain is over v0.7, whose closed rule list dropped anything outside 21 IDs.
 
 <!-- v0.8 bench -->
 
