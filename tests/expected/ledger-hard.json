@@ -1,0 +1,162 @@
+{
+  "fixture": "tests/fixtures/ledger-hard",
+  "must_find": [
+    {
+      "file": "internal/service/imports.go",
+      "rule_id": ["BUSINESS-STATE-INTEGRITY", "AUTHZ-PATH-PARITY", "BROKEN-ACCESS-CONTROL"],
+      "min_severity": "HIGH",
+      "lines": [72, 104],
+      "cross_file": true,
+      "alt_files": ["internal/httpapi/entries.go"],
+      "why": "Nhập sao kê tra kỳ theo ngày của từng dòng rồi chèn bút toán mà không kiểm trạng thái kỳ (đường tạo tay ở service/entries.go có khoá và kiểm) → kế toán đưa dòng có ngày thuộc kỳ đã chốt là ghi được vào kỳ đã chốt."
+    },
+    {
+      "file": "internal/service/entries.go",
+      "rule_id": ["BUSINESS-STATE-INTEGRITY", "AUTHZ-PATH-PARITY", "BROKEN-ACCESS-CONTROL"],
+      "min_severity": "HIGH",
+      "lines": [133, 148],
+      "why": "Khôi phục bút toán đã xoá không đi qua openForWrite: xoá bút toán lúc kỳ còn mở, chờ chốt, rồi khôi phục → tổng của kỳ đã chốt đổi mà số chốt không tính lại."
+    },
+    {
+      "file": "internal/repo/periods.go",
+      "rule_id": "BUSINESS-STATE-INTEGRITY",
+      "min_severity": "MEDIUM",
+      "lines": [63, 73],
+      "cross_file": true,
+      "why": "Tổng thu của kỳ JOIN bảng nhãn (entry_labels khoá chính (entry_id, label_id), một bút toán nhiều nhãn) → gắn thêm nhãn cho một phiếu thu là số tiền đó được cộng thêm một lần vào tổng thu và số dư chốt kỳ."
+    },
+    {
+      "file": "internal/service/payments.go",
+      "rule_id": ["BUSINESS-STATE-INTEGRITY", "RACE-CONDITION"],
+      "min_severity": "HIGH",
+      "lines": [45, 61],
+      "cross_file": true,
+      "alt_files": ["migrations/002_ledger.sql", "internal/repo/funds.go", "internal/httpapi/hooks.go"],
+      "why": "ApplyBankEvent dựa vào lỗi trùng khoá để bỏ qua sự kiện lặp, nhưng bank_events.provider_ref chỉ có KEY thường, không UNIQUE → gửi lại (hoặc phát lại) cùng webhook đã ký là quỹ được cộng tiền thêm lần nữa."
+    },
+    {
+      "file": "internal/service/expenses.go",
+      "rule_id": ["RACE-CONDITION", "BUSINESS-STATE-INTEGRITY"],
+      "min_severity": "MEDIUM",
+      "lines": [34, 71],
+      "why": "Hạn mức tháng của phòng: cộng tổng đề nghị đang mở rồi mới chèn, không transaction, không khoá → nhiều request song song cùng thấy tổng cũ và cùng lọt, tổng đề nghị vượt hạn mức."
+    },
+    {
+      "file": "internal/service/expenses.go",
+      "rule_id": ["RACE-CONDITION", "OTHER-CWE-833", "OTHER-CWE-667"],
+      "min_severity": "MEDIUM",
+      "lines": [73, 144],
+      "cross_file": true,
+      "alt_files": ["internal/repo/expenses.go", "internal/repo/funds.go"],
+      "why": "Decide khoá dòng đề nghị rồi khoá quỹ; CancelOpen khoá quỹ rồi khoá các đề nghị đang mở (FOR UPDATE nằm ở repo) → hai thao tác chạy cùng lúc trên cùng quỹ khoá chéo nhau, MySQL huỷ một bên (1213) trả 500; người duyệt gây lỗi lặp lại cho thao tác của quản trị."
+    },
+    {
+      "file": "internal/service/login.go",
+      "rule_id": ["RACE-CONDITION", "BRUTE-FORCE"],
+      "min_severity": "MEDIUM",
+      "lines": [81, 120],
+      "why": "Bước mã 2FA đếm lượt sai, so mã, sai mới ghi lượt → gửi hàng trăm mã song song trong một nhịp, tất cả đều qua bước đếm (còn < 5), ngưỡng khoá 5 lượt không còn tác dụng với mã 6 số."
+    },
+    {
+      "file": "internal/service/login.go",
+      "rule_id": ["AUTH-SESSION-LIFECYCLE", "OTHER-CWE-294", "OTHER-CWE-613"],
+      "min_severity": "MEDIUM",
+      "lines": [52, 120],
+      "why": "Phiếu trung gian sau bước mật khẩu chỉ có chữ ký + hạn 15 phút, không dùng một lần, không gắn thiết bị, đổi được phiên rồi vẫn còn hiệu lực → ai lấy được phiếu (log, proxy) dùng lại nhiều lần để thử mã hoặc đổi thêm phiên mà không cần mật khẩu."
+    },
+    {
+      "file": "internal/httpapi/middleware.go",
+      "rule_id": ["SENSITIVE-DATA-IN-LOGS", "OTHER-CWE-532"],
+      "min_severity": "HIGH",
+      "lines": [91, 113],
+      "cross_file": true,
+      "alt_files": ["internal/platform/logging.go"],
+      "why": "Middleware ghi body của mọi request lỗi (>= 400), bộ che chỉ bỏ khoá tên password / code / token / secret → body cập nhật lương (base_salary, tax_code, bank_account ở httpapi/staff.go) và phiếu đăng nhập (ticket) nằm nguyên trong log, trong khi DB lưu các trường đó dạng mã hoá."
+    },
+    {
+      "file": "internal/service/staff.go",
+      "rule_id": ["SENSITIVE-DATA-IN-LOGS", "OTHER-CWE-532"],
+      "min_severity": "MEDIUM",
+      "lines": [42, 65],
+      "why": "Log 'invite sent' ghi nguyên link mời chứa token dùng được → ai đọc log dùng link để vào công ty thay người được mời."
+    },
+    {
+      "file": "internal/service/staff.go",
+      "rule_id": ["AUTH-SESSION-LIFECYCLE", "BROKEN-ACCESS-CONTROL", "OTHER-CWE-613"],
+      "min_severity": "HIGH",
+      "lines": [102, 130],
+      "cross_file": true,
+      "alt_files": ["internal/repo/identity.go", "internal/httpapi/middleware.go"],
+      "why": "Cho nghỉ chỉ xoá bảng sessions; token API cá nhân (pat_, bảng api_tokens, không hết hạn) không bị xoá và ActorByAPIToken không kiểm users.active → người đã nghỉ vẫn gọi API bằng token cũ với đúng vai cũ. Đường đổi mật khẩu thì gọi RevokeAll xoá cả hai."
+    },
+    {
+      "file": "internal/service/expenses.go",
+      "rule_id": ["AUTH-SESSION-LIFECYCLE", "BROKEN-ACCESS-CONTROL", "BUSINESS-STATE-INTEGRITY", "IDOR"],
+      "min_severity": "MEDIUM",
+      "lines": [73, 107],
+      "cross_file": true,
+      "alt_files": ["internal/service/staff.go"],
+      "why": "Người duyệt được chụp vào approver_id lúc tạo đề nghị; ChangeHead (service/staff.go) chỉ đổi departments.head_id → trưởng phòng cũ vẫn duyệt được mọi đề nghị đang chờ, trưởng phòng mới thì bị 403."
+    },
+    {
+      "file": "internal/service/periods.go",
+      "rule_id": ["BUSINESS-STATE-INTEGRITY", "AUTHZ-PATH-PARITY"],
+      "min_severity": "MEDIUM",
+      "lines": [40, 68],
+      "cross_file": true,
+      "alt_files": ["internal/repo/expenses.go"],
+      "why": "Điều kiện chặn chốt kỳ chỉ đếm đề nghị thuộc quỹ chưa lưu trữ (CountOpenInPeriod JOIN funds.archived = 0) → kế toán lưu trữ quỹ, chốt kỳ, bỏ lưu trữ: kỳ đã chốt mà vẫn còn đề nghị chờ duyệt / chờ chi."
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "internal/service/payments.go",
+      "rule_id": ["BUSINESS-STATE-INTEGRITY", "RACE-CONDITION"],
+      "lines": [63, 83],
+      "reason": "ApplyPayoutEvent ghi payout_receipts có UNIQUE (provider, event_id) trong cùng transaction, trùng thì bỏ qua; chuyển trạng thái bằng UPDATE có điều kiện"
+    },
+    {
+      "file": "internal/service/funds.go",
+      "rule_id": ["RACE-CONDITION", "OTHER-CWE-833"],
+      "lines": [22, 57],
+      "reason": "Chuyển quỹ khoá hai dòng FOR UPDATE theo thứ tự id tăng dần trong một transaction, kiểm số dư sau khi khoá"
+    },
+    {
+      "file": "internal/service/entries.go",
+      "rule_id": ["BUSINESS-STATE-INTEGRITY", "RACE-CONDITION"],
+      "lines": [42, 131],
+      "reason": "Tạo / sửa / xoá bút toán khoá dòng kỳ (FOR UPDATE) rồi kiểm trạng thái trong cùng transaction với lệnh ghi"
+    },
+    {
+      "file": "internal/repo/entries.go",
+      "rule_id": "RACE-CONDITION",
+      "lines": [26, 35],
+      "reason": "Số chứng từ đọc bằng SELECT ... FOR UPDATE, luôn gọi trong transaction, có UNIQUE (period_id, voucher_no)"
+    },
+    {
+      "file": "internal/repo/periods.go",
+      "rule_id": "BUSINESS-STATE-INTEGRITY",
+      "lines": [84, 105],
+      "reason": "Bảng chia theo nhãn GROUP BY nhãn: một bút toán xuất hiện ở từng nhãn là đúng nghĩa, không cộng vào tổng kỳ"
+    },
+    {
+      "file": "internal/service/staff.go",
+      "rule_id": ["SENSITIVE-DATA-IN-LOGS", "OTHER-CWE-532"],
+      "lines": [67, 100],
+      "reason": "Cập nhật lương chỉ log và ghi nhật ký tên trường đã đổi, không ghi giá trị"
+    },
+    {
+      "file": "internal/service/login.go",
+      "rule_id": ["SENSITIVE-DATA-IN-LOGS", "OTHER-CWE-532"],
+      "reason": "Chỉ log user_id, session_id (số), tên token; không log token, phiếu hay email"
+    },
+    {
+      "file": "internal/service/login.go",
+      "rule_id": "HARDCODED-SECRET",
+      "reason": "placeholderHash là hash giả để cân thời gian khi email không tồn tại, không phải bí mật"
+    }
+  ],
+  "clean_files": [
+    "internal/audit/audit.go"
+  ]
+}

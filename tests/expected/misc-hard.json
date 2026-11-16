@@ -1,0 +1,75 @@
+{
+  "fixture": "tests/fixtures/misc-hard",
+  "must_find": [
+    {
+      "file": "internal/web/body.go",
+      "rule_id": [
+        "RESOURCE-EXHAUSTION",
+        "OTHER-CWE-409",
+        "OTHER-CWE-400"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        16,
+        34
+      ],
+      "alt_files": [
+        "internal/web/account.go"
+      ],
+      "why": "Trần 1 MB chỉ áp cho byte nén; body gzip được bung bằng io.ReadAll không trần → 1 MB nén thành hàng trăm MB RAM. /password/forgot dùng readJSON mà không cần đăng nhập."
+    },
+    {
+      "file": "internal/web/account.go",
+      "rule_id": [
+        "SENSITIVE-DATA-IN-LOGS",
+        "OTHER-CWE-532"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        21,
+        58
+      ],
+      "why": "Log 'reset mail sent' ghi email, IP và nguyên link đặt lại mật khẩu kèm token → ai đọc log chiếm được tài khoản trong 30 phút."
+    },
+    {
+      "file": "internal/web/session.go",
+      "rule_id": [
+        "OTHER-CWE-601"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        25,
+        62
+      ],
+      "why": "Sau đăng nhập chuyển tới tham số next chỉ cần bắt đầu bằng '/' → /login?next=//evil.example đưa người dùng vừa đăng nhập sang trang giả."
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "internal/web/session.go",
+      "rule_id": [
+        "OTHER-CWE-601"
+      ],
+      "lines": [
+        72,
+        97
+      ],
+      "reason": "setLanguage chuyển hướng qua localPath: phân tích URL, từ chối scheme / host / '//' / dấu gạch ngược, sai thì về '/'"
+    },
+    {
+      "file": "internal/web/archive.go",
+      "rule_id": [
+        "RESOURCE-EXHAUSTION",
+        "OTHER-CWE-409",
+        "OTHER-CWE-400"
+      ],
+      "reason": "Giải nén zip có trần: 8 MB nén, 50 tệp, 5 MB mỗi tệp và 40 MB tổng tính trên byte đã bung (LimitReader)"
+    },
+    {
+      "file": "internal/web/archive.go",
+      "rule_id": "PATH-TRAVERSAL",
+      "reason": "Tên tệp qua filepath.Base + regex allowlist, ghi vào thư mục theo id người dùng do server dựng"
+    }
+  ],
+  "clean_files": []
+}
