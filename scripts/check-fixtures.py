@@ -38,6 +38,7 @@ def canonical_rule_ids():
 
 
 CANONICAL = canonical_rule_ids()
+OTHER_CWE = re.compile(r"^OTHER-CWE-\d+$")
 
 
 def normalize(finding, problems):
@@ -51,7 +52,7 @@ def normalize(finding, problems):
                 break
     if rid is None:
         problems.add("finding thiếu rule_id")
-    elif rid not in CANONICAL:
+    elif rid not in CANONICAL and not OTHER_CWE.match(str(rid)):
         problems.add(f"rule ID ngoài danh sách: {rid}")
     return {**finding, "rule_id": rid}
 
@@ -139,6 +140,10 @@ def check(lang, report_path):
 
     total = len(expected["must_find"])
     print(f"   recall: {hit}/{total} ({hit * 100 // total}%)")
+    xf = [e for e in expected["must_find"] if e.get("cross_file")]
+    if xf:
+        xf_hit = sum(1 for e in xf if e not in missed)
+        print(f"   recall lỗi xuyên file: {xf_hit}/{len(xf)}")
     for exp in missed:
         print(f"   SÓT      {exp['file']}  {' | '.join(rule_ids(exp))}")
     for exp, best in weak:

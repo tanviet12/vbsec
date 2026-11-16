@@ -21,7 +21,7 @@ Sub-agent delegation workflow cho repo lớn (>20 main-lang files HOẶC >30 tot
 
 ### Step L2 — Chunk files
 
-Đọc [`../references/chunking-strategy.md`](../references/chunking-strategy.md) và apply algorithm.
+Đọc [`../references/chunking-strategy.md`](../references/chunking-strategy.md) và apply algorithm: **lát dọc theo khu nghiệp vụ** (route + handler + service + repo + tool agent cùng khu), cộng 1 chunk **liên khu** (`kind: cross-cutting`) cho tenant / path parity / lộ dữ liệu / log / luật dự án.
 
 Output: list `chunks` với format:
 ```
@@ -83,11 +83,12 @@ Khi sub-agent return mà:
 Đọc tất cả `.vbsec-tmp/findings-*.md`:
 
 1. **Parse** mỗi file thành list findings (file/line/rule_id/severity/issue/fix/context)
-2. **Validate rule_ids**: Mọi finding phải có `rule_id` trong 21 canonical IDs. Nếu sub-agent đã invent (vd `INSECURE-COOKIE`) → map về canonical theo mapping table trong [`../references/sub-agent-prompts.md`](../references/sub-agent-prompts.md#rule-id-discipline-critical--read-carefully). Nếu thật sự không map được → drop hoặc move vào `## NOT_MAPPED` section riêng.
+2. **Validate rule_ids**: mọi finding phải có `rule_id` thuộc bảng rule (SKILL.md Step 4) hoặc dạng `OTHER-CWE-<n>` kèm `cwe`. Sub-agent bịa ID (vd `INSECURE-COOKIE`) → đổi sang rule thật sự mô tả lỗi, hoặc `OTHER-CWE-<n>` (vd CWE-614 cookie thiếu Secure) nếu có đường khai thác; không có đường khai thác → hardening note. **KHÔNG drop** finding có đường khai thác chỉ vì không có rule.
 3. **Dedup**: key = `(file, line, rule_id)`. Giữ entry có severity cao nhất. Nếu tie, giữ entry có `context` dài hơn.
    - **Lưu ý:** dedup key có `rule_id` → 1 vị trí (file:line) dính 2 rule khác nhau (vd IDOR + RACE) sẽ là 2 entry riêng, KHÔNG dedup.
 4. **Collect HARDENING_NOTES**: gộp section `## HARDENING_NOTES` của các sub-agent vào `hardening_notes[]` + section `{header_hardening_title}` (dedup, tối đa 5 dòng). KHÔNG đưa vào `findings[]`.
-5. **Collect NOT_MAPPED**: nếu có findings trong `## NOT_MAPPED` section của sub-agent reports, collect lại để note ở cuối main report (giúp roadmap future rules).
+5. **Collect NOT_MAPPED** (tương thích cũ): mục này lẽ ra rỗng từ v0.8. Mục nào có đường khai thác → chuyển thành finding `OTHER-CWE-<n>`; còn lại → hardening note.
+5b. **Collect COVERAGE**: gộp `## COVERAGE` các chunk → `coverage` trong JSON + section `{header_coverage_title}`.
 6. **Collect PASSED**: union các rule_id xuất hiện trong `## PASSED` section của tất cả chunks. Một rule chỉ vào PASSED list nếu **không** xuất hiện trong findings của bất kỳ chunk nào.
 7. **Cross-chunk rules**:
    - **SLOPSQUATTING**: collect tất cả import statement từ chunks, dedup, kiểm tra package có hợp lệ. Add findings nếu có suspicious.
@@ -161,7 +162,7 @@ Khi translate sang `$LANG=vi`: dịch text, giữ code English. Khi `lang=en`: d
 | 0 CRITICAL, ≥1 HIGH | WARN |
 | 0 CRITICAL, 0 HIGH | PASS |
 
-Nếu có chunk failed → downgrade verdict 1 cấp (PASS→WARN, WARN→FAIL) hoặc giữ FAIL, kèm note.
+Nếu có chunk failed → downgrade verdict 1 cấp (PASS→WARN, WARN→FAIL) hoặc giữ FAIL, kèm note và field `verdict_downgraded_reason` trong JSON (validator chấp nhận verdict nặng hơn findings chỉ khi có field này).
 
 ### Step L10 — Cleanup
 
