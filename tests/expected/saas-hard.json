@@ -1,0 +1,319 @@
+{
+  "fixture": "tests/fixtures/saas-hard",
+  "must_find": [
+    {
+      "file": "mcp/src/tools/comments.ts",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "min_severity": "HIGH",
+      "lines": [
+        14,
+        31
+      ],
+      "cross_file": false,
+      "why": "list_task_comments trả nguyên văn bình luận (kể cả của khách client) bằng serverText, không bọc khối dữ liệu ngoài như các tool khác; khách viết câu lệnh giả, trợ lý của người quyền cao đọc rồi làm theo."
+    },
+    {
+      "file": "mcp/src/tools/invoices.ts",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "min_severity": "HIGH",
+      "lines": [
+        36,
+        58
+      ],
+      "cross_file": true,
+      "why": "list_overdue_invoices ghép customer_note (khách ẩn danh ghi qua POST /pay/{token}/note) vào trường next_step đứng cạnh cờ action_required: true, trả như chữ server; khách tự viết 'bước tiếp theo' cho trợ lý."
+    },
+    {
+      "file": "internal/assistant/summary.go",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "min_severity": "MEDIUM",
+      "lines": [
+        26,
+        54
+      ],
+      "cross_file": true,
+      "why": "ProjectDigest nối ghi chú dự án và bình luận (client đăng được qua AddComment) thẳng vào message vai system; khách điều khiển nội dung bản tóm tắt gợi ý gửi / huỷ hoá đơn cho quản lý."
+    },
+    {
+      "file": "mcp/src/tools/invoices.ts",
+      "rule_id": "EXCESSIVE-AGENCY",
+      "min_severity": "HIGH",
+      "lines": [
+        60,
+        73
+      ],
+      "cross_file": false,
+      "why": "void_invoice chỉ đòi confirm: true do mô hình tự điền, luật 'hỏi người dùng trước' nằm trong mô tả tool, không destructiveHint, không mã ngoài luồng; injection gọi huỷ hoá đơn ngay lượt đầu."
+    },
+    {
+      "file": "mcp/src/index.ts",
+      "rule_id": [
+        "EXCESSIVE-AGENCY",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "cross_file": true,
+      "why": "tools/list lọc bỏ set_member_role (đã quyết định chỉ làm trên web) nhưng tools/call tra findTool trên allTools nên tool vẫn gọi được; injection qua trợ lý của owner nâng vai kẻ tấn công.",
+      "alt_files": [
+        "mcp/src/registry.ts",
+        "mcp/src/tools/members.ts"
+      ]
+    },
+    {
+      "file": "mcp/src/tools/comments.ts",
+      "rule_id": [
+        "EXCESSIVE-AGENCY",
+        "LLM-PROMPT-INJECTION"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        33,
+        50
+      ],
+      "cross_file": false,
+      "why": "post_comment ghi chữ tự do ra luồng client (ngoài công ty) bằng cùng token vừa đọc được hoá đơn / thành viên, không xem trước, không đánh dấu sau lượt đọc nhạy; chữ tiêm vào dẫn 'đọc số rồi dán vào bình luận cho khách'."
+    },
+    {
+      "file": "internal/repo/reports.go",
+      "rule_id": [
+        "TENANT-ISOLATION",
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        15,
+        37
+      ],
+      "cross_file": true,
+      "why": "ProjectBilling lọc company_id ở projects nhưng LEFT JOIN invoices chỉ theo project_code (mã chỉ duy nhất trong một công ty theo migration); tổng tiền và số hoá đơn của công ty khác trùng mã bị cộng vào báo cáo."
+    },
+    {
+      "file": "internal/jobs/exports.go",
+      "rule_id": [
+        "TENANT-ISOLATION",
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        49,
+        88
+      ],
+      "cross_file": true,
+      "why": "Job xuất loại 'overdue' gọi Invoices.ListOverdue (truy vấn hệ thống không lọc công ty, vốn cho job nhắc nợ) thay vì lọc theo job.CompanyID; file CSV của người yêu cầu chứa hoá đơn quá hạn của mọi công ty."
+    },
+    {
+      "file": "internal/service/reports.go",
+      "rule_id": [
+        "TENANT-ISOLATION",
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        83,
+        120
+      ],
+      "cross_file": true,
+      "why": "ProjectDashboard dùng khoá cache 'dash:'+code không có company_id và đọc cache trước khi tra dự án theo công ty; công ty khác có dự án trùng mã nhận ngân sách / đã chi / đã xuất hoá đơn của công ty kia."
+    },
+    {
+      "file": "internal/repo/guard.go",
+      "rule_id": [
+        "TENANT-ISOLATION",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        52,
+        72
+      ],
+      "cross_file": false,
+      "why": "checkScope fail-open: câu không bắt đầu bằng select/insert/update/delete (WITH, REPLACE, chú thích đầu câu) cho qua; chỉ cần chữ 'company_id' xuất hiện ở bất kỳ đâu (cột SELECT, một phía JOIN) là đạt; tên bảng dính dấu phẩy hoặc backtick không nhận ra."
+    },
+    {
+      "file": "internal/service/invoices.go",
+      "rule_id": [
+        "AUTHZ-PATH-PARITY",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        115,
+        128
+      ],
+      "cross_file": false,
+      "why": "Void và MarkPaid đòi CanManageInvoices, còn Restore (POST /invoices/{id}/restore) không kiểm quyền nào; mọi thành viên kể cả client khôi phục hoá đơn đã huỷ về 'sent' và nhận lại số, trạng thái."
+    },
+    {
+      "file": "internal/service/members.go",
+      "rule_id": [
+        "AUTHZ-PATH-PARITY",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        76,
+        99
+      ],
+      "cross_file": true,
+      "why": "SetPermissions chặn quyền finance / billing_admin bằng CanGrant (chỉ owner), nhưng CopyPermissions chỉ đòi CanManageMembers rồi repo INSERT…SELECT chép nguyên bộ; admin chép quyền finance từ người đang có sang người khác.",
+      "alt_files": [
+        "internal/repo/members.go"
+      ]
+    },
+    {
+      "file": "internal/service/imports.go",
+      "rule_id": [
+        "AUTHZ-PATH-PARITY",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        34,
+        86
+      ],
+      "cross_file": true,
+      "why": "ImportInvoices chỉ kiểm IsStaff, không gọi CanBill / CanManageInvoices như Create và MarkPaid, và nhận status từ tệp; member thường nhập CSV tạo hoá đơn 'sent' / 'paid' cho dự án bất kỳ."
+    },
+    {
+      "file": "internal/httpapi/projects.go",
+      "rule_id": [
+        "EXCESSIVE-DATA-EXPOSURE",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        23,
+        40
+      ],
+      "cross_file": true,
+      "why": "getProject trả nguyên model.Project (budget_cents, hourly_rate_cents, notes) trong khi listProjects đi qua authz.ProjectView che theo quyền; client và member không có quyền finance đọc ngân sách, đơn giá, ghi chú nội bộ."
+    },
+    {
+      "file": "internal/httpapi/projects.go",
+      "rule_id": [
+        "EXCESSIVE-DATA-EXPOSURE",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        98,
+        122
+      ],
+      "cross_file": false,
+      "why": "Phản hồi của lệnh ghi addExpense trả spent_cents và remaining_cents; member không có quyền finance gửi một khoản chi nhỏ là suy ra ngân sách dự án."
+    },
+    {
+      "file": "internal/httpapi/members.go",
+      "rule_id": [
+        "EXCESSIVE-DATA-EXPOSURE",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "min_severity": "HIGH",
+      "lines": [
+        5,
+        12
+      ],
+      "cross_file": true,
+      "why": "listMembers trả nguyên model.Member có invite_token (tag json, repo SELECT cho mọi dòng) cho mọi staff; lấy mã của người đang chờ mời rồi gọi POST /invites/{token}/accept để nhận phiên của tài khoản đó (vd admin mới).",
+      "alt_files": [
+        "internal/model/model.go",
+        "internal/repo/members.go"
+      ]
+    },
+    {
+      "file": "internal/repo/invoices.go",
+      "rule_id": "SQL-INJECTION",
+      "min_severity": "HIGH",
+      "lines": [
+        60,
+        87
+      ],
+      "cross_file": false,
+      "why": "orderClause kiểm sort bằng regex ^[a-z_]+( (asc|desc))? thiếu neo cuối $, rồi Sprintf vào ORDER BY; ?sort=id,(select ...) qua kiểm và chèn được biểu thức SQL (blind)."
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "mcp/src/tools/projects.ts",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "reason": "list_projects / get_project trả chữ người dùng qua withExternal: khối <external_data> có escape '<', lời dặn sau khối và lời dặn lúc initialize"
+    },
+    {
+      "file": "mcp/src/tools/projects.ts",
+      "rule_id": "EXCESSIVE-AGENCY",
+      "lines": [
+        63,
+        90
+      ],
+      "reason": "delete_project đòi mã 6 số do backend gửi qua email cho người dùng (không trả về mô hình), gắn đúng thành viên + thao tác + dự án, hết hạn 10 phút, trần 5 lần thử, có destructiveHint"
+    },
+    {
+      "file": "mcp/src/tools/invoices.ts",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "lines": [
+        17,
+        34
+      ],
+      "reason": "get_invoice đặt customer_note trong khối withExternal, tên trường nói rõ nguồn, không cờ ra lệnh"
+    },
+    {
+      "file": "internal/assistant/summary.go",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "lines": [
+        56,
+        81
+      ],
+      "reason": "ReplyDraft: system prompt cố định, ghi chú khách nằm ở message user trong thẻ <customer_note> đã đổi '<' '>', kết quả chỉ là bản nháp cho kế toán xem trước khi gửi"
+    },
+    {
+      "file": "internal/repo/reports.go",
+      "rule_id": [
+        "TENANT-ISOLATION",
+        "IDOR"
+      ],
+      "lines": [
+        39,
+        62
+      ],
+      "reason": "MemberLoad: JOIN tasks có t.company_id = m.company_id và WHERE m.company_id = ?; bảng users không thuộc tenant"
+    },
+    {
+      "file": "internal/service/reports.go",
+      "rule_id": [
+        "TENANT-ISOLATION",
+        "IDOR"
+      ],
+      "lines": [
+        66,
+        81
+      ],
+      "reason": "Billing dùng khoá cache billing:<company_id>"
+    },
+    {
+      "file": "internal/service/projects.go",
+      "rule_id": [
+        "AUTHZ-PATH-PARITY",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "lines": [
+        81,
+        90
+      ],
+      "reason": "Restore dự án kiểm cùng luật CanManageProject như Archive"
+    },
+    {
+      "file": "internal/repo/projects.go",
+      "rule_id": "SQL-INJECTION",
+      "reason": "ORDER BY lấy từ allowlist map projectOrder, giá trị lạ về mặc định; các cột khác dùng placeholder"
+    }
+  ],
+  "clean_files": [
+    "internal/jobs/reminders.go",
+    "internal/service/confirm.go",
+    "internal/authz/policy.go",
+    "mcp/src/result.ts"
+  ]
+}

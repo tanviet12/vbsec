@@ -118,7 +118,9 @@ def check(lang, report_path):
     matched = set()
     for exp in expected["must_find"]:
         ids = rule_ids(exp)
-        cands = [i for i, f in enumerate(findings) if f["file"] == exp["file"] and f["rule_id"] in ids and in_lines(exp, f)]
+        files_ok = {exp["file"], *exp.get("alt_files", [])}
+        cands = [i for i, f in enumerate(findings)
+                 if f["rule_id"] in ids and ((f["file"] == exp["file"] and in_lines(exp, f)) or (f["file"] != exp["file"] and f["file"] in files_ok))]
         if not cands:
             missed.append(exp)
             continue

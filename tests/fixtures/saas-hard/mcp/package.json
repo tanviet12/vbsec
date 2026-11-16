@@ -1,0 +1,20 @@
+{
+  "name": "tallyboard-assistant-mcp",
+  "version": "0.5.2",
+  "private": true,
+  "type": "module",
+  "bin": { "tallyboard-mcp": "dist/index.js" },
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
