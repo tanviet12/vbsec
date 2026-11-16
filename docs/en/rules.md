@@ -4,7 +4,7 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 
 > **Conventions:**
 > - **Severity max** — the highest severity a finding of this rule can receive
-> - **Applies to** — `all` = every language; specialized overlays listed if `go`, `php`, `typescript` (includes `.js/.jsx/.ts/.tsx`), `python` (`.py/.pyw`), `dotnet` (`.cs/.csproj/.sln`)
+> - **Applies to** — `all` = every language; specialized overlays listed if `go`, `php`, `typescript` (includes `.js/.jsx/.ts/.tsx`), `python` (`.py/.pyw`), `dotnet` (`.cs/.csproj/.sln`), `dart` (`.dart`, Flutter apps)
 
 ---
 
@@ -12,26 +12,26 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 
 | # | Rule ID | Severity max | Specialization |
 |---|---|---|---|
-| 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | — |
+| 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | dart |
 | 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python, dotnet |
-| 3 | [XSS](#rule-3--xss) | HIGH | typescript |
+| 3 | [XSS](#rule-3--xss) | HIGH | typescript, dart |
 | 4 | [IDOR](#rule-4--idor) | HIGH | — |
-| 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | — |
+| 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | dart |
 | 6 | [BRUTE-FORCE](#rule-6--brute-force) | HIGH | — |
 | 7 | [MASS-ASSIGNMENT](#rule-7--mass-assignment) | CRITICAL | typescript, python, dotnet |
 | 8 | [INSECURE-DESERIALIZATION](#rule-8--insecure-deserialization) | CRITICAL | go, php, typescript, python, dotnet |
 | 9 | [SSRF](#rule-9--ssrf) | HIGH | go, typescript, python |
-| 10 | [PATH-TRAVERSAL](#rule-10--path-traversal) | HIGH | — |
+| 10 | [PATH-TRAVERSAL](#rule-10--path-traversal) | HIGH | dart |
 | 11 | [CSRF](#rule-11--csrf) | HIGH | php, typescript, python |
-| 12 | [BROKEN-ACCESS-CONTROL](#rule-12--broken-access-control) | CRITICAL | — |
+| 12 | [BROKEN-ACCESS-CONTROL](#rule-12--broken-access-control) | CRITICAL | dart |
 | 13 | [WEAK-PASSWORD-HASHING](#rule-13--weak-password-hashing) | CRITICAL | — |
 | 14 | [JWT-NONE-ALGORITHM](#rule-14--jwt-none-algorithm) | CRITICAL | typescript, python |
 | 15 | [CORS-MISCONFIG](#rule-15--cors-misconfig) | HIGH | typescript, python |
 | 16 | [UNRESTRICTED-FILE-UPLOAD](#rule-16--unrestricted-file-upload) | CRITICAL | — |
-| 17 | [VERBOSE-ERROR-DEBUG-MODE](#rule-17--verbose-error-debug-mode) | HIGH | go, php, typescript, python, dotnet |
+| 17 | [VERBOSE-ERROR-DEBUG-MODE](#rule-17--verbose-error-debug-mode) | HIGH | go, php, typescript, python, dotnet, dart |
 | 18 | [MISSING-RATE-LIMIT](#rule-18--missing-rate-limit) | HIGH | — |
 | 19 | [RACE-CONDITION](#rule-19--race-condition) | HIGH | — |
-| 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | — |
+| 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | dart |
 | 21 | [COMMAND-INJECTION](#rule-21--command-injection) | CRITICAL | go, php, typescript, python, dotnet |
 | 22 | [VULNERABLE-DEPENDENCY](#rule-22--vulnerable-dependency) | CRITICAL | all (only with `--sca`) |
 
@@ -40,7 +40,7 @@ Compact overview of each rule with unsafe/safe examples. For the full reasoning,
 ### Rule 1 — HARDCODED-SECRET
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 API keys, DB passwords, JWT secrets, Stripe/AWS/OpenAI keys committed in source. Once pushed to a public repo, the secret is permanently leaked — you must rotate, not just delete.
 
@@ -84,7 +84,7 @@ cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ### Rule 3 — XSS
 
 **Severity max:** HIGH
-**Applies to:** all (+ typescript)
+**Applies to:** all (+ typescript, dart)
 
 Rendering user input into HTML without escaping. Attacker injects `<script>` to steal cookies / sessions. Modern frameworks (React, Vue) auto-escape — danger appears with `dangerouslySetInnerHTML` / `v-html` / `innerHTML`.
 
@@ -134,7 +134,7 @@ app.get('/orders/:id', async (req, res) => {
 ### Rule 5 — SLOPSQUATTING
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 AI hallucinates non-existent package names (e.g., `requests-fast`, `react-utils-helper`). Attackers spot the pattern and publish a malicious package with that exact name. AI-generated code that runs `npm install` is compromised.
 
@@ -264,7 +264,7 @@ if (!ALLOWED_HOSTS.includes(url.hostname)) {
 ### Rule 10 — PATH-TRAVERSAL
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 `fs.readFile(req.params.filename)` — user submits `../../etc/passwd` and reads files outside the public folder.
 
@@ -321,7 +321,7 @@ app.post('/transfer', (req, res) => {
 ### Rule 12 — BROKEN-ACCESS-CONTROL
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 Frontend hides the "Delete user" button for non-admins, but the `DELETE /users/:id` endpoint has no role check. Regular users can call the API directly and delete.
 
@@ -447,7 +447,7 @@ move_uploaded_file($_FILES['file']['tmp_name'], '/var/uploads-private/' . $newNa
 ### Rule 17 — VERBOSE-ERROR-DEBUG-MODE
 
 **Severity max:** HIGH
-**Applies to:** all (+ go, php, typescript, python, dotnet)
+**Applies to:** all (+ go, php, typescript, python, dotnet, dart)
 
 `DEBUG=true` in production, stack traces leaking to responses, detailed errors revealing DB query / file paths. Attackers map attack surface from this info.
 
@@ -528,7 +528,7 @@ tx.Commit()
 ### Rule 20 — OUTDATED-DEPENDENCY
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 Packages with known CVEs (`log4j 2.14`, `lodash <4.17.21`, `express <4.17.3`). vbsec doesn't fetch CVE data in real-time — it flags old dependency patterns and recommends `npm audit` / `pip-audit` / `govulncheck`.
 
@@ -581,7 +581,7 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 **Severity max:** CRITICAL
 **Applies to:** all — **only runs with the `--sca` flag** (opt-in, default off, needs network)
 
-The live counterpart to rule 20: queries [OSV.dev](https://osv.dev) for the exact package/version pairs found in your manifest (NuGet, Go, npm, Composer, PyPI), and only flags when OSV confirms a real CVE — with the exact `fixed_version` and the advisory's own severity, not a static guess. See [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) for the full parsing + query flow.
+The live counterpart to rule 20: queries [OSV.dev](https://osv.dev) for the exact package/version pairs found in your manifest (NuGet, Go, npm, Composer, PyPI, Pub), and only flags when OSV confirms a real CVE — with the exact `fixed_version` and the advisory's own severity, not a static guess. See [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) for the full parsing + query flow.
 
 **Unsafe (`composer.lock`):**
 ```json
@@ -610,6 +610,7 @@ Some rules have language-specific overrides that catch idioms more accurately. W
 | TypeScript / JS | [`skills/vbs-scan-security/rules/languages/typescript/`](../../skills/vbs-scan-security/rules/languages/typescript/) | SQL-INJECTION (Sequelize/Prisma/TypeORM/Mongoose), XSS (React/Vue/Angular), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (js-yaml), SSRF, CSRF, JWT-NONE-ALGORITHM, CORS-MISCONFIG, VERBOSE-ERROR, COMMAND-INJECTION (child_process) |
 | Python | [`skills/vbs-scan-security/rules/languages/python/`](../../skills/vbs-scan-security/rules/languages/python/) | SQL-INJECTION (SQLAlchemy text/Django raw), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (pickle/yaml.load), SSRF, CSRF (Django), JWT-NONE-ALGORITHM (PyJWT), CORS-MISCONFIG, VERBOSE-ERROR (Flask/Django debug), COMMAND-INJECTION (subprocess shell=True) |
 | .NET / C# | [`skills/vbs-scan-security/rules/languages/dotnet/`](../../skills/vbs-scan-security/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/legacy formatters), VERBOSE-ERROR (Developer Exception Page), COMMAND-INJECTION (Process.Start) |
+| Dart / Flutter | [`skills/vbs-scan-security/rules/languages/dart/`](../../skills/vbs-scan-security/rules/languages/dart/) | HARDCODED-SECRET (server secrets bundled in the app, `.env` assets, tokens in SharedPreferences instead of Keychain/Keystore), XSS (WebView / `url_launcher` with outside URLs), SLOPSQUATTING (pub.dev), PATH-TRAVERSAL (push payload / deep link into go_router paths, ZipSlip), BROKEN-ACCESS-CONTROL (incomplete session clearing, 401 per HTTP verb, `allowBackup`, unused exported deep links), VERBOSE-ERROR (logs outside `kDebugMode`, cleartext, `badCertificateCallback`, debug routes), OUTDATED-DEPENDENCY (`pubspec.lock`) |
 
 Want to add another language (Ruby, Java, Rust)? See [contributing.md](contributing.md).
 

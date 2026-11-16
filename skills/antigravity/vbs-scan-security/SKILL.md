@@ -34,7 +34,7 @@ Trong Antigravity Agent Manager chat box:
 
 | Flag | Alias | Mô tả |
 |---|---|---|
-| `--sca` | `sca` | Tra cứu CVE **live** qua OSV.dev cho dependency (NuGet/Go/npm/Composer/PyPI). Xem [`references/dependency-scan.md`](references/dependency-scan.md). Cần network. |
+| `--sca` | `sca` | Tra cứu CVE **live** qua OSV.dev cho dependency (NuGet/Go/npm/Composer/PyPI/Pub). Xem [`references/dependency-scan.md`](references/dependency-scan.md). Cần network. |
 | `--auto-fix` | `auto-fix` | Tự sinh patch, verify bằng build command, revert nếu fail. Xem [`workflows/auto-fix.md`](workflows/auto-fix.md). **Ghi đè file nguồn** — cần git repo. |
 | `--run-tests` | — | Chỉ có tác dụng cùng `--auto-fix`: cho phép chạy test của project (`go test ./...`, `dotnet test`) để verify bản nâng version dependency. **Test có thể đụng hệ thống thật** (DB, dịch vụ trong `.env`) — chỉ bật khi test an toàn. Không bật → bump dependency chỉ là gợi ý patch. |
 
@@ -258,12 +258,12 @@ File i18n chứa bảng key→text cho toàn bộ user-facing strings. Mọi tex
 
 Đọc [`references/language-detection.md`](references/language-detection.md). Tóm tắt:
 
-1. Count extension trong file list: `.go`, `.py`, `.php`, `.js`, `.ts`, `.jsx`, `.tsx`, `.rb`, `.java`, `.rs`, `.cs`, `.csproj`, `.sln`
+1. Count extension trong file list: `.go`, `.py`, `.php`, `.js`, `.ts`, `.jsx`, `.tsx`, `.rb`, `.java`, `.rs`, `.cs`, `.csproj`, `.sln`, `.dart`
 2. Primary lang = lang chiếm ≥30% tổng files
 3. Có `rules/languages/<lang>/` → load overlay; không có → chỉ dùng generic
 4. Multi-lang repo (Go backend + Vue frontend) → load cả 2 overlay
 
-**Hiện hỗ trợ chuyên sâu:** `go`, `php`, `typescript` (gộp JS+TS), `python`, `dotnet`.
+**Hiện hỗ trợ chuyên sâu:** `go`, `php`, `typescript` (gộp JS+TS), `python`, `dotnet`, `dart` (app Flutter: nguồn L1 là payload push, deep link, file từ app khác).
 
 ---
 
@@ -331,7 +331,7 @@ Chỉ chạy khi `$SCA=true`. Rule 22 KHÔNG được nạp qua `load-rules.sh` 
 
 ## Step 4c: Auto-fix (optional — `--auto-fix`)
 
-Chỉ chạy khi `$AUTO_FIX=true`, và cần `$IS_GIT_REPO=true` (không có → in `{msg_autofix_needs_git}`, skip). `$SCAN_ROOT` khác `.` hoặc scope `staged` → chỉ sinh patch, KHÔNG apply, mọi finding là `suggested_only`. Chạy TRƯỚC Step 5 để `patch_status` kịp vào report. Đọc [`workflows/auto-fix.md`](workflows/auto-fix.md): preflight 1 lần (`command -v` build tool + build baseline; thiếu tool hoặc baseline fail → mọi finding `suggested_only`), rồi với mỗi finding CRITICAL/HIGH: harvest context → generate unified diff → `git apply --check` → snapshot file sắp bị ghi → `git apply` → build verify theo `$PRIMARY_LANG` → khôi phục từ snapshot + retry (tối đa 2 lần) nếu fail. KHÔNG revert bằng `git checkout`. Patch dependency chỉ `applied` khi có `--run-tests` và build + test của project pass (Go, dotnet); npm/Composer/PyPI luôn `suggested_only`.
+Chỉ chạy khi `$AUTO_FIX=true`, và cần `$IS_GIT_REPO=true` (không có → in `{msg_autofix_needs_git}`, skip). `$SCAN_ROOT` khác `.` hoặc scope `staged` → chỉ sinh patch, KHÔNG apply, mọi finding là `suggested_only`. Chạy TRƯỚC Step 5 để `patch_status` kịp vào report. Đọc [`workflows/auto-fix.md`](workflows/auto-fix.md): preflight 1 lần (`command -v` build tool + build baseline; thiếu tool hoặc baseline fail → mọi finding `suggested_only`), rồi với mỗi finding CRITICAL/HIGH: harvest context → generate unified diff → `git apply --check` → snapshot file sắp bị ghi → `git apply` → build verify theo `$PRIMARY_LANG` → khôi phục từ snapshot + retry (tối đa 2 lần) nếu fail. KHÔNG revert bằng `git checkout`. Patch dependency chỉ `applied` khi có `--run-tests` và build + test của project pass (Go, dotnet); npm/Composer/PyPI/Pub luôn `suggested_only`.
 
 ---
 

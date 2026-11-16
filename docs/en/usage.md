@@ -420,7 +420,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 
 ## Auto-fix (`--auto-fix`)
 
-**v0.7+, off by default.** After a scan, vbsec generates a unified-diff patch for each CRITICAL/HIGH finding, applies it via `git apply`, runs the language-appropriate build command (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`) to verify it, and reverts + retries (up to 2 times) if the build fails.
+**v0.7+, off by default.** After a scan, vbsec generates a unified-diff patch for each CRITICAL/HIGH finding, applies it via `git apply`, runs the language-appropriate build command (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`, `dart analyze`) to verify it, and reverts + retries (up to 2 times) if the build fails.
 
 ```
 /vbs-scan-security uncommitted --auto-fix
@@ -434,7 +434,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 - **`staged` scope** — auto-fix only writes patch suggestions, because applying a patch would change the working tree but not the index. npm, Composer and Python dependencies always get a patch suggestion only: testing them would mean installing packages and running install scripts, which cannot be cleanly undone.
 - **Commit or back up your working tree first** — auto-fix writes directly to source files on disk (build verification reduces risk, but it's still a real mutation).
 - Only CRITICAL/HIGH findings are auto-fixed; MEDIUM/LOW are always left untouched.
-- Languages without a reliable build command (anything outside .NET/Go/TypeScript/PHP/Python) only get a suggested patch saved to `vbsec-reports/patches/` — vbsec never overwrites source for those.
+- Languages without a reliable build command (anything outside .NET/Go/TypeScript/PHP/Python/Dart) only get a suggested patch saved to `vbsec-reports/patches/` — vbsec never overwrites source for those.
 
 Each processed finding gets a `patch_status` field in the JSON summary (`applied`/`failed_verification`/`suggested_only`/`skipped_low_severity`) — CI can gate further on this (e.g. fail if any `failed_verification` remain).
 
@@ -442,7 +442,7 @@ Each processed finding gets a `patch_status` field in the JSON summary (`applied
 
 ## Live dependency scan (`--sca`)
 
-**v0.7+, off by default, requires network.** Instead of only the offline static list (`OUTDATED-DEPENDENCY` rule), `--sca` queries [OSV.dev](https://osv.dev) **live** for dependency manifests across 5 ecosystems: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python).
+**v0.7+, off by default, requires network.** Instead of only the offline static list (`OUTDATED-DEPENDENCY` rule), `--sca` queries [OSV.dev](https://osv.dev) **live** for dependency manifests across 6 ecosystems: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python), Pub (Dart/Flutter, from `pubspec.lock`).
 
 ```
 /vbs-scan-security all --sca

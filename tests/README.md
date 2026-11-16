@@ -4,7 +4,7 @@ Bộ code mẫu có lỗi biết trước, dùng để đo skill bắt được 
 
 ```
 tests/
-├── fixtures/<lang>/      # câu dễ: python, typescript, go, php, dotnet
+├── fixtures/<lang>/      # câu dễ: python, typescript, go, php, dotnet, dart (app Flutter)
 ├── fixtures/<lang>-hard/ # câu khó: go-hard, typescript-hard, php-hard
 └── expected/<set>.json   # đáp án cho từng bộ
 ```

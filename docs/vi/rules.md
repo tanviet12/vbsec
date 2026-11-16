@@ -4,7 +4,7 @@ Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đ
 
 > **Ký hiệu:**
 > - **Severity max** — mức cao nhất một finding của rule này có thể đạt
-> - **Applies to** — `all` = mọi ngôn ngữ; có specialization riêng nếu liệt kê thêm `go`, `php`, `typescript` (gộp cả `.js/.jsx/.ts/.tsx`), `python` (`.py/.pyw`), `dotnet` (`.cs/.csproj/.sln`)
+> - **Applies to** — `all` = mọi ngôn ngữ; có specialization riêng nếu liệt kê thêm `go`, `php`, `typescript` (gộp cả `.js/.jsx/.ts/.tsx`), `python` (`.py/.pyw`), `dotnet` (`.cs/.csproj/.sln`), `dart` (`.dart`, app Flutter)
 
 ---
 
@@ -12,26 +12,26 @@ Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đ
 
 | # | Rule ID | Severity max | Specialization |
 |---|---|---|---|
-| 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | — |
+| 1 | [HARDCODED-SECRET](#rule-1--hardcoded-secret) | CRITICAL | dart |
 | 2 | [SQL-INJECTION](#rule-2--sql-injection) | CRITICAL | go, php, typescript, python, dotnet |
-| 3 | [XSS](#rule-3--xss) | HIGH | typescript |
+| 3 | [XSS](#rule-3--xss) | HIGH | typescript, dart |
 | 4 | [IDOR](#rule-4--idor) | HIGH | — |
-| 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | — |
+| 5 | [SLOPSQUATTING](#rule-5--slopsquatting) | CRITICAL | dart |
 | 6 | [BRUTE-FORCE](#rule-6--brute-force) | HIGH | — |
 | 7 | [MASS-ASSIGNMENT](#rule-7--mass-assignment) | CRITICAL | typescript, python, dotnet |
 | 8 | [INSECURE-DESERIALIZATION](#rule-8--insecure-deserialization) | CRITICAL | go, php, typescript, python, dotnet |
 | 9 | [SSRF](#rule-9--ssrf) | HIGH | go, typescript, python |
-| 10 | [PATH-TRAVERSAL](#rule-10--path-traversal) | HIGH | — |
+| 10 | [PATH-TRAVERSAL](#rule-10--path-traversal) | HIGH | dart |
 | 11 | [CSRF](#rule-11--csrf) | HIGH | php, typescript, python |
-| 12 | [BROKEN-ACCESS-CONTROL](#rule-12--broken-access-control) | CRITICAL | — |
+| 12 | [BROKEN-ACCESS-CONTROL](#rule-12--broken-access-control) | CRITICAL | dart |
 | 13 | [WEAK-PASSWORD-HASHING](#rule-13--weak-password-hashing) | CRITICAL | — |
 | 14 | [JWT-NONE-ALGORITHM](#rule-14--jwt-none-algorithm) | CRITICAL | typescript, python |
 | 15 | [CORS-MISCONFIG](#rule-15--cors-misconfig) | HIGH | typescript, python |
 | 16 | [UNRESTRICTED-FILE-UPLOAD](#rule-16--unrestricted-file-upload) | CRITICAL | — |
-| 17 | [VERBOSE-ERROR-DEBUG-MODE](#rule-17--verbose-error-debug-mode) | HIGH | go, php, typescript, python, dotnet |
+| 17 | [VERBOSE-ERROR-DEBUG-MODE](#rule-17--verbose-error-debug-mode) | HIGH | go, php, typescript, python, dotnet, dart |
 | 18 | [MISSING-RATE-LIMIT](#rule-18--missing-rate-limit) | HIGH | — |
 | 19 | [RACE-CONDITION](#rule-19--race-condition) | HIGH | — |
-| 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | — |
+| 20 | [OUTDATED-DEPENDENCY](#rule-20--outdated-dependency) | HIGH | dart |
 | 21 | [COMMAND-INJECTION](#rule-21--command-injection) | CRITICAL | go, php, typescript, python, dotnet |
 | 22 | [VULNERABLE-DEPENDENCY](#rule-22--vulnerable-dependency) | CRITICAL | all (chỉ khi có `--sca`) |
 
@@ -40,7 +40,7 @@ Tổng quan ngắn gọn từng rule với ví dụ unsafe/safe. Để đọc đ
 ### Rule 1 — HARDCODED-SECRET
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 API key, password DB, JWT secret, Stripe/AWS/OpenAI key viết thẳng trong code và commit lên Git. Một khi đã push lên public repo, secret coi như rò rỉ vĩnh viễn — phải xoay key, không phải chỉ xóa file.
 
@@ -84,7 +84,7 @@ cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ### Rule 3 — XSS
 
 **Severity max:** HIGH
-**Applies to:** all (+ typescript)
+**Applies to:** all (+ typescript, dart)
 
 Render user input ra HTML mà không escape. Hacker chèn `<script>` đánh cắp cookie / session. Framework hiện đại (React, Vue) auto-escape — chỉ nguy hiểm khi dùng `dangerouslySetInnerHTML` / `v-html` / `innerHTML`.
 
@@ -134,7 +134,7 @@ app.get('/orders/:id', async (req, res) => {
 ### Rule 5 — SLOPSQUATTING
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 AI hallucinate tên package không tồn tại (ví dụ `requests-fast`, `react-utils-helper`). Attacker thấy code mẫu → đăng ký package đó trên npm/PyPI kèm malware. Code AI sinh ra chạy `npm install` là dính.
 
@@ -264,7 +264,7 @@ if (!ALLOWED_HOSTS.includes(url.hostname)) {
 ### Rule 10 — PATH-TRAVERSAL
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 `fs.readFile(req.params.filename)` — user truyền `../../etc/passwd` là đọc được file ngoài thư mục public.
 
@@ -321,7 +321,7 @@ app.post('/transfer', (req, res) => {
 ### Rule 12 — BROKEN-ACCESS-CONTROL
 
 **Severity max:** CRITICAL
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 Frontend ẩn nút "Delete user" cho non-admin, nhưng endpoint `DELETE /users/:id` ở backend không check role. User thường gọi thẳng API là xóa được.
 
@@ -447,7 +447,7 @@ move_uploaded_file($_FILES['file']['tmp_name'], '/var/uploads-private/' . $newNa
 ### Rule 17 — VERBOSE-ERROR-DEBUG-MODE
 
 **Severity max:** HIGH
-**Applies to:** all (+ go, php, typescript, python, dotnet)
+**Applies to:** all (+ go, php, typescript, python, dotnet, dart)
 
 `DEBUG=true` ở production, stack trace lộ ra response, error chi tiết về DB query / file path. Hacker dùng thông tin này để mapping attack surface.
 
@@ -528,7 +528,7 @@ tx.Commit()
 ### Rule 20 — OUTDATED-DEPENDENCY
 
 **Severity max:** HIGH
-**Applies to:** all
+**Applies to:** all (+ dart)
 
 Package có CVE đã biết (`log4j 2.14`, `lodash <4.17.21`, `express <4.17.3`). vbsec không fetch CVE real-time — flag pattern dependency cũ + đề nghị chạy `npm audit` / `pip-audit` / `govulncheck`.
 
@@ -581,7 +581,7 @@ subprocess.run(['convert', filename, 'output.png'], check=True)
 **Severity max:** CRITICAL
 **Applies to:** all — **chỉ chạy khi có flag `--sca`** (opt-in, mặc định tắt, cần network)
 
-Bản "live" của rule 20: tra cứu [OSV.dev](https://osv.dev) cho đúng package/version tìm được trong manifest (NuGet, Go, npm, Composer, PyPI), chỉ flag khi OSV xác nhận CVE thật — kèm `fixed_version` chính xác và severity của chính advisory, không phải đoán từ static list. Xem [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) để biết toàn bộ cơ chế parse + query.
+Bản "live" của rule 20: tra cứu [OSV.dev](https://osv.dev) cho đúng package/version tìm được trong manifest (NuGet, Go, npm, Composer, PyPI, Pub), chỉ flag khi OSV xác nhận CVE thật — kèm `fixed_version` chính xác và severity của chính advisory, không phải đoán từ static list. Xem [`dependency-scan.md`](../../skills/vbs-scan-security/references/dependency-scan.md) để biết toàn bộ cơ chế parse + query.
 
 **Unsafe (`composer.lock`):**
 ```json
@@ -610,6 +610,7 @@ Một số rule có override chuyên sâu cho ngôn ngữ cụ thể. Khi vbsec 
 | TypeScript / JS | [`skills/vbs-scan-security/rules/languages/typescript/`](../../skills/vbs-scan-security/rules/languages/typescript/) | SQL-INJECTION (Sequelize/Prisma/TypeORM/Mongoose), XSS (React/Vue/Angular), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (js-yaml), SSRF, CSRF, JWT-NONE-ALGORITHM, CORS-MISCONFIG, VERBOSE-ERROR, COMMAND-INJECTION (child_process) |
 | Python | [`skills/vbs-scan-security/rules/languages/python/`](../../skills/vbs-scan-security/rules/languages/python/) | SQL-INJECTION (SQLAlchemy text/Django raw), MASS-ASSIGNMENT, INSECURE-DESERIALIZATION (pickle/yaml.load), SSRF, CSRF (Django), JWT-NONE-ALGORITHM (PyJWT), CORS-MISCONFIG, VERBOSE-ERROR (Flask/Django debug), COMMAND-INJECTION (subprocess shell=True) |
 | .NET / C# | [`skills/vbs-scan-security/rules/languages/dotnet/`](../../skills/vbs-scan-security/rules/languages/dotnet/) | SQL-INJECTION (EF Core raw SQL), MASS-ASSIGNMENT (ASP.NET Core model binding), INSECURE-DESERIALIZATION (Newtonsoft/formatter cũ), VERBOSE-ERROR (Developer Exception Page), COMMAND-INJECTION (Process.Start) |
+| Dart / Flutter | [`skills/vbs-scan-security/rules/languages/dart/`](../../skills/vbs-scan-security/rules/languages/dart/) | HARDCODED-SECRET (secret server đóng gói trong app, `.env` asset, token lưu SharedPreferences thay vì Keychain/Keystore), XSS (WebView / `url_launcher` với URL ngoài), SLOPSQUATTING (pub.dev), PATH-TRAVERSAL (payload push / deep link ghép vào route go_router, ZipSlip), BROKEN-ACCESS-CONTROL (xoá phiên thiếu, 401 theo verb, `allowBackup`, deep link exported không dùng), VERBOSE-ERROR (log ngoài `kDebugMode`, cleartext, `badCertificateCallback`, route debug), OUTDATED-DEPENDENCY (`pubspec.lock`) |
 
 Muốn add language khác (Ruby, Java, Rust)? Đọc [contributing.md](contributing.md).
 

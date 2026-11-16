@@ -27,7 +27,7 @@
 - **Finds vulnerabilities in AI-written code**: passwords in source, SQL injection, broken access control, JWTs accepted without signature checks, wide-open CORS and more: 21 of the most common types
 - **Explains them for people who aren't security experts**: every issue says why it's dangerous, how an attacker would exploit it step by step, the current code, and the fixed code
 - **Understands code instead of matching strings**: it traces data from user input to the dangerous call, so it raises far fewer false alarms than pattern-based scanners
-- **Goes deep on 5 languages**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, including popular frameworks such as Express, NestJS, Next.js, React, Django, FastAPI, Laravel and ASP.NET Core
+- **Goes deep on 6 languages**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter, including popular frameworks such as Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core and Flutter mobile apps
 - **Scans exactly what you need**: the whole repo, uncommitted changes only, one commit, one pull request, or the last N days of commits
 - **Works without git**: drop AI-generated code into a folder and scan it right away
 - **Stays fast on big repos**: splits the work across several agents running in parallel, then merges the results
@@ -59,7 +59,7 @@ Read the [full sample report](docs/examples/sample-report.md) to see how vbsec e
 
 ## Test results
 
-The repo ships 8 sample apps with known, planted bugs (Go, PHP, TypeScript, Python, .NET), including hard cases: data flowing through several files, sanitizers written wrong, race conditions when deducting a balance. Each set also has traps that look like bugs but are safe, to measure false alarms.
+The repo ships 9 sample apps with known, planted bugs (Go, PHP, TypeScript, Python, .NET, Flutter), including hard cases: data flowing through several files, sanitizers written wrong, race conditions when deducting a balance. Each set also has traps that look like bugs but are safe, to measure false alarms.
 
 | | Latest run |
 |---|---|
@@ -83,7 +83,7 @@ db.query(`SELECT * FROM products WHERE name = '${x}'`)
 
 To tell these apart, vbsec sorts data into 4 trust levels, from "sent by a stranger" (forms, URLs, headers, uploads) to "produced by the system" (constants, environment variables). Only stranger-supplied data that reaches a dangerous call without being cleaned gets reported.
 
-**It knows each language and framework.** On top of the general rules, vbsec has dedicated rules for Go, PHP, TypeScript/JavaScript, Python and .NET, so it knows each library's traps. For example: `Prisma.sql` is safe but `$queryRawUnsafe` is not, `bypassSecurityTrustHtml` in Angular switches off XSS protection, and Gin's debug mode left on in production.
+**It knows each language and framework.** On top of the general rules, vbsec has dedicated rules for Go, PHP, TypeScript/JavaScript, Python, .NET and Dart/Flutter, so it knows each library's traps. For example: `Prisma.sql` is safe but `$queryRawUnsafe` is not, `bypassSecurityTrustHtml` in Angular switches off XSS protection, Gin's debug mode left on in production, and a Flutter app keeping its login token in `SharedPreferences` instead of the Keychain.
 
 **Small repos scan instantly, big ones get split up.** Under about 20 code files, vbsec scans directly in roughly 30–60 seconds. Larger repos are split into parts for up to 3 agents working in parallel, then the results are merged and de-duplicated.
 
@@ -209,7 +209,7 @@ Edit rules in the canonical `skills/vbs-scan-security/`, then run `./scripts/syn
 
 ### Roadmap
 
-- Done: general rules; dedicated rules for Go, PHP, TypeScript/JavaScript, Python, .NET/C#; three platforms; scanning without git; online CVE lookup via OSV.dev (`--sca`, opt-in, needs network); automatic fixes verified by building (`--auto-fix`, opt-in, needs git). See [usage](docs/en/usage.md#live-dependency-scan---sca)
+- Done: general rules; dedicated rules for Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter; three platforms; scanning without git; online CVE lookup via OSV.dev (`--sca`, opt-in, needs network); automatic fixes verified by building (`--auto-fix`, opt-in, needs git). See [usage](docs/en/usage.md#live-dependency-scan---sca)
 - Next: Ruby, Java, Rust, driven by community demand
 
 ## License

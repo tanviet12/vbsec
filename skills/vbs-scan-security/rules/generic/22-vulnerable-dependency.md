@@ -27,7 +27,7 @@ KHÔNG tự tính điểm từ CVSS vector trong `severity[].score` — chỉ xu
 
 ## Reasoning
 
-1. Đọc [`dependency-scan.md`](../../references/dependency-scan.md) để biết cách parse manifest cho ecosystem tương ứng (`NuGet`, `Go`, `npm`, `Packagist`, `PyPI`).
+1. Đọc [`dependency-scan.md`](../../references/dependency-scan.md) để biết cách parse manifest cho ecosystem tương ứng (`NuGet`, `Go`, `npm`, `Packagist`, `PyPI`, `Pub`).
 2. Gọi `POST /v1/querybatch` lấy vuln ID, rồi `GET /v1/vulns/{id}` lấy chi tiết (severity, fixed version, CVE alias).
 3. Xác định severity từ `database_specific.severity` (tra qua GHSA alias nếu cần), theo bảng trên.
 4. Chỉ flag khi OSV **thực sự trả về ≥1 vuln** cho `(package, installed_version)` — không suy đoán, không dùng static list ở đây (đó là việc của rule 20).
@@ -39,7 +39,7 @@ KHÔNG tự tính điểm từ CVSS vector trong `severity[].score` — chỉ xu
 ```bash
 # Ví dụ minh họa 1 batch query — chi tiết đầy đủ ở dependency-scan.md
 curl -s -X POST https://api.osv.dev/v1/querybatch -H "Content-Type: application/json" -d '{
-  "queries": [{"package": {"name": "<pkg>", "ecosystem": "<NuGet|Go|npm|Packagist|PyPI>"}, "version": "<version>"}]
+  "queries": [{"package": {"name": "<pkg>", "ecosystem": "<NuGet|Go|npm|Packagist|PyPI|Pub>"}, "version": "<version>"}]
 }'
 ```
 
@@ -80,9 +80,11 @@ curl -s -X POST https://api.osv.dev/v1/querybatch -H "Content-Type: application/
    composer require <vendor/package>:<fixed_version>
    # pip
    pip install <package>==<fixed_version>
+   # Pub (Dart / Flutter)
+   flutter pub add <package>:^<fixed_version>   # hoặc dart pub add; nâng cả ràng buộc trong pubspec.yaml
    ```
-2. Sau khi bump version, chạy lại restore/install (`dotnet restore`, `npm install`, `go build ./...`, `composer update`, `pip install -r requirements.txt`) để lockfile khớp.
-3. Nếu dùng `--auto-fix` cùng lúc, xem [`../../workflows/auto-fix.md`](../../workflows/auto-fix.md) Bước 3, mục "Patch sửa dependency": Go/dotnet chỉ được bump khi có `--run-tests` và test của project pass trên version mới; npm/Composer/PyPI chỉ có gợi ý patch (`suggested_only`).
+2. Sau khi bump version, chạy lại restore/install (`dotnet restore`, `npm install`, `go build ./...`, `composer update`, `pip install -r requirements.txt`, `flutter pub get`) để lockfile khớp.
+3. Nếu dùng `--auto-fix` cùng lúc, xem [`../../workflows/auto-fix.md`](../../workflows/auto-fix.md) Bước 3, mục "Patch sửa dependency": Go/dotnet chỉ được bump khi có `--run-tests` và test của project pass trên version mới; npm/Composer/PyPI/Pub chỉ có gợi ý patch (`suggested_only`).
 4. Nếu không thể upgrade ngay (breaking change lớn), note rõ risk acceptance trong PR + theo dõi lại ở lần scan sau.
 
 ## Cross-references

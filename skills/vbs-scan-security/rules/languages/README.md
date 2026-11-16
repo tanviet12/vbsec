@@ -45,11 +45,20 @@ rules/
     │   ├── 15-cors-misconfig.md
     │   ├── 17-verbose-error-debug-mode.md
     │   └── 21-command-injection.md
-    └── dotnet/
-        ├── 02-sql-injection.md        (applies_to: dotnet — .cs .csproj .sln)
-        ├── 07-mass-assignment.md
-        ├── 08-insecure-deserialization.md
-        └── 21-command-injection.md
+    ├── dotnet/
+    │   ├── 02-sql-injection.md        (applies_to: dotnet — .cs .csproj .sln)
+    │   ├── 07-mass-assignment.md
+    │   ├── 08-insecure-deserialization.md
+    │   ├── 17-verbose-error-debug-mode.md
+    │   └── 21-command-injection.md
+    └── dart/                          (applies_to: dart — .dart, app Flutter)
+        ├── 01-hardcoded-secret.md
+        ├── 03-xss.md
+        ├── 05-slopsquatting.md
+        ├── 10-path-traversal.md
+        ├── 12-broken-access-control.md
+        ├── 17-verbose-error-debug-mode.md
+        └── 20-outdated-dependency.md
 ```
 
 **Matching is by frontmatter `id`, not filename.** Filename numeric prefix is convention only, to aid navigation. If `rules/languages/go/02-sql-injection.md` has `id: SQL-INJECTION`, it overrides `rules/generic/02-sql-injection.md` (also `id: SQL-INJECTION`) when scanning a Go repo.
@@ -73,11 +82,12 @@ See `references/language-detection.md` for the detection heuristic. In short:
 | PHP | `php/` | 5 | Stable (v0.1) |
 | TypeScript/JavaScript | `typescript/` | 10 | Stable (v0.2) — includes both `.ts` and `.js` files |
 | Python | `python/` | 9 | Stable (v0.4) — `.py` and `.pyw` |
-| .NET / C# | `dotnet/` | 4 | Stable (v0.6) — ASP.NET Core / EF Core |
+| .NET / C# | `dotnet/` | 5 | Stable (v0.6) — ASP.NET Core / EF Core |
+| Dart / Flutter | `dart/` | 7 | Beta (v0.8) — app di động Flutter: lưu token, xoá phiên, deep link, payload push, WebView, cấu hình Android / iOS, `pubspec.lock` |
 
 **v0.7**: `--auto-fix` (agentic patch loop) + `--sca` (live CVE via OSV.dev, rule 22 `VULNERABLE-DEPENDENCY`) — not a language overlay, cross-cutting feature.
 
-**Phase v0.8+** (planned): Ruby, Rust, Java/Kotlin.
+**Phase v0.9+** (planned): Ruby, Rust, Java/Kotlin.
 
 ## Why specialize?
 

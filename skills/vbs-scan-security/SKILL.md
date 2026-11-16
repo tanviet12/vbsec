@@ -34,7 +34,7 @@ Quét lỗ hổng bảo mật cho code do AI sinh ra (vibe code). Bộ skill nà
 
 | Flag | Alias | Mô tả |
 |---|---|---|
-| `--sca` | `sca` | Tra cứu CVE **live** qua OSV.dev cho dependency (5 ecosystem: NuGet/Go/npm/Composer/PyPI). Xem [`references/dependency-scan.md`](references/dependency-scan.md). Cần network. |
+| `--sca` | `sca` | Tra cứu CVE **live** qua OSV.dev cho dependency (6 ecosystem: NuGet/Go/npm/Composer/PyPI/Pub). Xem [`references/dependency-scan.md`](references/dependency-scan.md). Cần network. |
 | `--auto-fix` | `auto-fix` | Tự sinh patch (unified diff) cho finding CRITICAL/HIGH, verify bằng build command, revert nếu fail. Xem [`workflows/auto-fix.md`](workflows/auto-fix.md). **Ghi đè file nguồn** — cần git repo, khuyến nghị working tree sạch trước khi chạy. |
 | `--run-tests` | — | Chỉ có tác dụng cùng `--auto-fix`: cho phép chạy test của project (`go test ./...`, `dotnet test`) để verify bản nâng version dependency. **Test có thể đụng hệ thống thật** (DB, dịch vụ trong `.env`) — chỉ bật khi test an toàn. Không bật → bump dependency chỉ là gợi ý patch. |
 
@@ -288,12 +288,12 @@ File i18n chứa bảng key→text cho toàn bộ user-facing strings (section h
 
 Đọc [`references/language-detection.md`](references/language-detection.md) để biết cách detect. Tóm tắt:
 
-1. Count extension trong file list (đã strip vendored): `.go`, `.py`, `.php`, `.js`, `.ts`, `.jsx`, `.tsx`, `.rb`, `.java`, `.rs`, `.cs`, `.csproj`, `.sln`
+1. Count extension trong file list (đã strip vendored): `.go`, `.py`, `.php`, `.js`, `.ts`, `.jsx`, `.tsx`, `.rb`, `.java`, `.rs`, `.cs`, `.csproj`, `.sln`, `.dart`
 2. Primary lang = lang chiếm ≥30% tổng files
 3. Có `rules/languages/<lang>/` → load overlay; không có → chỉ dùng generic
 4. Multi-lang repo (cả Go backend + Vue frontend) → load cả 2 overlay
 
-**Hiện hỗ trợ chuyên sâu:** `go`, `php`, `typescript` (gộp JS+TS), `python`, `dotnet`. Các lang khác chỉ dùng generic rules.
+**Hiện hỗ trợ chuyên sâu:** `go`, `php`, `typescript` (gộp JS+TS), `python`, `dotnet`, `dart` (app Flutter: nguồn L1 là payload push, deep link, file từ app khác). Các lang khác chỉ dùng generic rules.
 
 ---
 
@@ -365,7 +365,7 @@ Rule 22 chỉ chạy khi `$SCA=true` — xem Step 4b dưới đây. 21 rules cò
 
 Chỉ chạy khi `$SCA=true`. Rule 22 KHÔNG được nạp qua `load-rules.sh` (frontmatter `opt_in: --sca`), nên Read [`rules/generic/22-vulnerable-dependency.md`](rules/generic/22-vulnerable-dependency.md) ở bước này. Đọc [`references/dependency-scan.md`](references/dependency-scan.md) và follow:
 
-1. Parse manifest dependency theo ecosystem tương ứng `$PRIMARY_LANG` (NuGet/.NET, Go, npm/TypeScript, Composer/PHP, PyPI/Python) — có thể nhiều ecosystem nếu multi-lang repo.
+1. Parse manifest dependency theo ecosystem tương ứng `$PRIMARY_LANG` (NuGet/.NET, Go, npm/TypeScript, Composer/PHP, PyPI/Python, Pub/Dart) — có thể nhiều ecosystem nếu multi-lang repo.
 2. Query live `https://api.osv.dev/v1/querybatch` rồi `v1/vulns/{id}` cho từng package (dùng Bash tool, đây là 1 trong 2 chỗ duy nhất trong skill được phép gọi network thật — chỗ còn lại là `gh pr diff`).
 3. Xác định severity từ `database_specific.severity` (không tự tính điểm từ CVSS vector), tạo finding `rule_id: VULNERABLE-DEPENDENCY` kèm `cve_id`/`fixed_version`.
 4. Network fail/không có manifest → in `{msg_sca_unavailable}`/`{msg_sca_no_manifest}`, KHÔNG fail scan, fallback sang rule 20 (đã chạy sẵn ở Step 4).
@@ -383,7 +383,7 @@ Chỉ chạy khi `$AUTO_FIX=true`. Chạy **TRƯỚC** khi render report ở Ste
 2. Chỉ xử lý finding CRITICAL/HIGH (từ cả rule 1-21 và rule 22 nếu có `--sca`).
 3. Preflight 1 lần: `command -v` build tool + build baseline. Thiếu tool hoặc baseline fail → không apply gì, mọi finding là `suggested_only`.
 4. Với mỗi finding: harvest context → generate unified diff → `git apply --check` → snapshot các file sắp bị ghi → `git apply` → chạy build command theo `$PRIMARY_LANG` → khôi phục từ snapshot + retry (tối đa 2 lần) nếu fail. KHÔNG revert bằng `git checkout` (mất thay đổi chưa commit của user).
-5. Patch dependency chỉ `applied` khi user bật `--run-tests` và build + test của project pass trên version mới (Go, dotnet; project phải có test). npm/Composer/PyPI luôn là `suggested_only`.
+5. Patch dependency chỉ `applied` khi user bật `--run-tests` và build + test của project pass trên version mới (Go, dotnet; project phải có test). npm/Composer/PyPI/Pub luôn là `suggested_only`.
 6. Gắn `patch_status` vào từng finding đã xử lý — dùng ở Step 5 khi render JSON + section Auto-fix.
 
 ---
@@ -473,6 +473,8 @@ WARN ≠ approve. Báo cáo cần nêu rõ HIGH issues cần khắc phục trư�
 │   └── languages/                    # Override chuyên sâu per language
 │       ├── go/                       # GORM, slog, Colly...
 │       ├── php/                      # mysqli/PDO, $_GET, eval/include, Laravel CSRF
+│       ├── typescript/ python/ dotnet/
+│       ├── dart/                     # Flutter: token storage, xoá phiên, deep link, push payload, WebView
 │       └── README.md                 # Hướng dẫn add language mới
 └── references/
     ├── chunking-strategy.md

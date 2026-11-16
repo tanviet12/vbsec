@@ -420,7 +420,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 
 ## Auto-fix (`--auto-fix`)
 
-**v0.7+, mặc định TẮT.** Sau khi scan, vbsec tự sinh patch (unified diff) cho từng finding CRITICAL/HIGH, apply thử qua `git apply`, chạy build command tương ứng ngôn ngữ (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`) để verify, và revert + thử lại (tối đa 2 lần) nếu build fail.
+**v0.7+, mặc định TẮT.** Sau khi scan, vbsec tự sinh patch (unified diff) cho từng finding CRITICAL/HIGH, apply thử qua `git apply`, chạy build command tương ứng ngôn ngữ (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`, `dart analyze`) để verify, và revert + thử lại (tối đa 2 lần) nếu build fail.
 
 ```
 /vbs-scan-security uncommitted --auto-fix
@@ -434,7 +434,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 - **Scope `staged`** — auto-fix chỉ ghi gợi ý patch, vì apply patch chỉ sửa working tree chứ không sửa index. Dependency npm, Composer, Python luôn chỉ có gợi ý patch: muốn test phải cài package và chạy install script, không hoàn tác gọn được.
 - **Commit hoặc backup working tree trước** — auto-fix ghi đè trực tiếp file nguồn (dù có build verify, đây vẫn là thay đổi thật trên đĩa).
 - Chỉ CRITICAL/HIGH được auto-fix; MEDIUM/LOW luôn để nguyên.
-- Ngôn ngữ chưa có build command tin cậy (ngoài .NET/Go/TS/PHP/Python) → vbsec chỉ ghi gợi ý patch vào `vbsec-reports/patches/`, không tự ghi đè.
+- Ngôn ngữ chưa có build command tin cậy (ngoài .NET/Go/TS/PHP/Python/Dart) → vbsec chỉ ghi gợi ý patch vào `vbsec-reports/patches/`, không tự ghi đè.
 
 Kết quả từng finding được ghi vào field `patch_status` trong JSON summary (`applied`/`failed_verification`/`suggested_only`/`skipped_low_severity`) — CI có thể gate tiếp trên field này (vd fail nếu còn `failed_verification`).
 
@@ -442,7 +442,7 @@ Kết quả từng finding được ghi vào field `patch_status` trong JSON sum
 
 ## Quét dependency live (`--sca`)
 
-**v0.7+, mặc định TẮT, cần network.** Thay vì chỉ dùng static list offline (rule `OUTDATED-DEPENDENCY`), `--sca` tra cứu **live** qua [OSV.dev](https://osv.dev) cho dependency manifest của 5 ecosystem: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python).
+**v0.7+, mặc định TẮT, cần network.** Thay vì chỉ dùng static list offline (rule `OUTDATED-DEPENDENCY`), `--sca` tra cứu **live** qua [OSV.dev](https://osv.dev) cho dependency manifest của 6 ecosystem: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python), Pub (Dart/Flutter, đọc `pubspec.lock`).
 
 ```
 /vbs-scan-security all --sca

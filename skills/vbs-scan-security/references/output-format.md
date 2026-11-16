@@ -383,7 +383,7 @@ Không cần cho rule không applicable (vd: PHP rules trên repo Node — khôn
 | `cve_id` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Alias CVE từ OSV (vd `CVE-2022-31091`), fallback OSV id nếu không có alias CVE |
 | `osv_id` | Khi `rule_id: VULNERABLE-DEPENDENCY` | ID gốc từ OSV.dev (vd `GHSA-...`) |
 | `package` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Tên package |
-| `ecosystem` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `NuGet`\|`Go`\|`npm`\|`Packagist`\|`PyPI` |
+| `ecosystem` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `NuGet`\|`Go`\|`npm`\|`Packagist`\|`PyPI`\|`Pub` |
 | `installed_version` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Version hiện tại trong manifest |
 | `fixed_version` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Version tối thiểu đã fix theo OSV |
 | `severity_source` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `"osv"` \| `"ghsa_alias"` \| `"default"` — severity lấy từ đâu (xem `dependency-scan.md` Bước 3) |

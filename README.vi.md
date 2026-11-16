@@ -27,7 +27,7 @@
 - **Tìm lỗ hổng trong code AI viết**: lộ mật khẩu trong code, SQL injection, phân quyền sai, JWT không kiểm chữ ký, CORS mở toang... tổng cộng 21 loại lỗi hay gặp nhất
 - **Giải thích cho người không chuyên bảo mật**: mỗi lỗi có phần vì sao nguy hiểm, hacker khai thác thế nào từng bước, code hiện tại và code sửa lại
 - **Đọc hiểu code, không dò chữ máy móc**: lần theo dữ liệu từ input người dùng tới chỗ nguy hiểm, nên ít báo nhầm hơn công cụ dò mẫu chuỗi
-- **Chuyên sâu 5 ngôn ngữ**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, hiểu framework phổ biến như Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core
+- **Chuyên sâu 6 ngôn ngữ**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter, hiểu framework phổ biến như Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core và app di động Flutter
 - **Quét đúng phần cần quét**: cả repo, chỉ phần chưa commit, một commit, một pull request, hoặc các commit trong N ngày
 - **Chạy được cả khi chưa có git**: bỏ code AI sinh vào một thư mục rồi quét luôn
 - **Repo lớn vẫn nhanh**: tự chia cho nhiều agent quét song song rồi gộp kết quả
@@ -59,7 +59,7 @@ vbsec báo 2 lỗi **NGHIÊM TRỌNG**:
 
 ## Kết quả thử nghiệm
 
-Repo có sẵn 8 bộ code mẫu cài lỗi biết trước (Go, PHP, TypeScript, Python, .NET, gồm cả câu khó: dữ liệu đi qua nhiều file, hàm làm sạch viết sai, race condition khi trừ số dư). Mỗi bộ có thêm bẫy trông giống lỗi nhưng an toàn, để đo báo nhầm.
+Repo có sẵn 9 bộ code mẫu cài lỗi biết trước (Go, PHP, TypeScript, Python, .NET, Flutter, gồm cả câu khó: dữ liệu đi qua nhiều file, hàm làm sạch viết sai, race condition khi trừ số dư). Mỗi bộ có thêm bẫy trông giống lỗi nhưng an toàn, để đo báo nhầm.
 
 | | Kết quả lần chạy gần nhất |
 |---|---|
@@ -83,7 +83,7 @@ db.query(`SELECT * FROM products WHERE name = '${x}'`)
 
 Để phân biệt, vbsec chia dữ liệu thành 4 mức, từ "người lạ gửi lên" (form, URL, header, file upload) tới "hệ thống tự tạo" (hằng số, biến môi trường). Chỉ dữ liệu từ người lạ, đi tới chỗ nguy hiểm mà chưa được lọc, mới bị báo.
 
-**Hiểu từng ngôn ngữ và framework.** Ngoài bộ luật chung, vbsec có luật riêng cho Go, PHP, TypeScript/JavaScript, Python và .NET. Nhờ vậy nó biết những cái bẫy riêng của từng thư viện. Ví dụ `Prisma.sql` là an toàn nhưng `$queryRawUnsafe` thì không, `bypassSecurityTrustHtml` trong Angular tắt luôn lớp chống XSS, Gin quên tắt debug mode khi chạy thật.
+**Hiểu từng ngôn ngữ và framework.** Ngoài bộ luật chung, vbsec có luật riêng cho Go, PHP, TypeScript/JavaScript, Python, .NET và Dart/Flutter. Nhờ vậy nó biết những cái bẫy riêng của từng thư viện. Ví dụ `Prisma.sql` là an toàn nhưng `$queryRawUnsafe` thì không, `bypassSecurityTrustHtml` trong Angular tắt luôn lớp chống XSS, Gin quên tắt debug mode khi chạy thật, app Flutter lưu token đăng nhập trong `SharedPreferences` thay vì Keychain.
 
 **Repo nhỏ quét ngay, repo lớn chia việc.** Dưới khoảng 20 file code, vbsec quét trực tiếp, mất chừng 30–60 giây. Repo lớn hơn thì chia thành nhiều phần cho tối đa 3 agent quét song song, xong gộp kết quả lại và bỏ lỗi trùng.
 
@@ -210,7 +210,7 @@ Sửa luật ở bản gốc `skills/vbs-scan-security/`, rồi chạy `./script
 
 ### Lộ trình
 
-- Đã có: luật chung, chuyên sâu Go, PHP, TypeScript/JavaScript, Python, .NET/C#; ba nền tảng; quét không cần git; tra CVE trực tuyến qua OSV.dev (`--sca`, mặc định tắt, cần mạng); tự sửa lỗi và kiểm build (`--auto-fix`, mặc định tắt, cần git). Xem [hướng dẫn](docs/vi/usage.md#quét-dependency-live---sca)
+- Đã có: luật chung, chuyên sâu Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter; ba nền tảng; quét không cần git; tra CVE trực tuyến qua OSV.dev (`--sca`, mặc định tắt, cần mạng); tự sửa lỗi và kiểm build (`--auto-fix`, mặc định tắt, cần git). Xem [hướng dẫn](docs/vi/usage.md#quét-dependency-live---sca)
 - Tiếp theo: Ruby, Java, Rust theo nhu cầu cộng đồng
 
 ## Giấy phép

@@ -46,6 +46,14 @@ Phân loại nguồn dữ liệu để quyết định 1 pattern code có thực
 - DNS responses (có thể bị poison)
 - External HTTP API responses **mà user control URL** (qua SSRF)
 
+### App di động (Flutter / React Native / native)
+- **Payload push**: `RemoteMessage.data`, `message.notification`, `NotificationResponse.payload` (`flutter_local_notifications`). Server của mình gửi, nhưng ai có FCM server key / quyền gửi (hoặc backend bị lạm dụng) cũng gửi được → L1 khi dùng làm đường dẫn, URL, tên file
+- **Deep link / intent**: `GoRouterState.uri`, `state.pathParameters`, `state.uri.queryParameters`, `app_links` / `uni_links` `uriLinkStream`, `getInitialLink`, `PlatformDispatcher.defaultRouteName`. App hay trang web bất kỳ trên máy mở được → L1 thật
+- **Clipboard**: `Clipboard.getData`, `Pasteboard`
+- **File từ app khác**: `receive_sharing_intent`, `file_picker`, `image_picker`, file zip / backup người dùng chọn (cả nội dung lẫn tên file)
+- **WebView**: `JavaScriptChannel.onMessageReceived`, `onNavigationRequest` URL — trang trong WebView gửi lên
+- Response API của chính backend: L2 (tin như DB). Thành L1 khi dùng làm đường dẫn file, URL mở WebView, HTML render
+
 ## L2 — Database / persistent storage
 
 Dữ liệu từ DB, Redis, S3... LUÔN có thể chứa L1 đã lưu trước đó. Treat như semi-trust:
