@@ -35,7 +35,7 @@ OWASP xếp **Broken Access Control là #1** vì AI sinh route nhanh, hay quên 
 Không có bằng chứng nào trong hai loại trên → **không tạo finding**:
 
 - Repo (hoặc phần code trong scope) **không có cơ chế auth nào** và endpoint chỉ đọc dữ liệu công khai (tìm sản phẩm, xem bài viết, health check, preview): đây là API public hoặc app mẫu chưa có đăng nhập. Ghi **1 hardening note chung** cho cả repo ("chưa có cơ chế auth, cần thêm trước khi đưa dữ liệu nhạy cảm vào"), không tạo finding cho từng endpoint.
-- Endpoint **đã có finding CRITICAL/HIGH của rule khác** (COMMAND-INJECTION, SSRF, SQL-INJECTION...): thiếu auth chỉ làm lỗi đó nặng hơn, không phải lỗi thứ hai. Ghi "endpoint không cần đăng nhập" vào `issue_summary` của finding chính để giải thích severity, KHÔNG tạo thêm BROKEN-ACCESS-CONTROL cùng dòng.
+- Endpoint **đã có finding CRITICAL/HIGH của rule khác** (COMMAND-INJECTION, SSRF, SQL-INJECTION...) và vấn đề chỉ là **thiếu auth**: thiếu auth chỉ làm lỗi đó nặng hơn, không phải lỗi thứ hai. Ghi "endpoint không cần đăng nhập" vào `issue_summary` của finding chính để giải thích severity, KHÔNG tạo thêm BROKEN-ACCESS-CONTROL cùng dòng. **Ngược lại**, nếu lỗi phân quyền **vẫn còn sau khi sửa lỗi kia** — quyền sở hữu xác định bằng trường user tự đổi được (`display_name`, `email` chưa verify), so sánh theo tên thay vì id, tenant lấy từ body — thì đó là finding riêng, kể cả khi cùng dòng với SQL injection.
 - Vấn đề thuộc loại "session không hết hạn", "cookie thiếu cờ", "OAuth thiếu state" mà **không chỉ ra được ai chiếm được gì**: hardening note, không gán rule này.
 
 Nếu reasoning của mình có chữ "có thể", "nên có", "tốt hơn nếu" mà không nêu được attacker lấy được dữ liệu / quyền gì → đó là hardening note.

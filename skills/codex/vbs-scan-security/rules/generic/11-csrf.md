@@ -14,16 +14,21 @@ Lưu ý quan trọng: **JWT trong header `Authorization`** thì miễn nhiễm C
 
 ## Khi nào HIGH
 
-- Auth dùng **session cookie** (Laravel session, Django session, Express `express-session`, Rails cookie store)
-- State-changing endpoint (POST/PUT/PATCH/DELETE) KHÔNG có CSRF token middleware
-- Cookie KHÔNG set `SameSite=Lax` hoặc `Strict` (mặc định browser mới là `Lax`, nhưng cookie cũ set `SameSite=None` thì rủi ro)
-- App có chức năng nhạy cảm: chuyển tiền, đổi email/password, xóa tài khoản, đổi role
+Cần đủ **cả hai** điều kiện:
 
-## Khi nào MEDIUM (giảm cấp)
+1. Auth dùng **session cookie** (Laravel session, Django session, Express `express-session`, PHP `session_start`, Rails cookie store) và cookie KHÔNG có `SameSite=Lax/Strict` hiệu lực
+2. Endpoint state-changing KHÔNG có CSRF token / Origin check **và** hành động nhạy cảm: chuyển tiền, đổi email / password / số điện thoại, xóa tài khoản, đổi role, thêm API key, đổi địa chỉ nhận hàng
 
-- App là **SPA + JWT trong header** (không dùng cookie) — implicit safe, nhưng vẫn nên flag nếu có cookie hybrid
-- Có check `Origin` / `Referer` header
+## Khi nào MEDIUM (mặc định)
+
+- Đủ điều kiện 1 nhưng endpoint chỉ đổi dữ liệu ít nhạy cảm: display name, avatar, cài đặt hiển thị, bình luận, đăng ký nhận tin → **MEDIUM là mức mặc định** cho CSRF
+- Có check `Origin` / `Referer` header nhưng thiếu ở một số endpoint
+- App là **SPA + JWT trong header** nhưng còn cookie hybrid cho vài route
+
+## Khi nào LOW
+
 - Cookie set `SameSite=Strict` (chặn hầu hết CSRF nhưng vẫn có gap: subdomain takeover)
+- Hành động chỉ tạo dữ liệu rác cho chính nạn nhân (upload avatar, thêm bình luận) và có thể hoàn tác
 
 ## Khi nào KHÔNG flag
 
