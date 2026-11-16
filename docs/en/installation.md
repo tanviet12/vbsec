@@ -154,5 +154,5 @@ Native Windows is not officially supported. Use WSL2 with the same instructions 
 ## Next steps
 
 - Read [usage.md](usage.md) for every scope and how to interpret the report
-- See [rules.md](rules.md) for the 21 detection rules
+- See [rules.md](rules.md) for the 30 detection rules
 - Want to contribute? See [contributing.md](contributing.md)

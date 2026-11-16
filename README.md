@@ -1,6 +1,6 @@
 <h1 align="center">vbsec — Security scanning for AI-written code</h1>
 
-<p align="center">A security scanning skill for Claude Code, Codex and Antigravity: it reads your code, finds the 21 most common vulnerability types, and shows you how to fix each one.<br>Free · Open source · Nothing extra to install</p>
+<p align="center">A security scanning skill for Claude Code, Codex and Antigravity: it reads your code, finds 30 vulnerability types, from classic injection bugs to the logic flaws of multi-tenant SaaS and AI agents, and shows you how to fix each one.<br>Free · Open source · Nothing extra to install</p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
@@ -13,7 +13,7 @@
 <p align="center">
   <b><a href="#install">Install</a></b> ·
   <b><a href="docs/examples/sample-report.md">Sample report</a></b> ·
-  <b><a href="#what-vbsec-catches">21 vulnerability types</a></b> ·
+  <b><a href="#what-vbsec-catches">30 vulnerability types</a></b> ·
   <b><a href="README.vi.md">🇻🇳 Tiếng Việt</a></b>
 </p>
 
@@ -24,11 +24,12 @@
 
 ## What vbsec does
 
-- **Finds vulnerabilities in AI-written code**: passwords in source, SQL injection, broken access control, JWTs accepted without signature checks, wide-open CORS and more: 21 of the most common types
+- **Finds vulnerabilities in AI-written code**: passwords in source, SQL injection, broken access control, JWTs accepted without signature checks, wide-open CORS and more: 21 classic types
+- **Catches the bugs of SaaS apps and AI agents**: one company reading another's data, a side path (restore, import, copy, agent tool) skipping the permission check the main screen has, closed periods edited, money counted twice, prompt injection through user-written text, agent tools that act without a real human confirmation: 9 more types
 - **Explains them for people who aren't security experts**: every issue says why it's dangerous, how an attacker would exploit it step by step, the current code, and the fixed code
 - **Understands code instead of matching strings**: it traces data from user input to the dangerous call, so it raises far fewer false alarms than pattern-based scanners
 - **Goes deep on 6 languages**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter, including popular frameworks such as Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core and Flutter mobile apps
-- **Scans exactly what you need**: the whole repo, uncommitted changes only, one commit, one pull request, or the last N days of commits
+- **Scans exactly what you need**: the whole repo, uncommitted changes only, one commit, one pull request, the last N days of commits, or a commit range such as `v1.2.0..HEAD` before a release
 - **Works without git**: drop AI-generated code into a folder and scan it right away
 - **Stays fast on big repos**: splits the work across several agents running in parallel, then merges the results
 - **Reports in English or Vietnamese**, saved as a file in `vbsec-reports/` you can hand to whoever fixes it, with a JSON summary at the end for CI/CD
@@ -59,12 +60,19 @@ Read the [full sample report](docs/examples/sample-report.md) to see how vbsec e
 
 ## Test results
 
-The repo ships 9 sample apps with known, planted bugs (Go, PHP, TypeScript, Python, .NET, Flutter), including hard cases: data flowing through several files, sanitizers written wrong, race conditions when deducting a balance. Each set also has traps that look like bugs but are safe, to measure false alarms.
+The repo ships sample apps with known, planted bugs. Each set also has traps that look like bugs but are safe, to measure false alarms.
 
-| | Latest run |
+- **9 classic sets** (Go, PHP, TypeScript, Python, .NET, Flutter), including hard cases: data flowing through several files, sanitizers written wrong, race conditions when deducting a balance.
+- **4 SaaS sets, new in v0.8**: `saas-hard` (MCP server, over-privileged agent, tenant leaks, permission checks that differ between paths, over-exposed responses), `ledger-hard` (money and state rules, concurrency, logs, sessions), `misc-hard` (zip bombs, PII in logs, open redirect), `lessons-hard` (one case per real-world security lesson). Each comes with a sample project rules file in `tests/context/`.
+
+| | Latest run, 9 classic sets (v0.7) |
 |---|---|
 | Bugs caught | **54/55** |
 | False alarms on safe traps | **0** |
+
+v0.8 results across all 13 sets: see the table below, updated by the maintainer.
+
+<!-- v0.8 bench -->
 
 AI output can vary between runs. Re-run it yourself with `./scripts/run-fixtures.sh` (see [`tests/README.md`](tests/README.md)). vbsec has also been tried on OWASP Juice Shop and caught the vulnerability classes matching its documented challenges.
 
@@ -119,7 +127,12 @@ Manual install, installing for one specific tool, troubleshooting: [docs/en/inst
 /vbs-scan-security uncommitted lang=en           # uncommitted changes only; worth running before every commit
 /vbs-scan-security pr id 42 lang=en              # scan pull request #42
 /vbs-scan-security commit within 7days lang=en   # commits from the last 7 days
+/vbs-scan-security range v1.2.0..HEAD lang=en    # everything changed since the last release
 ```
+
+**Tell vbsec your business rules.** Logic bugs (a closed period still editable, a permission only the owner may grant) can't be seen from code alone. Write your rules in `.vbsec/context.md` (loaded automatically) or pass `--context <file>`. Template: [`project-context.md`](skills/vbs-scan-security/references/project-context.md).
+
+Every report prints the vbsec version it ran (`vbsec_version`) and a coverage table: files read in full, files only pattern-searched, rules not loaded. `--auto-fix` only applies mechanical fixes (parameterized SQL, output escaping, turning off debug mode, dependency bumps); permission, logic and AI fixes stay as suggested patches for a human to review.
 
 Reports are saved to `vbsec-reports/scan-<timestamp>.md` inside the scanned folder. Add `vbsec-reports/` to `.gitignore`; vbsec reminds you if it's missing.
 
@@ -134,6 +147,11 @@ All options: [docs/en/usage.md](docs/en/usage.md).
 | Authentication, authorization | `BROKEN-ACCESS-CONTROL` · `IDOR` · `MASS-ASSIGNMENT` · `JWT-NONE-ALGORITHM` · `WEAK-PASSWORD-HASHING` · `CSRF` |
 | Abuse protection | `BRUTE-FORCE` · `MISSING-RATE-LIMIT` · `RACE-CONDITION` · `UNRESTRICTED-FILE-UPLOAD` |
 | Dependencies | `OUTDATED-DEPENDENCY` · `SLOPSQUATTING` (package names the AI made up, registered first by attackers) |
+| AI, MCP | `LLM-PROMPT-INJECTION` · `EXCESSIVE-AGENCY` |
+| SaaS permissions, data | `TENANT-ISOLATION` · `AUTHZ-PATH-PARITY` · `EXCESSIVE-DATA-EXPOSURE` · `BUSINESS-STATE-INTEGRITY` |
+| Logs, sessions, cost | `SENSITIVE-DATA-IN-LOGS` · `AUTH-SESSION-LIFECYCLE` · `RESOURCE-EXHAUSTION` |
+
+Plus `VULNERABLE-DEPENDENCY` (live CVE lookup, only with `--sca`). A real, exploitable bug outside these 30 types is still reported as `OTHER-CWE-<n>` (open redirect, XXE, SSTI...) and counts toward the verdict. The AI/MCP and tenant rules only load when the repo shows signs of them (an LLM/MCP SDK, a `tenant_id`-style column).
 
 Severity, vulnerable and safe code examples, and which languages have dedicated rules: [docs/en/rules.md](docs/en/rules.md).
 
@@ -143,7 +161,8 @@ vbsec is a first line of defense, not proof that your system is secure.
 
 - It does not replace a security review by professionals
 - It does not guarantee catching 100% of vulnerabilities
-- It does not query CVE databases online. Check dependencies for known vulnerabilities with `npm audit`, `pip-audit`, `govulncheck`, `composer audit`
+- It does not query CVE databases online unless you add `--sca`. Without it, check dependencies with `npm audit`, `pip-audit`, `govulncheck`, `composer audit`
+- Business-logic checks are only as good as the rules it knows: without a project rules file, it infers them from code and says so
 
 ## Add a badge to your repo
 
@@ -205,11 +224,12 @@ Edit rules in the canonical `skills/vbs-scan-security/`, then run `./scripts/syn
 ```bash
 ./scripts/sync-skills.sh               # sync the 3 skill variants
 ./scripts/run-fixtures.sh typescript   # scan the sample app and score it (costs tokens; run the language you changed)
+python3 scripts/check-lessons.py       # every security lesson in your lessons file must map to a test case
 ```
 
 ### Roadmap
 
-- Done: general rules; dedicated rules for Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter; three platforms; scanning without git; online CVE lookup via OSV.dev (`--sca`, opt-in, needs network); automatic fixes verified by building (`--auto-fix`, opt-in, needs git). See [usage](docs/en/usage.md#live-dependency-scan---sca)
+- Done: 30 general rules, including 9 for SaaS and AI agents (v0.8); dedicated rules for Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter; three platforms; scanning without git; online CVE lookup via OSV.dev (`--sca`, opt-in, needs network); automatic fixes verified by building (`--auto-fix`, opt-in, needs git). See [usage](docs/en/usage.md#live-dependency-scan---sca)
 - Next: Ruby, Java, Rust, driven by community demand
 
 ## License
