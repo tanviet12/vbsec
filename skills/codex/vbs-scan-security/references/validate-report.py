@@ -15,13 +15,17 @@ import sys
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
 VERDICTS = {"PASS", "WARN", "FAIL"}
-REQUIRED_TOP = ["verdict", "summary", "scope", "files_reviewed", "primary_language",
+REQUIRED_TOP = ["vbsec_version", "verdict", "summary", "scope", "files_reviewed", "primary_language",
                 "specialized_rules_used", "mode", "date", "findings"]
+# Lỗi có đường khai thác mà không rule nào khớp → OTHER-CWE-<số>, kèm field `cwe`, tính vào summary/verdict.
+OTHER_CWE = re.compile(r"^OTHER-CWE-(\d+)$")
+OTHER_SEVERITY_MAX = "HIGH"
+RANK = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 REQUIRED_FINDING = ["file", "line", "rule_id", "severity", "issue_summary", "fix_summary"]
 ALIASES = {"id": "rule_id", "rule": "rule_id", "note": "issue_summary", "summary": "issue_summary",
            "issue": "issue_summary", "fix": "fix_summary", "path": "file"}
 # Finding mà chính issue_summary thừa nhận là không khai thác được, hoặc thú nhận đã gán rule gần nhất
-# cho vấn đề ngoài 21 rule → không phải finding, phải chuyển sang hardening_notes. Ngoại lệ: rule
+# → không phải finding (chuyển sang hardening_notes) hoặc phải dùng OTHER-CWE-<n>. Ngoại lệ: rule
 # dependency (20, 22) — "CVE không reachable với code hiện tại" ở đó là lý do hạ severity, vẫn là finding.
 DEPENDENCY_RULES = {"OUTDATED-DEPENDENCY", "VULNERABLE-DEPENDENCY"}
 SELF_NEGATING = re.compile(
@@ -40,13 +44,21 @@ SELF_NEGATING = re.compile(
     re.I)
 
 
-def canonical_rule_ids():
-    ids = set()
+def canonical_rules():
+    """{rule_id: severity_max} đọc từ frontmatter rules/generic/*.md."""
+    rules = {}
     for path in glob.glob(os.path.join(SKILL_DIR, "rules", "generic", "*.md")):
-        m = re.search(r"^id:\s*(\S+)", open(path, encoding="utf-8").read(), re.M)
+        text = open(path, encoding="utf-8").read()
+        m = re.search(r"^id:\s*(\S+)", text, re.M)
         if m:
-            ids.add(m.group(1))
-    return ids
+            sm = re.search(r"^severity_max:\s*(\S+)", text, re.M)
+            rules[m.group(1)] = sm.group(1).upper() if sm else "CRITICAL"
+    return rules
+
+
+def expected_verdict(findings):
+    sevs = {f.get("severity") for f in findings}
+    return "FAIL" if "CRITICAL" in sevs else "WARN" if "HIGH" in sevs else "PASS"
 
 
 def validate(report_path):
@@ -60,7 +72,7 @@ def validate(report_path):
         return [f"JSON không parse được: {e}"]
 
     errors = []
-    rule_ids = canonical_rule_ids()
+    rules = canonical_rules()
     for key in REQUIRED_TOP:
         if key not in data:
             errors.append(f"thiếu field top-level `{key}`")
@@ -80,10 +92,22 @@ def validate(report_path):
             if key not in f and not any(a in f and p == key for a, p in ALIASES.items()):
                 errors.append(f"{where}: thiếu `{key}`")
         rid = f.get("rule_id")
-        if rid is not None and rid not in rule_ids:
-            errors.append(f"{where}: rule_id `{rid}` không thuộc danh sách rule canonical. "
-                          f"KHÔNG gán sang rule gần nhất: nếu có đường khai thác cụ thể thì chọn đúng rule mô tả nó, "
-                          f"còn không thì chuyển sang `hardening_notes`")
+        sev = f.get("severity")
+        cap = None
+        m_other = OTHER_CWE.match(rid) if isinstance(rid, str) else None
+        if m_other:
+            cap = OTHER_SEVERITY_MAX
+            cwe = str(f.get("cwe", ""))
+            if cwe.upper().replace("CWE-", "") != m_other.group(1):
+                errors.append(f"{where}: rule_id `{rid}` cần field `cwe` = \"CWE-{m_other.group(1)}\"")
+        elif rid is not None and rid not in rules:
+            errors.append(f"{where}: rule_id `{rid}` không thuộc danh sách rule. KHÔNG gán sang rule gần nhất: "
+                          f"nếu có đường khai thác cụ thể mà không rule nào khớp → dùng `OTHER-CWE-<số>` kèm `cwe`, "
+                          f"còn không có đường khai thác thì chuyển sang `hardening_notes`")
+        else:
+            cap = rules.get(rid)
+        if cap and sev in RANK and RANK[sev] > RANK[cap]:
+            errors.append(f"{where}: severity {sev} vượt trần {cap} của `{rid}`")
         issue_text = " ".join(str(f.get(k, "")) for k in ("issue_summary", "issue", "note", "summary"))
         m = SELF_NEGATING.search(issue_text)
         if m and rid not in DEPENDENCY_RULES:
@@ -92,7 +116,6 @@ def validate(report_path):
                           f"viết lại issue_summary nêu attacker làm gì và điều kiện bypass, bỏ cụm phủ định; "
                           f"(b) input attacker không tới được sink, chỉ là lớp phòng thủ thêm → xoá khỏi `findings[]`, "
                           f"ghi vào `hardening_notes[]` (không rule_id), cập nhật `summary` và verdict")
-        sev = f.get("severity")
         if sev is not None and sev not in SEVERITIES:
             errors.append(f"{where}: severity phải viết hoa CRITICAL/HIGH/MEDIUM/LOW, đang là {sev!r}")
         line = f.get("line")
@@ -113,6 +136,16 @@ def validate(report_path):
         got = summary.get(sev.lower())
         if got != want:
             errors.append(f"summary.{sev.lower()} = {got!r} nhưng findings có {want} mục {sev}")
+
+    if data.get("verdict") in VERDICTS and isinstance(findings, list):
+        want_v = expected_verdict(findings)
+        if data["verdict"] != want_v and not data.get("verdict_downgraded_reason"):
+            errors.append(f"verdict = {data['verdict']} nhưng findings cho ra {want_v} (CRITICAL → FAIL, HIGH → WARN). "
+                          f"Finding OTHER-CWE-* cũng tính. Chỉ được nặng hơn khi có `verdict_downgraded_reason` (vd chunk lỗi)")
+
+    cov = data.get("coverage")
+    if cov is not None and not isinstance(cov, dict):
+        errors.append("`coverage` (nếu có) phải là object: {files_read, files_grep_only, files_skipped, rules_skipped, context_file}")
 
     notes = data.get("hardening_notes", [])
     if not isinstance(notes, list) or any(not isinstance(n, dict) or "note" not in n for n in notes):

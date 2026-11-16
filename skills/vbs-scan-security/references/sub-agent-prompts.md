@@ -6,9 +6,9 @@ Templates cho prompt khi main orchestrator delegate quét 1 chunk cho sub-agent.
 
 1. **Sub-agent KHÔNG có lang context** — Luôn yêu cầu sub-agent output **canonical English + rule ID**. Main agent sẽ translate sang `$LANG` ở step aggregate.
 2. **Sub-agent nạp ĐỦ phần phát hiện của rule** qua `load-rules.sh` với **đường dẫn tuyệt đối** tới skill (`{skill_dir}`), giống agent chính ở SMALL mode. Danh sách 1 dòng mỗi rule không đủ để reasoning (v0.7 trở về trước chỉ đưa danh sách → agent con sót lỗi logic / quyền). Main agent điền `{skill_dir}` = thư mục chứa SKILL.md.
-5. **Luật dự án** (`$CONTEXT_FILE`, nếu có) được chép nguyên văn vào prompt — sub-agent không biết file đó ở đâu.
 3. **Prompt phải self-contained** — Sub-agent không thấy conversation hiện tại. Mọi context cần phải nằm trong prompt.
 4. **Output file path cố định** — Sub-agent ghi findings ra `.vbsec-tmp/findings-<chunk-name-slug>.md`. Main agent đọc lại để aggregate.
+5. **Luật dự án** (`$CONTEXT_FILE`, nếu có) được chép nguyên văn vào prompt — sub-agent không biết file đó ở đâu.
 
 ## Template prompt chính
 
@@ -65,7 +65,7 @@ Rule IDs at a glance (the loaded text is authoritative):
 30. AUTH-SESSION-LIFECYCLE — reusable intermediate login/2FA token, tokens not revoked on logout/offboarding, stale approver/privilege
 31. RESOURCE-EXHAUSTION — unbounded decompression/size/page/regex cost per request
 
-Note: rule 22 (VULNERABLE-DEPENDENCY) is opt-in. Rule 22 (VULNERABLE-DEPENDENCY, live OSV.dev lookup under `--sca`) is intentionally NOT in this per-chunk list — it's a repo-wide dependency-manifest check, not something that benefits from folder-based chunking. The **main orchestrator** runs it once (SKILL.md Step 4b), then merges its findings into the aggregated result below. Do not attempt OSV lookups from within a sub-agent chunk.
+Note: rule 22 (VULNERABLE-DEPENDENCY, live OSV.dev lookup under `--sca`) is opt-in and intentionally NOT in this per-chunk list — it's a repo-wide dependency-manifest check, not something that benefits from folder-based chunking. The **main orchestrator** runs it once (SKILL.md Step 4b), then merges its findings into the aggregated result below. Do not attempt OSV lookups from within a sub-agent chunk.
 
 # Methodology — Reasoning, not pattern-matching
 

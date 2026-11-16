@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sync-skills.sh — copy shared content (rules/, references/,
-# workflows/{small-review,auto-fix}.md) từ canonical Claude skill sang
+# workflows/{small-review,auto-fix}.md, VERSION) từ canonical Claude skill sang
 # Codex và Antigravity variants.
 #
 # CHẠY MỖI KHI sửa rule hoặc reference ở canonical.
@@ -33,7 +33,7 @@ for target in "${targets[@]}"; do
   echo "→ Syncing to $target"
   mkdir -p "$target/rules" "$target/references" "$target/workflows"
 
-  # Sync rules/ (21 generic + language overlays) — identical across platforms
+  # Sync rules/ (generic 01–31 + language overlays) — identical across platforms
   rsync -a --delete "$CANONICAL/rules/" "$target/rules/"
 
   # Sync references/ — identical across platforms
@@ -44,10 +44,14 @@ for target in "${targets[@]}"; do
   cp "$CANONICAL/workflows/small-review.md" "$target/workflows/small-review.md"
   cp "$CANONICAL/workflows/auto-fix.md" "$target/workflows/auto-fix.md"
 
+  # VERSION — SKILL.md của mọi biến thể đọc file này để in vbsec_version vào báo cáo
+  cp "$CANONICAL/VERSION" "$target/VERSION"
+
   echo "  ✓ rules/ ($(find "$target/rules" -name '*.md' | wc -l | xargs) files)"
   echo "  ✓ references/ ($(find "$target/references" -name '*.md' | wc -l | xargs) files)"
   echo "  ✓ workflows/small-review.md"
   echo "  ✓ workflows/auto-fix.md"
+  echo "  ✓ VERSION ($(cat "$target/VERSION"))"
 done
 
 echo ""

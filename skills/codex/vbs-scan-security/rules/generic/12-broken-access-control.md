@@ -17,7 +17,7 @@ OWASP xếp **Broken Access Control là #1** vì AI sinh route nhanh, hay quên 
 - Endpoint sensitive (admin, delete, update user khác, financial) **không có** middleware auth/role
 - Endpoint nhận `userId` / `tenantId` từ request body/query mà **không verify** user hiện tại có quyền truy cập resource đó (IDOR)
 - Frontend route ẩn nhưng backend mở (`/api/admin/*` không có guard)
-- Missing tenant isolation: query không có `WHERE tenant_id = current_user.tenant_id`
+- Missing tenant isolation → dùng rule TENANT-ISOLATION (25), không tạo BROKEN-ACCESS-CONTROL trùng dòng
 
 ## Khi nào HIGH (giảm cấp)
 
