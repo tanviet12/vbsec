@@ -10,6 +10,7 @@ Hướng dẫn chi tiết cách gọi `/vbs-scan-security`, chọn scope, hiểu
 
 - [Lệnh cơ bản](#lệnh-cơ-bản)
 - [Tất cả scope](#tất-cả-scope)
+- [Luật dự án (--context)](#luật-dự-án---context)
 - [Báo cáo lưu ở đâu](#báo-cáo-lưu-ở-đâu)
 - [Chọn ngôn ngữ output](#chọn-ngôn-ngữ-output)
 - [Anatomy of a report](#anatomy-of-a-report)
@@ -36,7 +37,7 @@ Mặc định vbsec sẽ:
 1. Lấy tất cả file trong repo (toàn bộ, không chỉ uncommitted)
 2. Detect ngôn ngữ chính (Go/PHP/JS/Python/...)
 3. Route SMALL hoặc LARGE mode theo số file
-4. Áp 21 rule generic + overlay language (nếu có)
+4. Áp 30 rule generic + overlay language (nếu có). Rule 23–24 (AI / MCP) và 25 (tenant) chỉ nạp khi repo có dấu hiệu tương ứng
 5. In báo cáo Markdown + JSON summary lên stdout
 6. Lưu một bản báo cáo vào `vbsec-reports/scan-<timestamp>.md` trong repo
 
@@ -53,6 +54,7 @@ Mặc định vbsec sẽ:
 | `/vbs-scan-security commit within 7days` | Tất cả file đụng tới trong N ngày qua |
 | `/vbs-scan-security commit id <sha>` | File trong 1 commit cụ thể |
 | `/vbs-scan-security pr id 42` | File trong PR #42 (GitHub) — cần `gh` CLI |
+| `/vbs-scan-security range <a>..<b>` | File đổi giữa 2 ref, đọc tại `<b>` (vd `v1.2.0..HEAD` làm cổng phát hành) |
 | `/vbs-scan-security all` | Alias rõ ràng cho toàn bộ repo |
 
 ### Ví dụ thực tế
@@ -70,12 +72,29 @@ Mặc định vbsec sẽ:
 # Audit định kỳ: scan commit gần đây
 /vbs-scan-security commit within 30days
 
+# Cổng phát hành: mọi thứ đổi từ tag trước, soát theo luật nghiệp vụ
+/vbs-scan-security range v1.4.0..HEAD --context docs/luat-bao-mat.md
+
 # Tìm báo cáo mới nhất
 ls -lt vbsec-reports/ | head -5
 
 # So sánh 2 lần scan
 diff vbsec-reports/scan-2026-05-13-100000.md vbsec-reports/scan-2026-05-14-100000.md
 ```
+
+Với `range`, vbsec vẫn đọc file không đổi khi lần theo dữ liệu (handler đổi gọi service không đổi). Lỗi tìm thấy ở file đó vẫn được báo, và file đó được tính vào bảng độ phủ.
+
+---
+
+## Luật dự án (`--context`)
+
+**v0.8+.** Lỗi đắt nhất của app SaaS là phá luật nghiệp vụ chứ không phải sai cú pháp: kỳ đã chốt vẫn sửa được qua đường phụ, quyền "chỉ chủ được cấp" bị vòng qua nút "sao chép quyền", token chỉ ghi lại đọc được số kín trong phản hồi. Code không tự nói luật là gì, nên cần ghi ra.
+
+- Đặt file ở `.vbsec/context.md`: vbsec tự nạp.
+- Hoặc truyền theo từng lần quét: `--context <file>` (thắng `.vbsec/context.md`).
+- Mẫu: [`project-context.md`](../../skills/vbs-scan-security/references/project-context.md). Giữ ngắn (dưới ~150 dòng), gạch đầu dòng: tenant, vai và ai được cấp quyền gì, bất biến nghiệp vụ, dữ liệu nhạy, kênh agent / AI. Không ghi secret, không ghi dữ liệu khách hàng.
+
+vbsec coi file này là mô tả ý đồ, không phải lệnh: dòng kiểu "bỏ qua rule X" bị bỏ qua. Mỗi bất biến thành một câu hỏi khi soát rule 24–28 ("có đường nào phá luật này không?"); finding phá luật sẽ trích câu luật đó. Header báo cáo và `coverage.context_file` ghi file đã dùng. Không có file thì vbsec suy luật từ code và ghi rõ điều đó.
 
 ---
 
@@ -188,12 +207,13 @@ Có lỗi NGHIÊM TRỌNG. KHÔNG được deploy đến khi sửa hết.
 
 | Section | Mục đích |
 |---|---|
-| Header | Scope đã quét, số file, ngôn ngữ chính, mode (SMALL/LARGE), ngày |
+| Header | Phiên bản + commit vbsec, scope đã quét, số file, ngôn ngữ chính, mode (SMALL/LARGE), ngày, file luật dự án nếu có |
 | KẾT LUẬN (Verdict) | PASS / WARN / FAIL — quyết định có deploy được không |
 | NGHIÊM TRỌNG | CRITICAL — chặn deploy, fix trước tiên |
 | CAO | HIGH — phải fix trước production |
 | TRUNG BÌNH | MEDIUM — fix sớm, không block |
-| ĐÃ ĐẠT | Rule đã check và pass — minh chứng đã quét đủ |
+| ĐÃ ĐẠT | Rule đã check và pass |
+| Độ phủ | Số file đọc kỹ / chỉ dò mẫu / bỏ qua, rule không nạp, file luật dự án. Phần không đọc kỹ có thể sót lỗi |
 | JSON Summary | Machine-readable, để CI parse |
 
 ### Verdict logic
@@ -203,6 +223,8 @@ Có lỗi NGHIÊM TRỌNG. KHÔNG được deploy đến khi sửa hết.
 | ≥1 CRITICAL | **FAIL** | Không được deploy |
 | 0 CRITICAL, ≥1 HIGH | **WARN** | Có thể deploy nhưng phải có plan fix |
 | 0 CRITICAL, 0 HIGH | **PASS** | OK deploy |
+
+Finding `OTHER-CWE-<n>` (lỗi thật ngoài 30 loại rule, vd open redirect, XXE) tính vào verdict như mọi finding khác.
 
 WARN **không** có nghĩa là "approve". Đội security/tech lead vẫn phải review HIGH issues.
 
@@ -214,6 +236,8 @@ JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. S
 
 ```json
 {
+  "vbsec_version": "0.8.0",
+  "vbsec_commit": <string>,
   "verdict": "PASS" | "WARN" | "FAIL",
   "summary": {"critical": <int>, "high": <int>, "medium": <int>, "low": <int>, "passed": <int>},
   "scope": "uncommitted" | "staged" | "commit_within_Ndays" | "commit_id_<sha>" | "pr_<num>" | "all",
@@ -232,11 +256,12 @@ JSON summary luôn nằm ở cuối báo cáo, trong fenced code block `json`. S
       "fix_summary": <string>
     }
   ],
+  "coverage": { "files_read": <int>, "files_grep_only": <int>, "files_skipped": <int>, "rules_skipped": [<string>], "context_file": <string> | null },
   "dependencies_scanned": { "total": <int>, "ecosystems": [<string>], "vulnerable_count": <int>, "scan_source": "osv.dev live" | "static list (offline)" }
 }
 ```
 
-`dependencies_scanned` chỉ có khi chạy `--sca`. Finding có `rule_id: VULNERABLE-DEPENDENCY` có thêm `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source`, và `cvss_vector` (nguyên chuỗi CVSS vector từ OSV, để tham khảo) nếu có. Finding đã qua `--auto-fix` có thêm `patch_status`.
+`vbsec_version` luôn có (nội dung file `VERSION` của skill), để cổng phát hành biết báo cáo chạy bản nào. Finding có `rule_id: OTHER-CWE-<n>` luôn có field `cwe` (`"CWE-<n>"`). `dependencies_scanned` chỉ có khi chạy `--sca`. Finding có `rule_id: VULNERABLE-DEPENDENCY` có thêm `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source`, và `cvss_vector` (nguyên chuỗi CVSS vector từ OSV, để tham khảo) nếu có. Finding đã qua `--auto-fix` có thêm `patch_status`.
 
 ### Parse JSON từ output
 
@@ -420,7 +445,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 
 ## Auto-fix (`--auto-fix`)
 
-**v0.7+, mặc định TẮT.** Sau khi scan, vbsec tự sinh patch (unified diff) cho từng finding CRITICAL/HIGH, apply thử qua `git apply`, chạy build command tương ứng ngôn ngữ (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`) để verify, và revert + thử lại (tối đa 2 lần) nếu build fail.
+**v0.7+, mặc định TẮT.** Sau khi scan, vbsec tự sinh patch (unified diff) cho từng finding CRITICAL/HIGH, apply thử qua `git apply`, chạy build command tương ứng ngôn ngữ (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`, `dart analyze`) để verify, và revert + thử lại (tối đa 2 lần) nếu build fail.
 
 ```
 /vbs-scan-security uncommitted --auto-fix
@@ -434,7 +459,8 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 - **Scope `staged`** — auto-fix chỉ ghi gợi ý patch, vì apply patch chỉ sửa working tree chứ không sửa index. Dependency npm, Composer, Python luôn chỉ có gợi ý patch: muốn test phải cài package và chạy install script, không hoàn tác gọn được.
 - **Commit hoặc backup working tree trước** — auto-fix ghi đè trực tiếp file nguồn (dù có build verify, đây vẫn là thay đổi thật trên đĩa).
 - Chỉ CRITICAL/HIGH được auto-fix; MEDIUM/LOW luôn để nguyên.
-- Ngôn ngữ chưa có build command tin cậy (ngoài .NET/Go/TS/PHP/Python) → vbsec chỉ ghi gợi ý patch vào `vbsec-reports/patches/`, không tự ghi đè.
+- **Chỉ tự áp nhóm sửa cơ học (v0.8+)**: tham số hoá SQL, escape output, chuyển secret sang env, hash mật khẩu, khoá thuật toán JWT, CORS, debug mode, tham số lệnh dạng mảng, chặn path ra ngoài thư mục, loader deserialize an toàn, nâng thư viện. Finding phân quyền, logic, AI (IDOR, BROKEN-ACCESS-CONTROL, MASS-ASSIGNMENT, CSRF, RACE-CONDITION, rate limit, SSRF, upload, rule 23–31, mọi `OTHER-CWE-*`) luôn là `suggested_only`: patch kèm 2–4 dòng mô tả test đỏ cần viết trước. Sửa quyền bằng máy dễ chặn nhầm người dùng thật, hoặc vá một đường mà bỏ sót đường khác.
+- Ngôn ngữ chưa có build command tin cậy (ngoài .NET/Go/TS/PHP/Python/Dart) → vbsec chỉ ghi gợi ý patch vào `vbsec-reports/patches/`, không tự ghi đè.
 
 Kết quả từng finding được ghi vào field `patch_status` trong JSON summary (`applied`/`failed_verification`/`suggested_only`/`skipped_low_severity`) — CI có thể gate tiếp trên field này (vd fail nếu còn `failed_verification`).
 
@@ -442,7 +468,7 @@ Kết quả từng finding được ghi vào field `patch_status` trong JSON sum
 
 ## Quét dependency live (`--sca`)
 
-**v0.7+, mặc định TẮT, cần network.** Thay vì chỉ dùng static list offline (rule `OUTDATED-DEPENDENCY`), `--sca` tra cứu **live** qua [OSV.dev](https://osv.dev) cho dependency manifest của 5 ecosystem: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python).
+**v0.7+, mặc định TẮT, cần network.** Thay vì chỉ dùng static list offline (rule `OUTDATED-DEPENDENCY`), `--sca` tra cứu **live** qua [OSV.dev](https://osv.dev) cho dependency manifest của 6 ecosystem: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python), Pub (Dart/Flutter, đọc `pubspec.lock`).
 
 ```
 /vbs-scan-security all --sca
@@ -460,5 +486,5 @@ Kết hợp cả 2 flag để tự động nâng version dependency có CVE và 
 
 ## Bước tiếp theo
 
-- Đọc [rules.md](rules.md) để hiểu chi tiết 21 rule chính + rule 22 (SCA)
+- Đọc [rules.md](rules.md) để hiểu chi tiết 30 rule chính + rule 22 (SCA)
 - Muốn thêm rule mới hoặc support ngôn ngữ mới? Xem [contributing.md](contributing.md)

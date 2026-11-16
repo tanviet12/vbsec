@@ -1,6 +1,6 @@
 <h1 align="center">vbsec — Quét bảo mật cho code do AI viết</h1>
 
-<p align="center">Skill quét bảo mật cho Claude Code, Codex và Antigravity: đọc code của bạn, tìm 21 loại lỗ hổng hay gặp nhất và chỉ cách sửa từng lỗi.<br>Miễn phí · Mã nguồn mở · Không cài thêm phần mềm</p>
+<p align="center">Skill quét bảo mật cho Claude Code, Codex và Antigravity: đọc code của bạn, tìm 30 loại lỗ hổng, từ lỗi chèn lệnh kinh điển tới lỗi logic của app SaaS nhiều công ty và agent AI, rồi chỉ cách sửa từng lỗi.<br>Miễn phí · Mã nguồn mở · Không cài thêm phần mềm</p>
 
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/gi%E1%BA%A5y%20ph%C3%A9p-MIT-blue" alt="Giấy phép MIT"></a>
@@ -13,7 +13,7 @@
 <p align="center">
   <b><a href="#cài-đặt">Cài đặt</a></b> ·
   <b><a href="docs/examples/bao-cao-mau.md">Xem báo cáo mẫu</a></b> ·
-  <b><a href="#vbsec-bắt-được-những-lỗi-nào">21 loại lỗi</a></b> ·
+  <b><a href="#vbsec-bắt-được-những-lỗi-nào">30 loại lỗi</a></b> ·
   <b><a href="README.md">🇬🇧 English</a></b>
 </p>
 
@@ -24,11 +24,12 @@
 
 ## vbsec làm được gì
 
-- **Tìm lỗ hổng trong code AI viết**: lộ mật khẩu trong code, SQL injection, phân quyền sai, JWT không kiểm chữ ký, CORS mở toang... tổng cộng 21 loại lỗi hay gặp nhất
+- **Tìm lỗ hổng trong code AI viết**: lộ mật khẩu trong code, SQL injection, phân quyền sai, JWT không kiểm chữ ký, CORS mở toang... 21 loại lỗi kinh điển
+- **Bắt lỗi riêng của app SaaS và agent AI**: công ty này xem được dữ liệu công ty kia, đường phụ (khôi phục, nhập, sao chép, tool cho agent) bỏ qua bước kiểm quyền mà màn chính có, kỳ đã chốt vẫn sửa được, tiền cộng hai lần, prompt injection qua chữ người dùng viết, tool agent tự làm mà không cần người thật xác nhận: thêm 9 loại
 - **Giải thích cho người không chuyên bảo mật**: mỗi lỗi có phần vì sao nguy hiểm, hacker khai thác thế nào từng bước, code hiện tại và code sửa lại
 - **Đọc hiểu code, không dò chữ máy móc**: lần theo dữ liệu từ input người dùng tới chỗ nguy hiểm, nên ít báo nhầm hơn công cụ dò mẫu chuỗi
-- **Chuyên sâu 5 ngôn ngữ**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, hiểu framework phổ biến như Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core
-- **Quét đúng phần cần quét**: cả repo, chỉ phần chưa commit, một commit, một pull request, hoặc các commit trong N ngày
+- **Chuyên sâu 6 ngôn ngữ**: Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter, hiểu framework phổ biến như Express, NestJS, Next.js, React, Django, FastAPI, Laravel, ASP.NET Core và app di động Flutter
+- **Quét đúng phần cần quét**: cả repo, chỉ phần chưa commit, một commit, một pull request, các commit trong N ngày, hoặc một khoảng commit như `v1.2.0..HEAD` trước khi phát hành
 - **Chạy được cả khi chưa có git**: bỏ code AI sinh vào một thư mục rồi quét luôn
 - **Repo lớn vẫn nhanh**: tự chia cho nhiều agent quét song song rồi gộp kết quả
 - **Báo cáo tiếng Việt hoặc tiếng Anh**, lưu thành file trong `vbsec-reports/` để gửi cho người sửa, cuối file có JSON cho CI/CD đọc
@@ -59,12 +60,29 @@ vbsec báo 2 lỗi **NGHIÊM TRỌNG**:
 
 ## Kết quả thử nghiệm
 
-Repo có sẵn 8 bộ code mẫu cài lỗi biết trước (Go, PHP, TypeScript, Python, .NET, gồm cả câu khó: dữ liệu đi qua nhiều file, hàm làm sạch viết sai, race condition khi trừ số dư). Mỗi bộ có thêm bẫy trông giống lỗi nhưng an toàn, để đo báo nhầm.
+Repo có sẵn các bộ code mẫu cài lỗi biết trước. Mỗi bộ có thêm bẫy trông giống lỗi nhưng an toàn, để đo báo nhầm.
 
-| | Kết quả lần chạy gần nhất |
+- **9 bộ kinh điển** (Go, PHP, TypeScript, Python, .NET, Flutter), gồm cả câu khó: dữ liệu đi qua nhiều file, hàm làm sạch viết sai, race condition khi trừ số dư.
+- **4 bộ SaaS, mới ở v0.8**: `saas-hard` (máy chủ MCP, agent quá quyền, lọt dữ liệu giữa các công ty, kiểm quyền lệch giữa các đường, phản hồi lộ quá mức), `ledger-hard` (luật tiền và trạng thái, đồng thời, log, phiên), `misc-hard` (bom giải nén, log chứa dữ liệu cá nhân, open redirect), `lessons-hard` (mỗi bài học bảo mật thực tế một ca). Mỗi bộ kèm file luật dự án mẫu trong `tests/context/`.
+
+| | Lần chạy gần nhất, 9 bộ kinh điển (v0.7) |
 |---|---|
 | Bắt được | **54/55** lỗi cài sẵn |
 | Báo nhầm bẫy an toàn | **0** |
+
+v0.8 trên 4 bộ SaaS (Claude Opus 5.5, mỗi cấu hình 1 lượt, 16/11/2026):
+
+| Bộ (số lỗi cài sẵn) | Model không skill | vbsec v0.7 | vbsec v0.8 |
+|---|---|---|---|
+| saas-hard (17) | 17 | 11 | 17 (16 khi có `--context`) |
+| ledger-hard (13) | 12 | 7 | 12 |
+| misc-hard (3) | 3 | 0 | 3 (có `--context`) |
+| lessons-hard (28) | 15–18 | 10 | 19 |
+| **Tổng (61)** | **47–50** | **28** | **51** |
+
+Đọc cho đúng: trên bộ mẫu nhỏ, model mạnh không skill đã tìm được phần lớn lỗi, nên v0.8 chỉ hơn vài điểm; khác biệt lớn là so với v0.7, bản cũ bỏ mọi lỗi ngoài 21 mã.
+
+<!-- v0.8 bench -->
 
 Kết quả của AI có thể khác nhau giữa các lần chạy. Tự chạy lại bằng `./scripts/run-fixtures.sh` (xem [`tests/README.md`](tests/README.md)). vbsec cũng đã được thử trên OWASP Juice Shop và bắt được các nhóm lỗi tương ứng với challenge của Juice Shop.
 
@@ -83,7 +101,7 @@ db.query(`SELECT * FROM products WHERE name = '${x}'`)
 
 Để phân biệt, vbsec chia dữ liệu thành 4 mức, từ "người lạ gửi lên" (form, URL, header, file upload) tới "hệ thống tự tạo" (hằng số, biến môi trường). Chỉ dữ liệu từ người lạ, đi tới chỗ nguy hiểm mà chưa được lọc, mới bị báo.
 
-**Hiểu từng ngôn ngữ và framework.** Ngoài bộ luật chung, vbsec có luật riêng cho Go, PHP, TypeScript/JavaScript, Python và .NET. Nhờ vậy nó biết những cái bẫy riêng của từng thư viện. Ví dụ `Prisma.sql` là an toàn nhưng `$queryRawUnsafe` thì không, `bypassSecurityTrustHtml` trong Angular tắt luôn lớp chống XSS, Gin quên tắt debug mode khi chạy thật.
+**Hiểu từng ngôn ngữ và framework.** Ngoài bộ luật chung, vbsec có luật riêng cho Go, PHP, TypeScript/JavaScript, Python, .NET và Dart/Flutter. Nhờ vậy nó biết những cái bẫy riêng của từng thư viện. Ví dụ `Prisma.sql` là an toàn nhưng `$queryRawUnsafe` thì không, `bypassSecurityTrustHtml` trong Angular tắt luôn lớp chống XSS, Gin quên tắt debug mode khi chạy thật, app Flutter lưu token đăng nhập trong `SharedPreferences` thay vì Keychain.
 
 **Repo nhỏ quét ngay, repo lớn chia việc.** Dưới khoảng 20 file code, vbsec quét trực tiếp, mất chừng 30–60 giây. Repo lớn hơn thì chia thành nhiều phần cho tối đa 3 agent quét song song, xong gộp kết quả lại và bỏ lỗi trùng.
 
@@ -119,8 +137,13 @@ Cài thủ công, cài cho một công cụ cụ thể, xử lý sự cố: [doc
 /vbs-scan-security uncommitted           # chỉ phần chưa commit, nên chạy trước mỗi lần commit
 /vbs-scan-security pr id 42              # quét pull request số 42
 /vbs-scan-security commit within 7days   # các commit trong 7 ngày gần nhất
+/vbs-scan-security range v1.2.0..HEAD    # mọi thứ đổi từ bản phát hành trước
 /vbs-scan-security lang=en               # báo cáo tiếng Anh
 ```
+
+**Cho vbsec biết luật nghiệp vụ.** Lỗi logic (kỳ đã chốt vẫn sửa được, quyền chỉ chủ mới được cấp) không nhìn ra được chỉ từ code. Ghi luật vào `.vbsec/context.md` (tự nạp) hoặc truyền `--context <file>`. Mẫu: [`project-context.md`](skills/vbs-scan-security/references/project-context.md).
+
+Mọi báo cáo in phiên bản vbsec đã chạy (`vbsec_version`) và bảng độ phủ: file đọc kỹ, file chỉ dò mẫu, rule không nạp. `--auto-fix` chỉ tự áp nhóm sửa cơ học (tham số hoá SQL, escape output, tắt debug mode, nâng thư viện); sửa phân quyền, logic, AI chỉ để dạng patch gợi ý cho người xem lại.
 
 Báo cáo lưu ở `vbsec-reports/scan-<thời gian>.md` trong thư mục được quét. Nên thêm `vbsec-reports/` vào `.gitignore`, vbsec sẽ nhắc nếu chưa có.
 
@@ -135,6 +158,11 @@ Mọi tuỳ chọn: [docs/vi/usage.md](docs/vi/usage.md).
 | Đăng nhập, phân quyền | `BROKEN-ACCESS-CONTROL` · `IDOR` · `MASS-ASSIGNMENT` · `JWT-NONE-ALGORITHM` · `WEAK-PASSWORD-HASHING` · `CSRF` |
 | Chống lạm dụng | `BRUTE-FORCE` · `MISSING-RATE-LIMIT` · `RACE-CONDITION` · `UNRESTRICTED-FILE-UPLOAD` |
 | Thư viện | `OUTDATED-DEPENDENCY` · `SLOPSQUATTING` (package AI bịa tên, hacker đăng ký trước) |
+| AI, MCP | `LLM-PROMPT-INJECTION` · `EXCESSIVE-AGENCY` |
+| Phân quyền, dữ liệu SaaS | `TENANT-ISOLATION` · `AUTHZ-PATH-PARITY` · `EXCESSIVE-DATA-EXPOSURE` · `BUSINESS-STATE-INTEGRITY` |
+| Log, phiên, chi phí | `SENSITIVE-DATA-IN-LOGS` · `AUTH-SESSION-LIFECYCLE` · `RESOURCE-EXHAUSTION` |
+
+Thêm `VULNERABLE-DEPENDENCY` (tra CVE trực tuyến, chỉ khi có `--sca`). Lỗi có đường khai thác thật mà nằm ngoài 30 loại trên vẫn được báo với mã `OTHER-CWE-<n>` (open redirect, XXE, SSTI...) và tính vào kết luận. Rule AI/MCP và rule tenant chỉ nạp khi repo có dấu hiệu (SDK LLM/MCP, cột kiểu `tenant_id`).
 
 Mức độ, ví dụ code lỗi và code an toàn, ngôn ngữ nào có luật chuyên sâu: [docs/vi/rules.md](docs/vi/rules.md).
 
@@ -144,7 +172,8 @@ vbsec là lớp phòng thủ đầu tiên, không phải bằng chứng hệ th�
 
 - Không thay thế đợt kiểm tra bảo mật do chuyên gia làm
 - Không đảm bảo bắt được 100% lỗ hổng
-- Không tra cơ sở dữ liệu CVE trực tuyến. Kiểm tra thư viện có lỗ hổng bằng `npm audit`, `pip-audit`, `govulncheck`, `composer audit`
+- Không tra cơ sở dữ liệu CVE trực tuyến nếu không thêm `--sca`. Không bật thì kiểm tra thư viện bằng `npm audit`, `pip-audit`, `govulncheck`, `composer audit`
+- Soát lỗi nghiệp vụ chỉ tốt bằng luật nó biết: không có file luật dự án thì vbsec suy luật từ code và ghi rõ điều đó
 
 ## Gắn badge cho repo của bạn
 
@@ -206,11 +235,12 @@ Sửa luật ở bản gốc `skills/vbs-scan-security/`, rồi chạy `./script
 ```bash
 ./scripts/sync-skills.sh               # đồng bộ 3 bản skill
 ./scripts/run-fixtures.sh typescript   # quét bộ mẫu và chấm điểm (tốn token, chạy ngôn ngữ mình sửa)
+python3 scripts/check-lessons.py       # mỗi bài học bảo mật trong kho bài học phải có ca kiểm
 ```
 
 ### Lộ trình
 
-- Đã có: luật chung, chuyên sâu Go, PHP, TypeScript/JavaScript, Python, .NET/C#; ba nền tảng; quét không cần git; tra CVE trực tuyến qua OSV.dev (`--sca`, mặc định tắt, cần mạng); tự sửa lỗi và kiểm build (`--auto-fix`, mặc định tắt, cần git). Xem [hướng dẫn](docs/vi/usage.md#quét-dependency-live---sca)
+- Đã có: 30 luật chung, gồm 9 luật cho app SaaS và agent AI (v0.8); chuyên sâu Go, PHP, TypeScript/JavaScript, Python, .NET/C#, Dart/Flutter; ba nền tảng; quét không cần git; tra CVE trực tuyến qua OSV.dev (`--sca`, mặc định tắt, cần mạng); tự sửa lỗi và kiểm build (`--auto-fix`, mặc định tắt, cần git). Xem [hướng dẫn](docs/vi/usage.md#quét-dependency-live---sca)
 - Tiếp theo: Ruby, Java, Rust theo nhu cầu cộng đồng
 
 ## Giấy phép

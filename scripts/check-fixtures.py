@@ -23,7 +23,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXPECTED_DIR = os.path.join(ROOT, "tests", "expected")
+EXPECTED_DIR = os.environ.get("VBSEC_EXPECTED_DIR", os.path.join(ROOT, "tests", "expected"))
 SEVERITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 RULES_DIR = os.path.join(ROOT, "skills", "vbs-scan-security", "rules", "generic")
 
@@ -38,6 +38,7 @@ def canonical_rule_ids():
 
 
 CANONICAL = canonical_rule_ids()
+OTHER_CWE = re.compile(r"^OTHER-CWE-\d+$")
 
 
 def normalize(finding, problems):
@@ -51,7 +52,7 @@ def normalize(finding, problems):
                 break
     if rid is None:
         problems.add("finding thiếu rule_id")
-    elif rid not in CANONICAL:
+    elif rid not in CANONICAL and not OTHER_CWE.match(str(rid)):
         problems.add(f"rule ID ngoài danh sách: {rid}")
     return {**finding, "rule_id": rid}
 
@@ -117,7 +118,9 @@ def check(lang, report_path):
     matched = set()
     for exp in expected["must_find"]:
         ids = rule_ids(exp)
-        cands = [i for i, f in enumerate(findings) if f["file"] == exp["file"] and f["rule_id"] in ids and in_lines(exp, f)]
+        files_ok = {exp["file"], *exp.get("alt_files", [])}
+        cands = [i for i, f in enumerate(findings)
+                 if f["rule_id"] in ids and ((f["file"] == exp["file"] and in_lines(exp, f)) or (f["file"] != exp["file"] and f["file"] in files_ok))]
         if not cands:
             missed.append(exp)
             continue
@@ -139,6 +142,10 @@ def check(lang, report_path):
 
     total = len(expected["must_find"])
     print(f"   recall: {hit}/{total} ({hit * 100 // total}%)")
+    xf = [e for e in expected["must_find"] if e.get("cross_file")]
+    if xf:
+        xf_hit = sum(1 for e in xf if e not in missed)
+        print(f"   recall lỗi xuyên file: {xf_hit}/{len(xf)}")
     for exp in missed:
         print(f"   SÓT      {exp['file']}  {' | '.join(rule_ids(exp))}")
     for exp, best in weak:

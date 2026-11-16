@@ -54,8 +54,8 @@ git init
 | New language specialization (Ruby, JS/TS, Python, Java, Rust) | High | `skills/vbs-scan-security/rules/languages/<lang>/` |
 | Improving an existing rule (more patterns, fewer false positives) | High | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Fixing reasoning bugs in a rule | High | `skills/vbs-scan-security/rules/generic/NN-*.md` |
-| Adding test cases (positive + negative) | Medium | `tests/` (no infra yet — bundle in PR description) |
-| Adding a brand-new rule (23, 24...) | Medium | Discuss via issue first |
+| Adding test cases (positive + negative) | Medium | `tests/fixtures/<set>/` + `tests/expected/<set>.json` (see [`tests/README.md`](../../tests/README.md)) |
+| Adding a brand-new rule (32, 33...) | Medium | Discuss via issue first |
 | CVE list updates for OUTDATED-DEPENDENCY (offline fallback) | Medium | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
 | Adding a new SCA ecosystem for `--sca`/VULNERABLE-DEPENDENCY | Medium | `skills/vbs-scan-security/references/dependency-scan.md` |
 | Docs (typos, examples, workflow improvements) | Low-Medium | `docs/`, `README.*.md` |
@@ -90,9 +90,11 @@ git init
 
 ### 1. Pick a name + number
 
-The next rule number is **23** (22 is `VULNERABLE-DEPENDENCY`, added in v0.7 for the `--sca` live OSV lookup). ID is `UPPERCASE-KEBAB-CASE`, e.g.: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
+The next rule number is **32** (01–21 classic, 22 is `VULNERABLE-DEPENDENCY` for `--sca`, 23–31 are the SaaS / AI agent rules added in v0.8). ID is `UPPERCASE-KEBAB-CASE`, e.g.: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
 
-File: `skills/vbs-scan-security/rules/generic/23-open-redirect.md`
+Bugs without a rule are already reported as `OTHER-CWE-<n>`. A new rule is worth it when a class keeps coming back and needs its own reasoning (what counts, what doesn't, severity).
+
+File: `skills/vbs-scan-security/rules/generic/32-open-redirect.md`
 
 ### 2. Frontmatter template
 
@@ -101,6 +103,9 @@ File: `skills/vbs-scan-security/rules/generic/23-open-redirect.md`
 id: OPEN-REDIRECT
 severity_max: HIGH
 applies_to: all
+cwe: [CWE-601]
+owasp: [A01:2021]
+# load_when: 'regex'   # optional: only load when the repo matches (see rules 23–25)
 ---
 
 # OPEN-REDIRECT — Short human-readable name
@@ -155,11 +160,15 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | What to do |
 |---|---|
-| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Add a row to the rules table in Step 4 (renumber from "22 rules" to "23 rules") |
-| [`docs/vi/rules.md`](../vi/rules.md) | Add a `### Rule 23 — OPEN-REDIRECT` section |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Add a row to the rules table in Step 4 ("30 generic rules" → "31") |
+| [`workflows/auto-fix.md`](../../skills/vbs-scan-security/workflows/auto-fix.md) | Put the rule in the mechanical group (auto-applied) or the permission / logic group (`suggested_only`) |
+| [`docs/vi/rules.md`](../vi/rules.md) | Add a `### Rule 32 — OPEN-REDIRECT` section |
 | [`docs/en/rules.md`](rules.md) | Same |
-| [`README.vi.md`](../../README.vi.md) | Update the 22→23 list (the table) |
-| [`README.md`](../../README.md) | Same |
+| [`README.vi.md`](../../README.vi.md) | Add the ID to the "vbsec bắt được những lỗi nào" table, update the rule count |
+| [`README.md`](../../README.md) | Same ("What vbsec catches") |
+| `tests/expected/<set>.json` | At least one `must_find` and one safe trap for the new rule |
+
+Then run `./scripts/sync-skills.sh` to copy the rule to the Codex and Antigravity variants.
 
 ### 4. Test
 
@@ -177,7 +186,7 @@ A specialization overrides a generic rule for a specific language with patterns 
 mkdir -p skills/vbs-scan-security/rules/languages/ruby
 ```
 
-Pick the rules worth specializing (not all 21 — focus on ones with idiomatic Ruby patterns). Examples:
+Pick the rules worth specializing (not all 30 — focus on ones with idiomatic Ruby patterns). Examples:
 
 - SQL-INJECTION → ActiveRecord `.where("...")` raw vs parameterized
 - MASS-ASSIGNMENT → `User.update(params)` missing `permit`
@@ -263,7 +272,30 @@ All user-facing strings in the report must go through i18n. When you need a new 
 
 ## Testing before you PR
 
-vbsec has no automated test runner yet. Manual testing on two cases:
+### Fixture sets
+
+The repo ships sample apps with planted bugs and answer keys (details in [`tests/README.md`](../../tests/README.md)):
+
+- Classic sets: `go`, `php`, `typescript`, `python`, `dotnet`, `dart`, plus hard variants `go-hard`, `php-hard`, `typescript-hard`.
+- SaaS sets (v0.8): `saas-hard` (MCP server, over-privileged agent, tenant, path parity, data exposure), `ledger-hard` (money and state rules, concurrency, logs, sessions), `misc-hard` (zip bombs, PII in logs, open redirect), `lessons-hard` (one case per security lesson). Each has a sample project rules file in `tests/context/<set>.md` to pass with `--context`.
+
+```bash
+./scripts/run-fixtures.sh saas-hard      # real scan + scoring (costs tokens)
+./scripts/run-fixtures.sh --check-only   # score the latest existing report only
+```
+
+### Lessons → test cases
+
+`scripts/check-lessons.py` checks that every security lesson in your lessons file has a test case. The lessons file is private to each maintainer (default `~/.claude/rules/bai-hoc-bao-mat.md`, override with `--lessons` or `VBSEC_LESSONS`); the repo only keeps the mapping in `tests/lessons-map.json`. Each lesson is `covered` (its cases must exist in `tests/expected/<set>.json`), `out_of_scope` (with a `reason`) or `todo`. The script fails on unmapped lessons, `todo` entries, cases pointing at missing answers, or a lesson title that changed. No lessons file → warning, exit 0.
+
+```bash
+python3 scripts/check-lessons.py
+python3 scripts/check-lessons.py --init   # print JSON stubs for unmapped lessons
+```
+
+### Quick manual check
+
+For a single rule change, two tiny cases are often enough:
 
 ### Positive case — rule MUST flag
 
@@ -360,9 +392,12 @@ Include in the PR description:
 ### Pre-PR checklist
 
 - [ ] Branch from latest `main`
-- [ ] Rule file has full frontmatter (id, severity_max, applies_to)
+- [ ] Rule file has full frontmatter (id, severity_max, applies_to, cwe, owasp; load_when if it should only load on some repos)
 - [ ] Positive case tested → flags correctly
 - [ ] Negative case tested → does NOT false-positive
+- [ ] `./scripts/run-fixtures.sh <set>` run for the sets your change touches
+- [ ] `python3 scripts/check-lessons.py` green (if you keep a lessons file)
+- [ ] `./scripts/sync-skills.sh` run
 - [ ] `docs/vi/rules.md` + `docs/en/rules.md` updated
 - [ ] `SKILL.md` Step 4 table updated if adding a new rule
 - [ ] README.vi.md + README.md updated if adding a new rule
@@ -374,7 +409,7 @@ Include in the PR description:
 
 | Prefix | When to use | Example |
 |---|---|---|
-| `feat:` | Add a feature / new rule | `feat: add OPEN-REDIRECT rule (23)` |
+| `feat:` | Add a feature / new rule | `feat: add OPEN-REDIRECT rule (32)` |
 | `fix:` | Bug fix, false-positive reduction | `fix: reduce false positive in SQL-INJECTION for parameterized GORM` |
 | `docs:` | Docs / README updates | `docs: clarify SMALL vs LARGE thresholds` |
 | `lang:` | Add/modify a language specialization | `lang: add Ruby specialization for SQL-INJECTION` |

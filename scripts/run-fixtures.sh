@@ -12,6 +12,7 @@
 #   ./scripts/run-fixtures.sh                # mọi ngôn ngữ
 #   ./scripts/run-fixtures.sh python php     # chỉ vài ngôn ngữ
 #   ./scripts/run-fixtures.sh --check-only   # không scan, chỉ chấm report mới nhất
+#   ./scripts/run-fixtures.sh --with-context saas-hard   # nạp tests/context/<bộ>.md qua --context (nếu có)
 #
 # Token mỗi lần scan được ghi vào tests/usage.log để so trước/sau khi đổi skill.
 # Scan chạy với tool tối thiểu và KHÔNG load MCP server nào (--strict-mcp-config), để số
@@ -21,10 +22,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHECK_ONLY=0
+WITH_CONTEXT=0
 LANGS=()
 for arg in "$@"; do
   case "$arg" in
     --check-only) CHECK_ONLY=1 ;;
+    --with-context) WITH_CONTEXT=1 ;;
     -h|--help) grep -E '^# ' "$0" | sed 's/^# //'; exit 0 ;;
     *) LANGS+=("$arg") ;;
   esac
@@ -45,7 +48,10 @@ if [ "$CHECK_ONLY" -eq 0 ]; then
       echo "Fixture $lang chưa được git track — commit trước khi chạy"; exit 1
     fi
     echo "== scan $lang"
-    (cd "$dir" && claude -p "/vbs-scan-security all lang=en" \
+    ARGS="all lang=en"
+    ctx="$ROOT/tests/context/$lang.md"
+    [ "$WITH_CONTEXT" -eq 1 ] && [ -f "$ctx" ] && ARGS="$ARGS --context $ctx"
+    (cd "$dir" && claude -p "/vbs-scan-security $ARGS" \
       --allowedTools "Bash Read Grep Glob Write" --tools "Bash,Read,Grep,Glob,Write" \
       --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
       --output-format json > "$USAGE_TMP") || true

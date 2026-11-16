@@ -176,6 +176,11 @@ Bảng key → text cho output report khi `lang=vi`. SKILL.md và workflows ph�
 |---|---|
 | `header_hardening_title` | Gợi ý tăng cường (không phải lỗ hổng) |
 | `msg_hardening_intro` | Các điểm dưới đây không khai thác được, chỉ là gợi ý phòng thủ thêm. Không tính vào kết quả. |
+| `header_version` | Phiên bản vbsec |
+| `header_context` | Luật dự án |
+| `header_coverage_title` | Độ phủ của lượt quét |
+| `msg_coverage_intro` | Phần nào đã đọc kỹ, phần nào chỉ tìm theo mẫu, rule nào không nạp. Lỗi ở phần chưa đọc kỹ có thể bị sót. |
+| `label_other_cwe` | Ngoài danh mục rule (vẫn tính vào kết luận) |
 
 ## Auto-fix (`--auto-fix`, v0.7+)
 

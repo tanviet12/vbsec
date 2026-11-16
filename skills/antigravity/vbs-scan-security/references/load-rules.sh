@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # load-rules.sh — in phần PHÁT HIỆN của bộ rule hiệu lực cho các ngôn ngữ đã detect.
 #
-# Usage: bash <skill-dir>/references/load-rules.sh --part N [lang ...]
-#   vd:  bash references/load-rules.sh --part 1 typescript
+# Usage: bash <skill-dir>/references/load-rules.sh [--root DIR] --part N [lang ...]
+#   vd:  bash references/load-rules.sh --root "$SCAN_ROOT" --part 1 typescript
 #        bash references/load-rules.sh --part 2 go typescript   # repo đa ngôn ngữ
 #        bash references/load-rules.sh --part 1                 # không có overlay → chỉ generic
 #
@@ -13,7 +13,12 @@
 # Rule generic có `opt_in:` trong frontmatter (vd rule 22, chỉ chạy khi có --sca) KHÔNG được nạp ở
 # pha quét — workflow tương ứng tự Read rule đó khi user bật cờ.
 #
-# Với mỗi rule generic còn lại (01-21):
+# Rule có `load_when: '<regex>'` trong frontmatter (vd rule AI/MCP, tenant) chỉ được nạp khi truyền
+# --root và trong DIR có ít nhất 1 file khớp regex (grep -E -i, bỏ node_modules/vendor/.git...). Không
+# truyền --root → nạp mọi rule (an toàn: thà tốn token còn hơn bỏ sót). Rule bị bỏ được liệt kê ở
+# dòng cuối để báo cáo ghi vào bảng độ phủ.
+#
+# Với mỗi rule generic còn lại:
 #   - Mọi lang đã detect đều có overlay cùng `id` → chỉ in overlay (generic bị thay thế hoàn toàn).
 #   - Ngược lại → in generic, kèm overlay của lang nào có.
 # Mỗi file chỉ in tới trước heading chi tiết đầu tiên (## Examples / ## Fix recommendation /
@@ -26,17 +31,29 @@ set -euo pipefail
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PART_BUDGET=20000   # ký tự mỗi phần
 PART=1
+ROOT=""
 LANGS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --part) PART="$2"; shift 2 ;;
     --part=*) PART="${1#--part=}"; shift ;;
+    --root) ROOT="$2"; shift 2 ;;
+    --root=*) ROOT="${1#--root=}"; shift ;;
     *) LANGS+=("$1"); shift ;;
   esac
 done
 
 rule_id() { sed -n 's/^id:[[:space:]]*//p' "$1" | head -1; }
 is_opt_in() { sed -n '/^---$/,/^---$/p' "$1" | grep -q '^opt_in:'; }
+load_when() { sed -n '/^---$/,/^---$/p' "$1" | sed -n "s/^load_when:[[:space:]]*//p" | head -1 | sed -e "s/^'//" -e "s/'\$//" -e 's/^"//' -e 's/"$//'; }
+
+triggered() {  # triggered <regex> → 0 nếu ROOT có file khớp
+  [ -z "$ROOT" ] && return 0
+  [ -d "$ROOT" ] || return 0
+  grep -rIqiE --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.git \
+    --exclude-dir=dist --exclude-dir=build --exclude-dir=vbsec-reports --exclude-dir=.vbsec-tmp \
+    -e "$1" "$ROOT" 2>/dev/null
+}
 
 overlay_for() {  # overlay_for <lang> <id> → path hoặc rỗng
   local dir="$SKILL_DIR/rules/languages/$1" f
@@ -55,10 +72,13 @@ detection() {  # detection <path> → phần phát hiện của 1 rule, kèm hea
 }
 
 FILES_SELECTED=()
+SKIPPED=()
 
 for generic in "$SKILL_DIR"/rules/generic/[0-9]*.md; do
   is_opt_in "$generic" && continue
   id="$(rule_id "$generic")"
+  lw="$(load_when "$generic")"
+  if [ -n "$lw" ] && ! triggered "$lw"; then SKIPPED+=("$id"); continue; fi
   overlays=()
   all_covered=1
   for lang in ${LANGS[@]+"${LANGS[@]}"}; do
@@ -98,4 +118,7 @@ if [ "$PART" -lt "$total_parts" ]; then
   echo "=== PART $PART/$total_parts — CHƯA ĐỦ: chạy tiếp --part $((PART + 1)) đến --part $total_parts ==="
 else
   echo "=== PART $PART/$total_parts — đã in đủ ${#FILES_SELECTED[@]} rule ==="
+  if [ ${#SKIPPED[@]} -gt 0 ]; then
+    echo "=== Rule không nạp vì repo không có dấu hiệu liên quan (ghi vào coverage.rules_skipped): ${SKIPPED[*]} ==="
+  fi
 fi

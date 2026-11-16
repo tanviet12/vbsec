@@ -154,5 +154,5 @@ Native Windows không được hỗ trợ chính thức. Dùng WSL2 với cùng 
 ## Bước tiếp theo
 
 - Đọc [usage.md](usage.md) để biết tất cả scope và cách đọc báo cáo
-- Xem [rules.md](rules.md) để hiểu 21 rule
+- Xem [rules.md](rules.md) để hiểu 30 rule
 - Muốn đóng góp? Đọc [contributing.md](contributing.md)

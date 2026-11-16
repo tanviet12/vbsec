@@ -1,0 +1,122 @@
+{
+  "fixture": "tests/fixtures/dart",
+  "must_find": [
+    {
+      "file": ".env",
+      "rule_id": "HARDCODED-SECRET",
+      "min_severity": "CRITICAL"
+    },
+    {
+      "file": "lib/services/token_storage.dart",
+      "rule_id": "HARDCODED-SECRET",
+      "min_severity": "HIGH",
+      "lines": [15, 23]
+    },
+    {
+      "file": "lib/api/client.dart",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "lib/api/client.dart",
+      "rule_id": "BROKEN-ACCESS-CONTROL",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "lib/state/account_model.dart",
+      "rule_id": "BROKEN-ACCESS-CONTROL",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "lib/notifications/push_handler.dart",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "LOW",
+      "lines": [24, 28]
+    },
+    {
+      "file": "lib/notifications/push_handler.dart",
+      "rule_id": "XSS",
+      "min_severity": "MEDIUM",
+      "lines": [24, 33]
+    },
+    {
+      "file": "lib/screens/help_screen.dart",
+      "rule_id": "XSS",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "lib/router.dart",
+      "rule_id": ["VERBOSE-ERROR-DEBUG-MODE", "BROKEN-ACCESS-CONTROL"],
+      "min_severity": "HIGH",
+      "lines": [27, 27]
+    },
+    {
+      "file": "lib/backup/restore.dart",
+      "rule_id": "PATH-TRAVERSAL",
+      "min_severity": "HIGH"
+    },
+    {
+      "file": "android/app/src/main/AndroidManifest.xml",
+      "rule_id": "BROKEN-ACCESS-CONTROL",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "android/app/src/main/AndroidManifest.xml",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "min_severity": "MEDIUM"
+    },
+    {
+      "file": "pubspec.lock",
+      "rule_id": ["OUTDATED-DEPENDENCY", "VULNERABLE-DEPENDENCY"],
+      "min_severity": "HIGH"
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "lib/firebase_options.dart",
+      "rule_id": "HARDCODED-SECRET",
+      "reason": "apiKey Firebase là cấu hình client công khai"
+    },
+    {
+      "file": "lib/services/token_storage.dart",
+      "rule_id": "HARDCODED-SECRET",
+      "lines": [25, 27],
+      "reason": "PIN lưu flutter_secure_storage (Keychain / Keystore)"
+    },
+    {
+      "file": "lib/notifications/push_handler.dart",
+      "rule_id": "PATH-TRAVERSAL",
+      "lines": [18, 22],
+      "reason": "getInitialMessage đã lọc order_id theo UUID"
+    },
+    {
+      "file": "lib/router.dart",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "lines": [28, 29],
+      "reason": "route /wireframes bọc kDebugMode"
+    },
+    {
+      "file": "lib/main.dart",
+      "rule_id": "VERBOSE-ERROR-DEBUG-MODE",
+      "reason": "badCertificateCallback và debugPrint đều bọc kDebugMode"
+    },
+    {
+      "file": "pubspec.yaml",
+      "rule_id": "SLOPSQUATTING",
+      "reason": "share_plus là gói Flutter Community"
+    },
+    {
+      "file": "pubspec.lock",
+      "rule_id": "SLOPSQUATTING",
+      "reason": "share_plus là gói Flutter Community"
+    }
+  ],
+  "clean_files": [
+    "lib/firebase_options.dart",
+    "lib/screens/about_screen.dart",
+    "lib/screens/order_screen.dart",
+    "lib/screens/wireframe_gallery.dart",
+    "lib/screens/login_screen.dart",
+    "ios/Runner/Info.plist"
+  ]
+}

@@ -37,12 +37,14 @@ Mục đích: non-tech user đọc CRITICAL phải hiểu được tác hại + 
 ```markdown
 # {report_title}
 
+**{header_version}:** {vbsec_version} ({vbsec_commit})
 **{header_scope}:** {scope_label}
 **{header_files}:** {N} ({ext_breakdown})
 **{header_primary_lang}:** {lang_code} ({using_specialized | using_generic | no_specialized})
 **{header_mode}:** {mode_label}
 **{header_date}:** {date}
 **{header_lang}:** {lang_code}
+**{header_context}:** {context_file | —}
 
 ## {verdict_label}: {verdict_value}
 
@@ -221,6 +223,7 @@ const hash = await argon2.hash(password)
 ```markdown
 # {report_title}
 
+**{header_version}:** {vbsec_version} ({vbsec_commit})
 **{header_scope}:** {scope_label}
 ...
 
@@ -358,12 +361,14 @@ Không cần cho rule không applicable (vd: PHP rules trên repo Node — khôn
 
 | Field | Type | Description |
 |---|---|---|
-| `verdict` | `"PASS"\|"WARN"\|"FAIL"` | Tổng kết |
+| `vbsec_version` | string | **Bắt buộc.** Nội dung file `VERSION` của skill (vd `"0.8.0"`). Cổng phát hành dựa vào field này để biết báo cáo chạy bản nào |
+| `vbsec_commit` | string (optional) | Commit ngắn của skill (`git -C <skill-dir> rev-parse --short HEAD`), `"unknown"` nếu không phải git |
+| `verdict` | `"PASS"\|"WARN"\|"FAIL"` | Tổng kết. Phải khớp findings (CRITICAL → FAIL, HIGH → WARN, còn lại PASS), kể cả finding `OTHER-CWE-*`. Nặng hơn chỉ khi có `verdict_downgraded_reason` |
 | `summary.critical` | int | Số **findings** (không phải rule-hit) ở mức CRITICAL |
 | `summary.high` | int | Số findings ở mức HIGH |
 | `summary.medium` | int | Số findings ở mức MEDIUM |
 | `summary.low` | int | Số findings ở mức LOW |
-| `summary.passed` | int | Số rule đã check và pass (max 21 trong rules generic) |
+| `summary.passed` | int | Số rule đã check và pass (tối đa = số rule đã nạp) |
 | `scope` | string | Scope label (canonical EN) |
 | `files_reviewed` | int | |
 | `primary_language` | string | lowercase, e.g. `"typescript"`, `"go"`, `"php"` |
@@ -372,6 +377,8 @@ Không cần cho rule không applicable (vd: PHP rules trên repo Node — khôn
 | `date` | ISO 8601 date | |
 | `findings[]` | array | Mỗi finding: file, line, rule_id, severity, issue_summary, fix_summary |
 | `hardening_notes[]` | array (optional) | Gợi ý phòng thủ thêm, KHÔNG phải lỗ hổng: `{file, line, note}`. Không tính vào `summary` |
+| `coverage` | object (optional, khuyến nghị) | `{files_read, files_grep_only, files_skipped, rules_skipped: [...], context_file}` — 3 số đếm file, rule không nạp do `load_when`, đường dẫn luật dự án hoặc null |
+| `verdict_downgraded_reason` | string (optional) | LARGE mode có chunk lỗi nên verdict bị nâng nặng hơn findings |
 | `top_rules_by_count[]` | array (optional) | Optional ranking; mỗi entry: `{rule_id, count}` |
 | `dependencies_scanned` | object (optional) | Chỉ có khi chạy `--sca`. `{total, ecosystems: [...], vulnerable_count, scan_source: "osv.dev live"\|"static list (offline)"}` — xem [`dependency-scan.md`](dependency-scan.md) |
 
@@ -379,11 +386,12 @@ Không cần cho rule không applicable (vd: PHP rules trên repo Node — khôn
 
 | Field | Khi nào có | Description |
 |---|---|---|
+| `cwe` | **Bắt buộc** khi `rule_id` là `OTHER-CWE-<n>`; tuỳ chọn với rule khác | `"CWE-<n>"` khớp số trong `rule_id` |
 | `patch_status` | Khi chạy `--auto-fix` và finding này (CRITICAL/HIGH) đã được xử lý | `"applied"` \| `"failed_verification"` \| `"suggested_only"` \| `"skipped_low_severity"` — xem [`../workflows/auto-fix.md`](../workflows/auto-fix.md) |
 | `cve_id` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Alias CVE từ OSV (vd `CVE-2022-31091`), fallback OSV id nếu không có alias CVE |
 | `osv_id` | Khi `rule_id: VULNERABLE-DEPENDENCY` | ID gốc từ OSV.dev (vd `GHSA-...`) |
 | `package` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Tên package |
-| `ecosystem` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `NuGet`\|`Go`\|`npm`\|`Packagist`\|`PyPI` |
+| `ecosystem` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `NuGet`\|`Go`\|`npm`\|`Packagist`\|`PyPI`\|`Pub` |
 | `installed_version` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Version hiện tại trong manifest |
 | `fixed_version` | Khi `rule_id: VULNERABLE-DEPENDENCY` | Version tối thiểu đã fix theo OSV |
 | `severity_source` | Khi `rule_id: VULNERABLE-DEPENDENCY` | `"osv"` \| `"ghsa_alias"` \| `"default"` — severity lấy từ đâu (xem `dependency-scan.md` Bước 3) |
@@ -395,7 +403,8 @@ Không cần cho rule không applicable (vd: PHP rules trên repo Node — khôn
 |---|---|---|
 | `file` | string | Path tương đối từ scope root |
 | `line` | int | Số nguyên >= 1 (dòng bắt đầu; không dùng `"12-27"`) |
-| `rule_id` | string | Một trong các `id` ở `rules/generic/*.md` (21 rule). KHÔNG tự đặt ID mới, KHÔNG gán rule gần nhất cho vấn đề không thuộc rule nào (→ `hardening_notes`) |
+| `rule_id` | string | Một trong các `id` ở `rules/generic/*.md`, hoặc `OTHER-CWE-<n>` cho lỗi có đường khai thác mà không rule nào khớp (kèm `cwe`, severity ≤ HIGH). KHÔNG tự đặt ID khác, KHÔNG gán rule gần nhất. Không có đường khai thác → `hardening_notes` |
+| `severity` (trần) | | ≤ `severity_max` trong frontmatter của rule |
 | `severity` | string | Viết hoa: `CRITICAL` \| `HIGH` \| `MEDIUM` \| `LOW` |
 | `issue_summary` | string | 1 dòng |
 | `fix_summary` | string | 1 dòng |
@@ -412,7 +421,7 @@ Script báo lỗi → sửa JSON trong report, ghi lại, chạy lại (tối đ
 
 ### Finding vs hardening note
 
-Chỉ tạo **finding** khi có **đường khai thác cụ thể**: input attacker điều khiển được (L1/L2 theo `data-flow-classification.md`) đi tới sink nguy hiểm, hoặc cấu hình sai khai thác được ngay. Nếu chính reasoning của mình kết luận "an toàn" / "safe" / "không khai thác được" / "not reachable by current code" → **KHÔNG tạo finding**. `validate-report.py` từ chối finding có các cụm này trong `issue_summary` (trừ `OUTDATED-DEPENDENCY` / `VULNERABLE-DEPENDENCY`, nơi "CVE không reachable" chỉ là lý do hạ severity), và từ chối `issue_summary` có chữ "mapped to closest rule" / "rule gần nhất": vấn đề không thuộc 21 rule thì là hardening note, không ép vào rule gần giống. Khi bị từ chối, chọn 1 trong 2: viết lại `issue_summary` nêu rõ attacker làm gì và lấy được gì (nếu thật sự có đường khai thác), hoặc chuyển sang hardening note. Không được chỉ xoá cụm phủ định cho qua validator.
+Chỉ tạo **finding** khi có **đường khai thác cụ thể**: input attacker điều khiển được (L1/L2 theo `data-flow-classification.md`) đi tới sink nguy hiểm, hoặc cấu hình sai khai thác được ngay. Nếu chính reasoning của mình kết luận "an toàn" / "safe" / "không khai thác được" / "not reachable by current code" → **KHÔNG tạo finding**. `validate-report.py` từ chối finding có các cụm này trong `issue_summary` (trừ `OUTDATED-DEPENDENCY` / `VULNERABLE-DEPENDENCY`, nơi "CVE không reachable" chỉ là lý do hạ severity), và từ chối `issue_summary` có chữ "mapped to closest rule" / "rule gần nhất": vấn đề có đường khai thác mà không thuộc rule nào thì dùng `OTHER-CWE-<n>` (tính vào verdict), không có đường khai thác thì là hardening note; không bao giờ ép vào rule gần giống. Khi bị từ chối, chọn 1 trong 2: viết lại `issue_summary` nêu rõ attacker làm gì và lấy được gì (nếu thật sự có đường khai thác), hoặc chuyển sang hardening note. Không được chỉ xoá cụm phủ định cho qua validator.
 
 **Ranh giới quan trọng — check viết sai vẫn là finding:** hàm kiểm tra / sanitizer / allowlist **viết sai** (`HasPrefix` thiếu dấu `/` sau `Join`, `endsWith("example.com")` không có dấu chấm, `algorithms` lấy từ header token, regex thiếu anchor, check `..` trước khi decode...) **LUÔN là finding**, kể cả khi hiện tại có yếu tố khác đang chặn khai thác (phiên bản thư viện, chưa có thư mục sibling, auth đang dùng Bearer). Lỗi nằm trong code của repo; yếu tố chặn nằm ngoài tầm kiểm soát và đổi bất cứ lúc nào. Cách ghi: giữ finding, hạ severity xuống MEDIUM nếu cần, `issue_summary` nêu điều kiện để bypass thành công ("bypass khi có thư mục `/srv/wallet/files-*`", "bypass nếu đổi sang thư viện không kiểm key type"). Không viết "not exploitable". Chỉ chuyển sang hardening note khi **input attacker không tới được sink** hoặc code không có lỗi mà chỉ thiếu một lớp phòng thủ thêm.
 

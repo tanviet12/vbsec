@@ -54,8 +54,8 @@ git init
 | Thêm language specialization (Ruby, JS/TS, Python, Java, Rust) | Cao | `skills/vbs-scan-security/rules/languages/<lang>/` |
 | Cải thiện rule existing (thêm pattern, giảm false positive) | Cao | `skills/vbs-scan-security/rules/generic/NN-*.md` |
 | Sửa lỗi reasoning trong rule | Cao | `skills/vbs-scan-security/rules/generic/NN-*.md` |
-| Thêm test case (positive + negative) | Trung | `tests/` (chưa có infra, kèm trong PR description) |
-| Thêm rule mới (rule 23, 24...) | Trung | Cần thảo luận trước qua issue |
+| Thêm test case (positive + negative) | Trung | `tests/fixtures/<bộ>/` + `tests/expected/<bộ>.json` (xem [`tests/README.md`](../../tests/README.md)) |
+| Thêm rule mới (rule 32, 33...) | Trung | Cần thảo luận trước qua issue |
 | Cập nhật CVE list cho OUTDATED-DEPENDENCY (fallback offline) | Trung | `skills/vbs-scan-security/rules/generic/20-outdated-dependency.md` |
 | Thêm ecosystem mới cho `--sca`/VULNERABLE-DEPENDENCY | Trung | `skills/vbs-scan-security/references/dependency-scan.md` |
 | Docs (typo, ví dụ, cải thiện workflow) | Thấp-Trung | `docs/`, `README.*.md` |
@@ -90,9 +90,11 @@ git init
 
 ### 1. Đặt tên + chọn số
 
-Rule kế tiếp là **23** (rule 22 là `VULNERABLE-DEPENDENCY`, thêm ở v0.7 cho `--sca`/OSV live lookup). Tên ID dạng `KEBAB-CASE-UPPERCASE`, ví dụ: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
+Rule kế tiếp là **32** (01–21 kinh điển, 22 là `VULNERABLE-DEPENDENCY` cho `--sca`, 23–31 là rule SaaS / agent AI thêm ở v0.8). Tên ID dạng `KEBAB-CASE-UPPERCASE`, ví dụ: `OPEN-REDIRECT`, `XML-XXE`, `LDAP-INJECTION`.
 
-File: `skills/vbs-scan-security/rules/generic/23-open-redirect.md`
+Lỗi chưa có rule vẫn được báo với mã `OTHER-CWE-<n>`. Chỉ nên thêm rule mới khi một loại lỗi lặp lại nhiều và cần cách suy luận riêng (khi nào tính, khi nào không, mức độ).
+
+File: `skills/vbs-scan-security/rules/generic/32-open-redirect.md`
 
 ### 2. Template frontmatter
 
@@ -101,6 +103,9 @@ File: `skills/vbs-scan-security/rules/generic/23-open-redirect.md`
 id: OPEN-REDIRECT
 severity_max: HIGH
 applies_to: all
+cwe: [CWE-601]
+owasp: [A01:2021]
+# load_when: 'regex'   # tuỳ chọn: chỉ nạp khi repo khớp (xem rule 23–25)
 ---
 
 # OPEN-REDIRECT — Tên dễ hiểu của lỗ hổng
@@ -155,11 +160,15 @@ grep -rE 'res\.redirect\(req\.(query|body|params)' src/
 
 | File | Cần làm gì |
 |---|---|
-| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Thêm row vào bảng "22 rules generic" ở Step 4 (đổi thành "23 rules") |
-| [`docs/vi/rules.md`](rules.md) | Thêm section `### Rule 23 — OPEN-REDIRECT` |
+| [`skills/vbs-scan-security/SKILL.md`](../../skills/vbs-scan-security/SKILL.md) | Thêm row vào bảng rule ở Step 4 ("30 rule generic" → "31") |
+| [`workflows/auto-fix.md`](../../skills/vbs-scan-security/workflows/auto-fix.md) | Xếp rule vào nhóm sửa cơ học (tự áp) hoặc nhóm quyền / logic (`suggested_only`) |
+| [`docs/vi/rules.md`](rules.md) | Thêm section `### Rule 32 — OPEN-REDIRECT` |
 | [`docs/en/rules.md`](../en/rules.md) | Thêm tương ứng |
-| [`README.vi.md`](../../README.vi.md) | Update danh sách 22 → 23 (cả bảng) |
-| [`README.md`](../../README.md) | Update tương ứng |
+| [`README.vi.md`](../../README.vi.md) | Thêm ID vào bảng "vbsec bắt được những lỗi nào", sửa số rule |
+| [`README.md`](../../README.md) | Tương ứng ("What vbsec catches") |
+| `tests/expected/<bộ>.json` | Ít nhất một `must_find` và một bẫy an toàn cho rule mới |
+
+Xong chạy `./scripts/sync-skills.sh` để chép rule sang bản Codex và Antigravity.
 
 ### 4. Test
 
@@ -177,7 +186,7 @@ Specialization = override rule generic cho 1 ngôn ngữ cụ thể, với patte
 mkdir -p skills/vbs-scan-security/rules/languages/ruby
 ```
 
-Chọn rule muốn specialize (không cần toàn bộ 21 — chọn rule nào Ruby có pattern đặc thù). Ví dụ:
+Chọn rule muốn specialize (không cần toàn bộ 30 — chọn rule nào Ruby có pattern đặc thù). Ví dụ:
 
 - SQL-INJECTION → ActiveRecord `.where("...")` raw vs parameterized
 - MASS-ASSIGNMENT → `User.update(params)` thiếu `permit`
@@ -263,7 +272,30 @@ Mọi user-facing string trong báo cáo phải qua i18n. Khi cần thêm key m�
 
 ## Testing trước khi PR
 
-vbsec chưa có test runner tự động. Manual test theo 2 case:
+### Bộ fixture
+
+Repo có sẵn các app mẫu cài lỗi kèm đáp án (chi tiết ở [`tests/README.md`](../../tests/README.md)):
+
+- Bộ kinh điển: `go`, `php`, `typescript`, `python`, `dotnet`, `dart`, cùng bản khó `go-hard`, `php-hard`, `typescript-hard`.
+- Bộ SaaS (v0.8): `saas-hard` (máy chủ MCP, agent quá quyền, tenant, phân quyền lệch giữa các đường, lộ dữ liệu), `ledger-hard` (luật tiền và trạng thái, đồng thời, log, phiên), `misc-hard` (bom giải nén, log chứa dữ liệu cá nhân, open redirect), `lessons-hard` (mỗi bài học bảo mật một ca). Mỗi bộ có file luật dự án mẫu ở `tests/context/<bộ>.md` để truyền bằng `--context`.
+
+```bash
+./scripts/run-fixtures.sh saas-hard      # quét thật + chấm điểm (tốn token)
+./scripts/run-fixtures.sh --check-only   # chỉ chấm báo cáo mới nhất đã có
+```
+
+### Bài học → ca kiểm
+
+`scripts/check-lessons.py` kiểm mỗi bài học bảo mật trong kho bài học đều có ca kiểm. Kho bài học là file riêng của từng người bảo trì (mặc định `~/.claude/rules/bai-hoc-bao-mat.md`, đổi bằng `--lessons` hoặc `VBSEC_LESSONS`); repo chỉ giữ bảng nối `tests/lessons-map.json`. Mỗi bài ở một trong ba trạng thái: `covered` (ca phải có trong `tests/expected/<bộ>.json`), `out_of_scope` (kèm `reason`), `todo`. Script báo đỏ khi có bài chưa nối, bài `todo`, ca trỏ tới đáp án không tồn tại, hoặc tiêu đề bài đã đổi. Không có kho bài học → cảnh báo, exit 0.
+
+```bash
+python3 scripts/check-lessons.py
+python3 scripts/check-lessons.py --init   # in khung JSON cho bài chưa nối
+```
+
+### Thử tay nhanh
+
+Sửa một rule đơn lẻ thì thường hai ca nhỏ là đủ:
 
 ### Positive case — rule PHẢI flag
 
@@ -361,9 +393,12 @@ Trong mô tả PR, bao gồm:
 ### Checklist trước khi mở PR
 
 - [ ] Branch tách từ `main` mới nhất
-- [ ] Rule file có frontmatter đủ (id, severity_max, applies_to)
+- [ ] Rule file có frontmatter đủ (id, severity_max, applies_to, cwe, owasp; load_when nếu chỉ nạp ở một số repo)
 - [ ] Đã test positive case → flag đúng
 - [ ] Đã test negative case → KHÔNG false-positive
+- [ ] Đã chạy `./scripts/run-fixtures.sh <bộ>` cho các bộ thay đổi đụng tới
+- [ ] `python3 scripts/check-lessons.py` xanh (nếu có kho bài học)
+- [ ] Đã chạy `./scripts/sync-skills.sh`
 - [ ] Đã update `docs/vi/rules.md` + `docs/en/rules.md`
 - [ ] Đã update `SKILL.md` Step 4 table nếu rule mới
 - [ ] Đã update README.vi.md + README.md nếu rule mới
@@ -375,7 +410,7 @@ Trong mô tả PR, bao gồm:
 
 | Prefix | Khi nào dùng | Ví dụ |
 |---|---|---|
-| `feat:` | Thêm tính năng / rule mới | `feat: add OPEN-REDIRECT rule (23)` |
+| `feat:` | Thêm tính năng / rule mới | `feat: add OPEN-REDIRECT rule (32)` |
 | `fix:` | Sửa bug, giảm false positive | `fix: reduce false positive in SQL-INJECTION for parameterized GORM` |
 | `docs:` | Cập nhật docs / README | `docs: clarify SMALL vs LARGE thresholds` |
 | `lang:` | Thêm/sửa language specialization | `lang: add Ruby specialization for SQL-INJECTION` |

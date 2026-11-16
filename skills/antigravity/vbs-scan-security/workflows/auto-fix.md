@@ -29,6 +29,13 @@ Vòng lặp patch tự động cho findings CRITICAL/HIGH, chạy sau khi đã c
 ## Scope — finding nào được auto-fix
 
 - Chỉ xử lý finding có `severity` là `CRITICAL` hoặc `HIGH`. MEDIUM/LOW → `patch_status: "skipped_low_severity"`, không đụng vào (rủi ro/nhiễu không tương xứng với lợi ích tự động sửa).
+- **Chỉ tự áp patch cho nhóm sửa cơ học** (v0.8+). Sửa phân quyền / logic / AI bằng máy dễ chặn nhầm người dùng thật hoặc vá một đường mà bỏ đường khác, nên:
+
+  | Nhóm | rule_id | Xử lý |
+  |---|---|---|
+  | Cơ học (được apply + verify) | SQL-INJECTION (tham số hoá), XSS (escape / bỏ `v-html`), HARDCODED-SECRET (đọc env), WEAK-PASSWORD-HASHING, JWT-NONE-ALGORITHM (khoá thuật toán), CORS-MISCONFIG, VERBOSE-ERROR-DEBUG-MODE, COMMAND-INJECTION (mảng tham số), PATH-TRAVERSAL (containment), INSECURE-DESERIALIZATION (safe loader), OUTDATED-DEPENDENCY / VULNERABLE-DEPENDENCY (theo luật bump bên dưới) | Bước 0 → 3 như cũ |
+  | Quyền / logic / AI (chỉ gợi ý) | IDOR, BROKEN-ACCESS-CONTROL, MASS-ASSIGNMENT, CSRF, RACE-CONDITION, BRUTE-FORCE, MISSING-RATE-LIMIT, SSRF, UNRESTRICTED-FILE-UPLOAD, SLOPSQUATTING, rule 23–31, mọi `OTHER-CWE-*` | Bước 1 → 2 → **Bước 4** (`suggested_only`). Patch kèm 2–4 dòng mô tả **test đỏ** cần viết trước khi sửa (request nào, vai nào, kỳ vọng mã lỗi gì) |
+
 - Xử lý **tuần tự**, nhóm theo `file`: nếu 1 file có nhiều finding, xử lý hết các finding của file đó trước khi qua file khác (tránh 2 patch chồng lấn cùng lúc trên 1 file).
 - Bỏ qua finding đã có `patch_status` (vd re-run sau khi 1 phần đã fix) trừ khi user chỉ định re-run.
 
@@ -44,7 +51,7 @@ Chạy khi `$SCAN_ROOT` là `.`. Mục đích: biết chắc có verify được
    Với finding `VULNERABLE-DEPENDENCY` của Go/dotnet, kiểm tra thêm `go` / `dotnet` (bảng "Patch sửa dependency" ở Bước 3). Thiếu → finding đó đi thẳng Bước 4, không apply vào manifest.
 2. **Build baseline.** Chạy verify command 1 lần trên code hiện tại, chưa patch gì:
    - Verify cấp dự án (`dotnet build`, `go build ./...`, `npx tsc --noEmit`): chạy 1 lần. Fail → project vốn đã build lỗi, không phân biệt được lỗi do patch hay lỗi có sẵn → mọi finding đi thẳng Bước 4 (`suggested_only`), note "build baseline fail".
-   - Verify cấp file (`php -l`, `python -m py_compile`, `node --check`): chạy trên từng file trước khi patch file đó. Fail → finding của file đó đi thẳng Bước 4.
+   - Verify cấp file (`php -l`, `python -m py_compile`, `node --check`, `dart analyze <file>`): chạy trên từng file trước khi patch file đó. Fail → finding của file đó đi thẳng Bước 4.
 3. Tạo thư mục gốc chứa snapshot cho cả lượt auto-fix (nằm ngoài repo) và bộ đếm lần patch. Mỗi lần patch có thư mục snapshot RIÊNG `$AF_BAK/<n>` (Bước 3 mục 2):
    ```bash
    AF_BAK=$(mktemp -d "${TMPDIR:-/tmp}/vbsec-autofix.XXXXXX")
@@ -119,6 +126,7 @@ Quy tắc:
    | `typescript` | `npx` + `tsc` trong project (có `tsconfig.json`), else `node` | `npx --no-install tsc --noEmit` nếu có `tsconfig.json`, else `node --check <file>` | `--no-install` để không tự tải `tsc` từ registry. JS thuần chỉ check syntax file |
    | `php` | `php` | `php -l <file>` | Chỉ syntax check, không semantic toàn dự án |
    | `python` | `python3` hoặc `python` | `python3 -m py_compile <file>` | Chỉ syntax check, không semantic toàn dự án |
+   | `dart` | `dart` | `dart analyze --no-fatal-warnings <file>` | Chạy ở thư mục có `pubspec.yaml`, cần `.dart_tool/` (đã `pub get`); thiếu → coi như thiếu tool. Lỗi phân tích (error) mới fail, warning/info không fail. Không chạy `flutter build` (chậm, cần SDK nền tảng) |
    | *(không có overlay / lang khác)* | — | — | Không có verify command tin cậy → KHÔNG auto-apply, xem Bước 4 |
 
    **Patch sửa dependency (`VULNERABLE-DEPENDENCY`)** — build pass chỉ chứng minh version mới resolve được, không chứng minh code vẫn tương thích (bản mới có thể có breaking change). Vì vậy bump dependency chỉ được `applied` khi **test của project** chạy pass trên version mới. Ecosystem nào không build + test được với version mới thì chỉ gợi ý patch:
@@ -129,6 +137,7 @@ Quy tắc:
    | dotnet | `.csproj` bị patch, `packages.lock.json`, `Directory.Packages.props` (nếu có — với Central Package Management, patch sửa `<PackageVersion>` trong file này thay vì `.csproj`) | `dotnet restore && dotnet build && dotnet test` | Test pass → `applied`. Khi khôi phục, chạy lại `dotnet restore` để `obj/` khớp manifest cũ |
    | npm, Composer | — | Không chạy. Muốn test phải cài package vào `node_modules/`/`vendor/` và chạy install script — không hoàn tác gọn được | Luôn Bước 4 (`suggested_only`) |
    | PyPI | — | KHÔNG chạy `pip install` (sửa thẳng môi trường Python của user, không hoàn tác được) | Luôn Bước 4 (`suggested_only`) |
+   | Pub | — | KHÔNG chạy `flutter pub upgrade` / `pub get` (đổi `pubspec.lock`, tải package, chạy build hook của package) | Luôn Bước 4 (`suggested_only`) |
 
    Quy tắc cho Go/dotnet:
    - **Chạy test cần user cho phép bằng `--run-tests`.** Test của project có thể đụng hệ thống thật (vd integration test đọc `DATABASE_URL` từ `.env` rồi `TRUNCATE` bảng). Không có `--run-tests` (`$RUN_TESTS` khác `true`) → KHÔNG chạy test, không bump: finding đi Bước 4 (`suggested_only`), in `{msg_autofix_needs_run_tests}` một lần.
@@ -154,7 +163,7 @@ Quy tắc:
 
 ## Bước 4 — Không apply (chỉ gợi ý patch)
 
-Các trường hợp: `$SCAN_ROOT` khác `.` (Gate 4); scope `staged` (Gate 5); bump dependency Go/dotnet khi không có `--run-tests` (Bước 3); `$PRIMARY_LANG` không có verify command tin cậy; thiếu build tool hoặc build baseline fail (Bước 0); dependency npm/Composer/PyPI, hoặc dependency Go/dotnet khi project không có test hoặc test baseline fail (Bước 3).
+Các trường hợp: finding thuộc nhóm quyền / logic / AI (bảng ở mục Scope); `$SCAN_ROOT` khác `.` (Gate 4); scope `staged` (Gate 5); bump dependency Go/dotnet khi không có `--run-tests` (Bước 3); `$PRIMARY_LANG` không có verify command tin cậy; thiếu build tool hoặc build baseline fail (Bước 0); dependency npm/Composer/PyPI/Pub, hoặc dependency Go/dotnet khi project không có test hoặc test baseline fail (Bước 3).
 
 1. KHÔNG áp dụng patch vào file thật.
 2. Ghi diff ra file: `vbsec-reports/patches/<file-slug>-<line>-<rule_id>.patch` (dùng Write tool). Với `VULNERABLE-DEPENDENCY`, thêm `-<cve_id>` vào cuối tên (1 package có thể có nhiều CVE trên cùng 1 dòng manifest). Tên file phải khác nhau cho mỗi finding, để patch sau không ghi đè patch trước.

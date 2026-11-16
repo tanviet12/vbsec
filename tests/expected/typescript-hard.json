@@ -38,6 +38,20 @@
       "file": "web/components/SearchResult.vue",
       "rule_id": "XSS",
       "min_severity": "HIGH"
+    },
+    {
+      "file": "package.json",
+      "rule_id": "OUTDATED-DEPENDENCY",
+      "min_severity": "MEDIUM",
+      "lines": [
+        6,
+        6
+      ]
+    },
+    {
+      "file": "server/routes/auth.ts",
+      "rule_id": "MISSING-RATE-LIMIT",
+      "min_severity": "MEDIUM"
     }
   ],
   "must_not_find": [

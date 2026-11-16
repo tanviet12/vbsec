@@ -23,6 +23,7 @@ Cách detect ngôn ngữ code chính trong repo để chọn rule overlay.
    | `rust` | `.rs` | |
    | `dotnet` | `.cs`, `.csproj`, `.sln` | ASP.NET Core / EF Core; marker phụ: `global.json`, `appsettings.json` |
    | `kotlin` | `.kt`, `.kts` | |
+   | `dart` | `.dart` | Flutter / Dart; marker: `pubspec.yaml`. Bỏ file sinh tự động (`*.g.dart`, `*.freezed.dart`, `*.mocks.dart`, `lib/generated/`) khỏi mẫu số. App Flutter có thư mục `android/`, `ios/` chứa vài file `.kt` / `.swift` vỏ native: không tính là ngôn ngữ thứ hai, nhưng `AndroidManifest.xml`, `Info.plist`, `network_security_config.xml` vẫn được quét bằng overlay `dart` |
 
 3. **Primary language** = lang nào có **≥30% tổng file code** trong scope.
 
@@ -48,6 +49,7 @@ Cách detect ngôn ngữ code chính trong repo để chọn rule overlay.
 | `typescript` | ✅ v0.2 | Sequelize/Prisma/TypeORM/Mongoose SQLi+NoSQLi, React/Vue/Angular XSS, Express/NestJS/Next.js mass-assignment/SSRF/CSRF/CORS, js-yaml deserialize, child_process injection, JWT none/algorithm-confusion |
 | `python` | ✅ v0.4 | SQLAlchemy text() + Django .raw/.extra, pickle/yaml.load (RCE), subprocess shell=True, Flask Werkzeug debugger RCE, Django DEBUG/FastAPI debug, Django ModelForm/Flask `**request.json`/FastAPI Pydantic mass-assignment, PyJWT algorithms allowlist, flask-cors/django-cors-headers/FastAPI CORSMiddleware, Django CSRF middleware |
 | `dotnet` | ✅ v0.6 | ASP.NET Core / Minimal API model binding, EF Core raw SQL, Newtonsoft TypeNameHandling / legacy formatter deserialization, Process.Start command injection, Developer Exception Page / debug mode |
+| `dart` | ✅ v0.8 | App Flutter (client di động): token trong SharedPreferences thay vì Keychain/Keystore, `.env` đóng gói làm asset, xoá phiên thiếu (RAM, 401 theo verb), `allowBackup`, deep link exported, payload push / deep link ghép vào đường dẫn go_router, ZipSlip, WebView / `url_launcher` với URL ngoài, log token không bọc `kDebugMode`, cleartext / `badCertificateCallback`, `pubspec.lock` (CVE + slopsquatting) |
 | Khác | Phase v0.8+ | Ruby, Java, Rust theo nhu cầu cộng đồng |
 
 ## Frontend framework detection (sub-classification)
@@ -64,6 +66,16 @@ Khi primary = `javascript` hoặc `typescript`, detect thêm framework để ch�
 | NestJS | `package.json` có `"@nestjs/core"` | Decorators (`@Body()`, `@Query()`) — Mass Assignment via DTO whitelist |
 
 Framework markers chỉ là gợi ý — vẫn áp dụng generic rules cho mọi case. Markers chỉ dùng để **giảm false positive** (vd: không flag XSS cho mustache trong Vue vì auto-escape).
+
+## App di động Flutter (`dart`)
+
+Repo có `pubspec.yaml` khai `flutter:` (hoặc dependency `flutter: sdk: flutter`) → coi là **app client**. Code chạy trên máy người dùng, mọi thứ đóng gói vào app (code, asset, `--dart-define`) đều coi như công khai.
+
+| Marker | Ảnh hưởng đến rule |
+|---|---|
+| `pubspec.yaml` có `flutter:` | Nguồn L1 là payload push, deep link / intent, clipboard, file từ app khác (xem `data-flow-classification.md` mục "App di động"). Rule thuần server (CSRF, CORS-MISCONFIG, BRUTE-FORCE, MISSING-RATE-LIMIT, MASS-ASSIGNMENT, IDOR, RACE-CONDITION, SQL-INJECTION trên DB cục bộ `sqflite`) **không tạo finding ở code app**: chống dò mật khẩu, phân quyền dữ liệu là việc của server. Chỉ flag khi có đường khai thác ngay trên máy (vd SQL ghép chuỗi từ deep link vào DB cục bộ chứa dữ liệu người khác) |
+| `shelf`, `dart_frog`, `serverpod`, `alfred` trong `dependencies` | Có backend Dart: áp rule server như ngôn ngữ backend khác cho thư mục server (route thiếu auth, SQL, CORS...) |
+| `android/app/src/main/AndroidManifest.xml`, `ios/Runner/Info.plist` | Quét cùng overlay `dart`: `allowBackup`, `exported`, intent-filter, `usesCleartextTraffic`, `NSAllowsArbitraryLoads`, `debuggable` |
 
 ## Pseudocode
 

@@ -4,7 +4,7 @@ Bộ code mẫu có lỗi biết trước, dùng để đo skill bắt được 
 
 ```
 tests/
-├── fixtures/<lang>/      # câu dễ: python, typescript, go, php, dotnet
+├── fixtures/<lang>/      # câu dễ: python, typescript, go, php, dotnet, dart (app Flutter)
 ├── fixtures/<lang>-hard/ # câu khó: go-hard, typescript-hard, php-hard
 └── expected/<set>.json   # đáp án cho từng bộ
 ```
@@ -27,7 +27,7 @@ Code trong `fixtures/` **cố tình có lỗ hổng**. Không copy đi dùng, kh
 
 | Field | Ý nghĩa |
 |---|---|
-| `must_find` | Finding bắt buộc có: `file` + `rule_id` (string hoặc list các ID chấp nhận được) + `min_severity`. Thêm `lines: [start, end]` khi 1 file có cả đoạn lỗi lẫn đoạn an toàn cùng loại |
+| `must_find` | Finding bắt buộc có: `file` + `rule_id` (string hoặc list các ID chấp nhận được) + `min_severity`. Thêm `lines: [start, end]` khi 1 file có cả đoạn lỗi lẫn đoạn an toàn cùng loại; `alt_files` khi lỗi xuyên file có thể được báo ở file lân cận (không xét `lines`); `why`, `cross_file` để đọc kết quả |
 | `must_not_find` | Finding KHÔNG được có, kèm `reason` |
 | `clean_files` | File không được có finding nào |
 

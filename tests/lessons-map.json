@@ -1,0 +1,677 @@
+{
+  "lessons": {
+    "1": {
+      "title": "Tin header IP do client gửi",
+      "status": "covered",
+      "rule": "BRUTE-FORCE",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/middleware.go",
+          "rule_id": "BRUTE-FORCE"
+        }
+      ]
+    },
+    "2": {
+      "title": "Token trung gian dùng lại được",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/login.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "3": {
+      "title": "Access token không thu hồi được",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/staff.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "4": {
+      "title": "Cookie SameSite=Strict và vỏ desktop",
+      "status": "out_of_scope",
+      "reason": "kiến trúc vỏ desktop / webview và nơi giữ refresh token; chỉ đúng với nền tảng vỏ native, không có fixture trong vbsec"
+    },
+    "5": {
+      "title": "Lộ email có tài khoản",
+      "status": "covered",
+      "rule": "OTHER-CWE-204",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/account.go",
+          "rule_id": "OTHER-CWE-204"
+        }
+      ]
+    },
+    "6": {
+      "title": "Khoá đăng nhập thuần theo IP",
+      "status": "todo"
+    },
+    "7": {
+      "title": "Token trong link thư",
+      "status": "covered",
+      "rule": "OTHER-CWE-640",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/account.go",
+          "rule_id": "OTHER-CWE-640"
+        }
+      ]
+    },
+    "8": {
+      "title": "Tiêu token và đổi dữ liệu không cùng transaction",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/account.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        }
+      ]
+    },
+    "9": {
+      "title": "Đặt mật khẩu mới",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/account.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "10": {
+      "title": "Hàng đợi việc nền đầy thì bỏ âm thầm nhưng vẫn trừ hạn mức",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/platform/mail.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        }
+      ]
+    },
+    "11": {
+      "title": "Giới hạn theo người nhận chỉ có ngưỡng giờ",
+      "status": "out_of_scope",
+      "reason": "ngưỡng chính sách gửi thư (trần ngày bên cạnh trần giờ); là lựa chọn con số vận hành, bộ quét không khẳng định được lỗi từ mã"
+    },
+    "12": {
+      "title": "Endpoint nhận token không giới hạn tốc độ",
+      "status": "covered",
+      "rule": "MISSING-RATE-LIMIT",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/account.go",
+          "rule_id": "MISSING-RATE-LIMIT"
+        }
+      ]
+    },
+    "13": {
+      "title": "Khoá theo tài khoản bị kẻ cầm phiên trộm lạm dụng",
+      "status": "out_of_scope",
+      "reason": "UX màn báo khoá (chỉ đường thoát cho chủ tài khoản), không phải mẫu lỗi trong mã quét"
+    },
+    "14": {
+      "title": "Danh sách lệch điều kiện với kiểm quyền",
+      "status": "covered",
+      "rule": "AUTHZ-PATH-PARITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/members.go",
+          "rule_id": "AUTHZ-PATH-PARITY"
+        }
+      ]
+    },
+    "15": {
+      "title": "Xem chéo tenant không để dấu",
+      "status": "covered",
+      "rule": "OTHER-CWE-778",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/ops.go",
+          "rule_id": "OTHER-CWE-778"
+        }
+      ]
+    },
+    "16": {
+      "title": "Đọc rồi ghi cấu hình không khoá",
+      "status": "covered",
+      "rule": "RACE-CONDITION",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/settings.go",
+          "rule_id": "RACE-CONDITION"
+        }
+      ]
+    },
+    "17": {
+      "title": "Lỗi của bên thứ ba mang PII vào log",
+      "status": "covered",
+      "rule": "SENSITIVE-DATA-IN-LOGS",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/platform/mail.go",
+          "rule_id": "SENSITIVE-DATA-IN-LOGS"
+        }
+      ]
+    },
+    "18": {
+      "title": "Sự kiện do kẻ tấn công kích hoạt ghi nhật ký không trần",
+      "status": "covered",
+      "rule": "RESOURCE-EXHAUSTION",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/httpapi/account.go",
+          "rule_id": "RESOURCE-EXHAUSTION"
+        }
+      ]
+    },
+    "19": {
+      "title": "Nhật ký \"bất biến\" mà user DB của app vẫn có quyền sửa",
+      "status": "out_of_scope",
+      "reason": "quyền của user DB (GRANT) và tự kiểm lúc khởi động trên máy chủ thật: hạ tầng / cấu hình DB, không nằm trong mã ứng dụng được quét"
+    },
+    "20": {
+      "title": "Ghi nhật ký làm hỏng thao tác chính",
+      "status": "covered",
+      "rule": "SENSITIVE-DATA-IN-LOGS",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/members.go",
+          "rule_id": "SENSITIVE-DATA-IN-LOGS"
+        }
+      ]
+    },
+    "21": {
+      "title": "Bộ lọc thời gian không cận dưới",
+      "status": "covered",
+      "rule": "RESOURCE-EXHAUSTION",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/activity.go",
+          "rule_id": "RESOURCE-EXHAUSTION"
+        }
+      ]
+    },
+    "22": {
+      "title": "Kiểm khoá rồi mới đếm",
+      "status": "covered",
+      "rule": "RACE-CONDITION",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/login.go",
+          "rule_id": "RACE-CONDITION"
+        },
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/expenses.go",
+          "rule_id": "RACE-CONDITION"
+        }
+      ]
+    },
+    "23": {
+      "title": "Kiểm điều kiện của người bị tác động rồi ghi ở transaction khác",
+      "status": "covered",
+      "rule": "RACE-CONDITION",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/members.go",
+          "rule_id": "RACE-CONDITION"
+        }
+      ]
+    },
+    "24": {
+      "title": "Tên do người dùng / quản trị đặt chèn thẳng vào thân thư dạng chữ",
+      "status": "covered",
+      "rule": "OTHER-CWE-93",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/platform/mail.go",
+          "rule_id": "OTHER-CWE-93"
+        }
+      ]
+    },
+    "25": {
+      "title": "Mở lại tư cách cũ mang theo quyền cũ",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/members.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "26": {
+      "title": "Scope token chỉ kiểm ở nhánh \"theo chức năng\"",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/agentapi/dispatch.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "27": {
+      "title": "Phản ứng huỷ bỏ đòi bằng chứng yếu hơn yêu cầu thường",
+      "status": "todo"
+    },
+    "28": {
+      "title": "Đăng ký client động: tên ứng dụng là dữ liệu kẻ lạ nhập",
+      "status": "todo"
+    },
+    "29": {
+      "title": "Xoá phiên chỉ xoá token, quên dữ liệu trong bộ nhớ",
+      "status": "covered",
+      "rule": "BROKEN-ACCESS-CONTROL",
+      "cases": [
+        {
+          "set": "dart",
+          "file": "lib/state/account_model.dart",
+          "rule_id": "BROKEN-ACCESS-CONTROL"
+        }
+      ]
+    },
+    "30": {
+      "title": "401 chỉ nhận ở GET, hoặc nhận ở mọi request kể cả đăng nhập",
+      "status": "covered",
+      "rule": "BROKEN-ACCESS-CONTROL",
+      "cases": [
+        {
+          "set": "dart",
+          "file": "lib/api/client.dart",
+          "rule_id": "BROKEN-ACCESS-CONTROL"
+        }
+      ]
+    },
+    "31": {
+      "title": "File tạm chứa dữ liệu nhạy cảm không ai dọn",
+      "status": "todo"
+    },
+    "32": {
+      "title": "Giá trị trong payload push ghép thẳng vào đường dẫn điều hướng",
+      "status": "covered",
+      "rule": "PATH-TRAVERSAL",
+      "cases": [
+        {
+          "set": "dart",
+          "file": "lib/notifications/push_handler.dart",
+          "rule_id": "PATH-TRAVERSAL"
+        }
+      ]
+    },
+    "33": {
+      "title": "Cổng \"chỉ debug\" lặp trên từng dòng",
+      "status": "covered",
+      "rule": "VERBOSE-ERROR-DEBUG-MODE",
+      "cases": [
+        {
+          "set": "dart",
+          "file": "lib/router.dart",
+          "rule_id": "VERBOSE-ERROR-DEBUG-MODE"
+        }
+      ]
+    },
+    "34": {
+      "title": "Bộ phân tích \"không hiểu thì cho qua\"",
+      "status": "covered",
+      "rule": "TENANT-ISOLATION",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "internal/repo/guard.go",
+          "rule_id": "TENANT-ISOLATION"
+        }
+      ]
+    },
+    "35": {
+      "title": "Khớp \"có một cái trùng ở đâu đó là đủ\"",
+      "status": "covered",
+      "rule": "TENANT-ISOLATION",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "internal/repo/guard.go",
+          "rule_id": "TENANT-ISOLATION"
+        }
+      ]
+    },
+    "36": {
+      "title": "Một lý do ngoại lệ cho cả nhóm hàm",
+      "status": "out_of_scope",
+      "reason": "kỷ luật quản lý sổ ngoại lệ (một lý do phủ bao nhiêu hàm, có ràng bảng không): soát bằng quy trình review, không định vị được thành một đoạn mã lỗi"
+    },
+    "37": {
+      "title": "Ghi / ghép một phần lấy gốc từ bản đã che theo quyền xem",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/projects.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        }
+      ]
+    },
+    "38": {
+      "title": "Nhật ký lượt gọi chép nguyên tham số của tool ghi dữ liệu nhạy",
+      "status": "covered",
+      "rule": "SENSITIVE-DATA-IN-LOGS",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/httpapi/middleware.go",
+          "rule_id": "SENSITIVE-DATA-IN-LOGS"
+        }
+      ]
+    },
+    "39": {
+      "title": "Gắn tệp bằng id mà chỉ kiểm cùng tenant",
+      "status": "covered",
+      "rule": "IDOR",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/files.go",
+          "rule_id": "IDOR"
+        }
+      ]
+    },
+    "40": {
+      "title": "Lịch sử \"số đã chốt\" chỉ ghi ở đường mở lại, quên đường tính lại",
+      "status": "todo"
+    },
+    "41": {
+      "title": "Quyền cấp cho \"ứng dụng\" thay vì cho \"lần kết nối\"",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/agentapi/dispatch.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "42": {
+      "title": "Quyền ghi dữ liệu nghiệp vụ tự mở đường ghi cấu hình khi gặp giá trị lạ",
+      "status": "covered",
+      "rule": "AUTHZ-PATH-PARITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/imports.go",
+          "rule_id": "AUTHZ-PATH-PARITY"
+        }
+      ]
+    },
+    "43": {
+      "title": "Vai thấp hạ được mức bảo vệ của thao tác \"chỉ người cao nhất\"",
+      "status": "covered",
+      "rule": "BROKEN-ACCESS-CONTROL",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/settings.go",
+          "rule_id": "BROKEN-ACCESS-CONTROL"
+        }
+      ]
+    },
+    "44": {
+      "title": "Khoá dòng đã chốt ở đường \"sửa\", quên đường \"ẩn / gom / xoá cha / khôi phục bản\"",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/entries.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        },
+        {
+          "set": "saas-hard",
+          "file": "internal/service/invoices.go",
+          "rule_id": "AUTHZ-PATH-PARITY"
+        }
+      ]
+    },
+    "45": {
+      "title": "Trần từng trường, nhưng bước chốt gộp nhiều dòng vào một cột",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/projects.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        }
+      ]
+    },
+    "46": {
+      "title": "Bản chụp mang dữ liệu nhạy ra khỏi khu có luật che",
+      "status": "todo"
+    },
+    "47": {
+      "title": "Cổng ghi \"test chạy trong CI\" mà CI không có database",
+      "status": "out_of_scope",
+      "reason": "cấu hình CI (job không dựng DB, test tự Skip): quy trình phát hành, không phải mã ứng dụng"
+    },
+    "48": {
+      "title": "Body nén được framework tự giải nén, không trần sau giải nén",
+      "status": "covered",
+      "rule": "RESOURCE-EXHAUSTION",
+      "cases": [
+        {
+          "set": "misc-hard",
+          "file": "internal/web/body.go",
+          "rule_id": "RESOURCE-EXHAUSTION"
+        }
+      ]
+    },
+    "49": {
+      "title": "Quyền \"chỉ người cao nhất cấp\" chặn ở màn cấp quyền, quên các đường chép quyền",
+      "status": "covered",
+      "rule": "AUTHZ-PATH-PARITY",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "internal/service/members.go",
+          "rule_id": "AUTHZ-PATH-PARITY"
+        }
+      ]
+    },
+    "50": {
+      "title": "Luật giới hạn đặt ở danh sách chọn, không ở đường ghi",
+      "status": "covered",
+      "rule": "BROKEN-ACCESS-CONTROL",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/service/requests.go",
+          "rule_id": "BROKEN-ACCESS-CONTROL"
+        }
+      ]
+    },
+    "51": {
+      "title": "Đồng bộ tự động từ khu A ghi vào đích của khu B bằng quyền của khu A",
+      "status": "todo"
+    },
+    "52": {
+      "title": "Tệp \"tạm\" được bảng nghiệp vụ tham chiếu nhưng không ai đổi trạng thái",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/jobs/cleanup.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        }
+      ]
+    },
+    "53": {
+      "title": "Đụng UNIQUE rồi đọc lại trong cùng transaction REPEATABLE READ",
+      "status": "todo"
+    },
+    "54": {
+      "title": "Bản chụp giữ mốc tạo lười",
+      "status": "todo"
+    },
+    "55": {
+      "title": "Việc chặn tính trên \"tập đang bật\" thì nút tắt là cửa lách",
+      "status": "covered",
+      "rule": "BUSINESS-STATE-INTEGRITY",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/periods.go",
+          "rule_id": "BUSINESS-STATE-INTEGRITY"
+        }
+      ]
+    },
+    "56": {
+      "title": "Trần byte của JSON tính theo cách mã hoá thật, đường tự động không được lỗi vì trần",
+      "status": "todo"
+    },
+    "57": {
+      "title": "Phản hồi của lệnh ghi là một cửa đọc",
+      "status": "covered",
+      "rule": "EXCESSIVE-DATA-EXPOSURE",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "internal/httpapi/projects.go",
+          "rule_id": "EXCESSIVE-DATA-EXPOSURE"
+        }
+      ]
+    },
+    "58": {
+      "title": "Cột \"người phải xử lý\" chụp lúc tạo, chỉ cập nhật ở một đường đổi vai",
+      "status": "covered",
+      "rule": "AUTH-SESSION-LIFECYCLE",
+      "cases": [
+        {
+          "set": "ledger-hard",
+          "file": "internal/service/expenses.go",
+          "rule_id": "AUTH-SESSION-LIFECYCLE"
+        }
+      ]
+    },
+    "59": {
+      "title": "Biến chế độ chạy so đúng chuỗi, giá trị lạ lặng lẽ thành \"không phải prod\"",
+      "status": "covered",
+      "rule": "VERBOSE-ERROR-DEBUG-MODE",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/platform/config.go",
+          "rule_id": "VERBOSE-ERROR-DEBUG-MODE"
+        }
+      ]
+    },
+    "60": {
+      "title": "Kết quả tool trả cho mô hình là một kênh lệnh",
+      "status": "covered",
+      "rule": "LLM-PROMPT-INJECTION",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "mcp/src/tools/comments.ts",
+          "rule_id": "LLM-PROMPT-INJECTION"
+        },
+        {
+          "set": "saas-hard",
+          "file": "internal/assistant/summary.go",
+          "rule_id": "LLM-PROMPT-INJECTION"
+        }
+      ]
+    },
+    "61": {
+      "title": "Tham số \"xác nhận\" do mô hình tự điền không phải xác nhận",
+      "status": "covered",
+      "rule": "EXCESSIVE-AGENCY",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "mcp/src/tools/invoices.ts",
+          "rule_id": "EXCESSIVE-AGENCY"
+        }
+      ]
+    },
+    "62": {
+      "title": "Mã xác nhận không đi chung gói với thứ cần xác nhận",
+      "status": "covered",
+      "rule": "LLM-PROMPT-INJECTION",
+      "cases": [
+        {
+          "set": "lessons-hard",
+          "file": "internal/agentapi/tools.go",
+          "rule_id": "LLM-PROMPT-INJECTION"
+        }
+      ]
+    },
+    "63": {
+      "title": "Lệnh ghi chữ tự do là một cửa ra; kết nối vừa đọc số kín thì cửa ra phải hẹp lại",
+      "status": "covered",
+      "rule": "EXCESSIVE-AGENCY",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "mcp/src/tools/comments.ts",
+          "rule_id": "EXCESSIVE-AGENCY"
+        }
+      ]
+    },
+    "64": {
+      "title": "Cờ và câu do server đặt không đứng cạnh chữ người khác viết",
+      "status": "covered",
+      "rule": "LLM-PROMPT-INJECTION",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "mcp/src/tools/invoices.ts",
+          "rule_id": "LLM-PROMPT-INJECTION"
+        }
+      ]
+    },
+    "65": {
+      "title": "Điều đã định bỏ phải kiểm ở nhánh chính",
+      "status": "covered",
+      "rule": "EXCESSIVE-AGENCY",
+      "cases": [
+        {
+          "set": "saas-hard",
+          "file": "mcp/src/index.ts",
+          "rule_id": "EXCESSIVE-AGENCY"
+        }
+      ]
+    }
+  }
+}

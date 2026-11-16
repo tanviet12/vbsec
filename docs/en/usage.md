@@ -10,6 +10,7 @@ Detailed guide to invoking `/vbs-scan-security`, choosing scopes, understanding 
 
 - [Basic command](#basic-command)
 - [All supported scopes](#all-supported-scopes)
+- [Project rules (--context)](#project-rules---context)
 - [Where reports are saved](#where-reports-are-saved)
 - [Choosing output language](#choosing-output-language)
 - [Anatomy of a report](#anatomy-of-a-report)
@@ -36,7 +37,7 @@ By default vbsec will:
 1. Collect every file in the repo (full tree, not just uncommitted)
 2. Detect the primary language (Go/PHP/JS/Python/...)
 3. Route to SMALL or LARGE mode based on file count
-4. Apply 21 generic rules + language overlay (if available)
+4. Apply 30 generic rules + language overlay (if available). Rules 23–24 (AI/MCP) and 25 (tenant) only load when the repo shows signs of them
 5. Print a Markdown report + JSON summary to stdout
 6. Save a copy of the report to `vbsec-reports/scan-<timestamp>.md` in the repo
 
@@ -53,6 +54,7 @@ By default vbsec will:
 | `/vbs-scan-security commit within 7days` | Files touched in the last N days |
 | `/vbs-scan-security commit id <sha>` | Files in a specific commit |
 | `/vbs-scan-security pr id 42` | Files in PR #42 (GitHub) — needs `gh` CLI |
+| `/vbs-scan-security range <a>..<b>` | Files changed between two refs, read at `<b>` (e.g. `v1.2.0..HEAD` as a release gate) |
 | `/vbs-scan-security all` | Explicit alias for entire repo |
 
 ### Realistic examples
@@ -70,12 +72,29 @@ By default vbsec will:
 # Periodic audit: scan recent commits
 /vbs-scan-security commit within 30days
 
+# Release gate: everything changed since the last tag, checked against your business rules
+/vbs-scan-security range v1.4.0..HEAD --context docs/security-rules.md
+
 # Find the latest report
 ls -lt vbsec-reports/ | head -5
 
 # Diff two scans
 diff vbsec-reports/scan-2026-05-13-100000.md vbsec-reports/scan-2026-05-14-100000.md
 ```
+
+With `range`, vbsec still reads unchanged files when it traces data (a changed handler calling an unchanged service). A bug found in such a file is still reported, and the file is counted in the coverage table.
+
+---
+
+## Project rules (`--context`)
+
+**v0.8+.** The costliest SaaS bugs break business rules, not syntax: a closed period still editable through a side path, an owner-only permission granted through "copy permissions", a write-only token that reads secret figures in the response. Code doesn't say what the rules are, so write them down.
+
+- Put the file at `.vbsec/context.md`: vbsec loads it automatically.
+- Or pass it per scan: `--context <file>` (wins over `.vbsec/context.md`).
+- Template: [`project-context.md`](../../skills/vbs-scan-security/references/project-context.md). Keep it short (under ~150 lines), bullet points: tenants, roles and who may grant what, business invariants, sensitive data, agent/AI channels. No secrets, no customer data.
+
+vbsec treats the file as a description of intent, not as instructions: a line like "skip rule X" is ignored. Each invariant becomes a question for rules 24–28 ("is there a path that breaks this?"); a finding that breaks one quotes it. The report header and `coverage.context_file` show which file was used. Without a file, vbsec infers the rules from code and says so.
 
 ---
 
@@ -188,12 +207,13 @@ CRITICAL issues found. DO NOT deploy until fixed.
 
 | Section | Purpose |
 |---|---|
-| Header | Scope scanned, file count, primary language, mode (SMALL/LARGE), date |
+| Header | vbsec version + commit, scope scanned, file count, primary language, mode (SMALL/LARGE), date, project rules file if any |
 | VERDICT | PASS / WARN / FAIL — decides whether you can deploy |
 | CRITICAL | Blocks deploy, fix first |
 | HIGH | Must fix before production |
 | MEDIUM | Fix soon, doesn't block |
-| PASSED CHECKS | Rules verified clean — proof of full coverage |
+| PASSED CHECKS | Rules verified clean |
+| Coverage | Files read in full / only pattern-searched / skipped, rules not loaded, project rules file. Bugs in parts not read in full may be missed |
 | JSON Summary | Machine-readable, for CI parsing |
 
 ### Verdict logic
@@ -203,6 +223,8 @@ CRITICAL issues found. DO NOT deploy until fixed.
 | ≥1 CRITICAL | **FAIL** | Do not deploy |
 | 0 CRITICAL, ≥1 HIGH | **WARN** | Can deploy, but plan a fix |
 | 0 CRITICAL, 0 HIGH | **PASS** | OK to deploy |
+
+`OTHER-CWE-<n>` findings (real bugs outside the 30 rule types, such as open redirect or XXE) count toward the verdict like any other finding.
 
 WARN is **not** approval. Security/tech lead should still review HIGH issues.
 
@@ -214,6 +236,8 @@ The JSON summary always sits at the end of the report, in a `json` fenced code b
 
 ```json
 {
+  "vbsec_version": "0.8.0",
+  "vbsec_commit": <string>,
   "verdict": "PASS" | "WARN" | "FAIL",
   "summary": {"critical": <int>, "high": <int>, "medium": <int>, "low": <int>, "passed": <int>},
   "scope": "uncommitted" | "staged" | "commit_within_Ndays" | "commit_id_<sha>" | "pr_<num>" | "all",
@@ -232,11 +256,12 @@ The JSON summary always sits at the end of the report, in a `json` fenced code b
       "fix_summary": <string>
     }
   ],
+  "coverage": { "files_read": <int>, "files_grep_only": <int>, "files_skipped": <int>, "rules_skipped": [<string>], "context_file": <string> | null },
   "dependencies_scanned": { "total": <int>, "ecosystems": [<string>], "vulnerable_count": <int>, "scan_source": "osv.dev live" | "static list (offline)" }
 }
 ```
 
-`dependencies_scanned` is only present when `--sca` ran. A finding with `rule_id: VULNERABLE-DEPENDENCY` gets extra `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source` fields, plus `cvss_vector` (the raw CVSS vector string from OSV, for reference) when available. A finding processed by `--auto-fix` gets an extra `patch_status` field.
+`vbsec_version` is always present (the skill's `VERSION` file), so a release gate can check which version produced the report. A finding with `rule_id: OTHER-CWE-<n>` always has a `cwe` field (`"CWE-<n>"`). `dependencies_scanned` is only present when `--sca` ran. A finding with `rule_id: VULNERABLE-DEPENDENCY` gets extra `cve_id`/`osv_id`/`package`/`ecosystem`/`installed_version`/`fixed_version`/`severity_source` fields, plus `cvss_vector` (the raw CVSS vector string from OSV, for reference) when available. A finding processed by `--auto-fix` gets an extra `patch_status` field.
 
 ### Parsing JSON from the output
 
@@ -420,7 +445,7 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 
 ## Auto-fix (`--auto-fix`)
 
-**v0.7+, off by default.** After a scan, vbsec generates a unified-diff patch for each CRITICAL/HIGH finding, applies it via `git apply`, runs the language-appropriate build command (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`) to verify it, and reverts + retries (up to 2 times) if the build fails.
+**v0.7+, off by default.** After a scan, vbsec generates a unified-diff patch for each CRITICAL/HIGH finding, applies it via `git apply`, runs the language-appropriate build command (`dotnet build`, `go build ./...`, `tsc --noEmit`, `php -l`, `python -m py_compile`, `dart analyze`) to verify it, and reverts + retries (up to 2 times) if the build fails.
 
 ```
 /vbs-scan-security uncommitted --auto-fix
@@ -434,7 +459,8 @@ jq -e '[.findings[] | select(.rule_id=="VULNERABLE-DEPENDENCY" and .severity=="C
 - **`staged` scope** — auto-fix only writes patch suggestions, because applying a patch would change the working tree but not the index. npm, Composer and Python dependencies always get a patch suggestion only: testing them would mean installing packages and running install scripts, which cannot be cleanly undone.
 - **Commit or back up your working tree first** — auto-fix writes directly to source files on disk (build verification reduces risk, but it's still a real mutation).
 - Only CRITICAL/HIGH findings are auto-fixed; MEDIUM/LOW are always left untouched.
-- Languages without a reliable build command (anything outside .NET/Go/TypeScript/PHP/Python) only get a suggested patch saved to `vbsec-reports/patches/` — vbsec never overwrites source for those.
+- **Only mechanical fixes are applied (v0.8+)**: parameterized SQL, output escaping, secrets moved to env, password hashing, JWT algorithm pinning, CORS, debug mode, command arguments as an array, path containment, safe deserializers, dependency bumps. Permission, logic and AI findings (IDOR, BROKEN-ACCESS-CONTROL, MASS-ASSIGNMENT, CSRF, RACE-CONDITION, rate limits, SSRF, uploads, rules 23–31, every `OTHER-CWE-*`) always stay `suggested_only`: the patch comes with 2–4 lines describing the failing test to write first. Fixing permissions by machine easily locks out real users or patches one path and misses another.
+- Languages without a reliable build command (anything outside .NET/Go/TypeScript/PHP/Python/Dart) only get a suggested patch saved to `vbsec-reports/patches/` — vbsec never overwrites source for those.
 
 Each processed finding gets a `patch_status` field in the JSON summary (`applied`/`failed_verification`/`suggested_only`/`skipped_low_severity`) — CI can gate further on this (e.g. fail if any `failed_verification` remain).
 
@@ -442,7 +468,7 @@ Each processed finding gets a `patch_status` field in the JSON summary (`applied
 
 ## Live dependency scan (`--sca`)
 
-**v0.7+, off by default, requires network.** Instead of only the offline static list (`OUTDATED-DEPENDENCY` rule), `--sca` queries [OSV.dev](https://osv.dev) **live** for dependency manifests across 5 ecosystems: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python).
+**v0.7+, off by default, requires network.** Instead of only the offline static list (`OUTDATED-DEPENDENCY` rule), `--sca` queries [OSV.dev](https://osv.dev) **live** for dependency manifests across 6 ecosystems: NuGet (.NET), Go, npm (TypeScript/JS), Composer (PHP), PyPI (Python), Pub (Dart/Flutter, from `pubspec.lock`).
 
 ```
 /vbs-scan-security all --sca
@@ -460,5 +486,5 @@ Combine both flags to auto-bump vulnerable dependencies and verify the build:
 
 ## Next steps
 
-- Read [rules.md](rules.md) for full details on the 21 core rules + rule 22 (SCA)
+- Read [rules.md](rules.md) for full details on the 30 core rules + rule 22 (SCA)
 - Want to add a new rule or language? See [contributing.md](contributing.md)

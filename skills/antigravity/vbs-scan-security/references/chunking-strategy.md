@@ -9,7 +9,20 @@ Cách chia file thành chunks cho LARGE mode (sub-agent delegation). Mỗi chunk
 - **Cân bằng tải**: chunks tương đương kích cỡ
 - **Không quá nhiều chunks**: target 3-10 chunks (sub-agent overhead cao, đừng có 50 chunk 2 file mỗi cái)
 
-## Strategy mặc định: Top-level folder
+## Strategy mặc định (v0.8+): Lát dọc theo khu nghiệp vụ
+
+Chia theo **thư mục cấp một** cắt đứt luồng dữ liệu: với kiến trúc nhiều tầng (handler → core/service → repo ở thư mục khác nhau, cộng tool agent / MCP ở chỗ thứ tư), agent con quét `handlers/` không thấy repo lọc tenant thế nào, agent quét `repo/` không biết input đến từ đâu. Lỗi đắt nhất (tenant, quyền lệch giữa các đường, lộ dữ liệu, logic trạng thái) nằm đúng ở chỗ nối đó.
+
+Nên mỗi chunk là **một lát dọc**: mọi file của một khu nghiệp vụ, đủ các tầng.
+
+1. **Tìm khu nghiệp vụ** bằng tên chung xuyên tầng: `handlers/invoice.go`, `service/invoice.go`, `repo/invoice_repo.go`, `mcp/tools/invoice.ts`, `migrations/*invoice*` → khu `invoice`. Nguồn gợi ý: file đăng ký route (`router.go`, `routes/*.ts`), tên bảng trong migration, thư mục `modules/<khu>` / `features/<khu>` / `domain/<khu>` nếu repo đã chia sẵn (khi đó dùng luôn).
+2. **Gán file vào khu**: theo tên (stem chung), rồi theo import (handler import service nào). File dùng chung (middleware auth / tenant, db helper, config, logger) → gắn vào **mọi** lát dọc dưới dạng "đọc tham khảo" (không tính vào file_count), và vào chunk liên khu.
+3. **Chunk liên khu** (`kind: cross-cutting`), luôn có khi repo có ≥ 2 khu: nhận danh sách mọi file mã, chỉ soát TENANT-ISOLATION, AUTHZ-PATH-PARITY, EXCESSIVE-DATA-EXPOSURE, SENSITIVE-DATA-IN-LOGS và luật dự án — so sánh các đường ghi / đọc cùng đối tượng giữa các khu (xem prompt trong [`sub-agent-prompts.md`](sub-agent-prompts.md)).
+4. File không thuộc khu nào (script, cấu hình, frontend thuần UI) → gom theo thư mục như strategy cũ bên dưới.
+
+Không tìm được khu (repo phẳng, ít tầng) → dùng strategy theo thư mục bên dưới.
+
+## Strategy dự phòng: Top-level folder
 
 Chia theo **top-level folder** dưới git root, mỗi folder = 1 chunk.
 
@@ -108,7 +121,7 @@ def chunk_files(files, max_files_per_chunk=30, target_chunks_max=15):
     return final
 ```
 
-LLM agent dùng Glob + lý luận để chia, không cần chạy Python literal.
+LLM agent dùng Glob + lý luận để chia, không cần chạy Python literal. Pseudocode trên là strategy dự phòng; với lát dọc, bước 1 thay `top = f.split("/")[0]` bằng "khu nghiệp vụ của f" (stem chung / import), các bước cân bằng (split chunk > 30 file theo khu con, merge khu < 5 file) giữ nguyên.
 
 ## Output format cho main orchestrator
 

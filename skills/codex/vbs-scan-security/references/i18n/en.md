@@ -176,6 +176,11 @@ Key→text mapping for report output when `lang=en`. SKILL.md and workflows must
 |---|---|
 | `header_hardening_title` | Hardening notes (not vulnerabilities) |
 | `msg_hardening_intro` | The items below are not exploitable; they are optional defense-in-depth suggestions and do not affect the verdict. |
+| `header_version` | vbsec version |
+| `header_context` | Project rules |
+| `header_coverage_title` | Scan coverage |
+| `msg_coverage_intro` | What was read in full, what was only pattern-searched, which rules were not loaded. Issues in parts not read in full may be missed. |
+| `label_other_cwe` | Outside the rule catalog (still counts toward the verdict) |
 
 ## Auto-fix (`--auto-fix`, v0.7+)
 

@@ -8,7 +8,7 @@ Hướng dẫn parse dependency manifest và tra cứu CVE live qua [OSV.dev](ht
 
 ## Bước 1 — Đọc manifest theo ecosystem
 
-vbsec hiện chuyên sâu 5 ngôn ngữ — mỗi ngôn ngữ map sang đúng 1 [OSV ecosystem name](https://ossf.github.io/osv-schema/#affectedpackage-field):
+vbsec hiện chuyên sâu 6 ngôn ngữ — mỗi ngôn ngữ map sang đúng 1 [OSV ecosystem name](https://ossf.github.io/osv-schema/#affectedpackage-field):
 
 | Lang (vbsec) | OSV ecosystem | Manifest/lockfile đọc | Cách trích PackageId + Version (illustrative) |
 |---|---|---|---|
@@ -17,6 +17,7 @@ vbsec hiện chuyên sâu 5 ngôn ngữ — mỗi ngôn ngữ map sang đúng 1 
 | `typescript` | `npm` | `package-lock.json` (lockfile v2/v3, object `packages`) | Ưu tiên `package-lock.json` hơn `package.json` — có version đã resolve thật, không phải range (`^1.2.3`). Walk `packages["node_modules/<name>"].version` |
 | `php` | `Packagist` | `composer.lock` (`packages[].name` + `.version`) | JSON parse trực tiếp — `composer.lock` luôn có version cụ thể |
 | `python` | `PyPI` | `requirements.txt` (`pkg==version`), `poetry.lock`, `Pipfile.lock` | `requirements.txt`: split theo `==` (bỏ qua dòng dùng `>=`/`~=` — không có version cụ thể để query); `poetry.lock`/`Pipfile.lock`: parse TOML/JSON lấy `name` + `version` |
+| `dart` | `Pub` | `pubspec.lock` (map `packages:`, mỗi key là tên package) | Chỉ lấy package có `source: hosted` và `description.url` là `https://pub.dev` (hoặc `https://pub.dartlang.org`): tên = key, version = field `version`. Bỏ `source: sdk` (`flutter`, `flutter_test`...), `path`, `git`, và hosted server riêng (không có trên OSV). Không có `pubspec.lock` (package thư viện thường không commit lock) → không query, chỉ `pubspec.yaml` có range `^1.2.3` |
 
 **Nguyên tắc đọc:** Dùng Read tool, KHÔNG chạy lệnh `jq`/parser thật — đây là illustrative pattern, agent tự parse bằng reasoning giống cách đọc code khác. Nếu 1 repo có nhiều manifest cùng ecosystem (vd nhiều `.csproj` trong monorepo), gộp tất cả package tìm được, dedup theo `(name, version)`.
 
@@ -128,4 +129,4 @@ Thêm block top-level vào JSON summary cuối report (xem chi tiết field ở 
 
 - [`../rules/generic/22-vulnerable-dependency.md`](../rules/generic/22-vulnerable-dependency.md) — rule chính dùng data từ file này
 - [`../rules/generic/20-outdated-dependency.md`](../rules/generic/20-outdated-dependency.md) — fallback offline, cross-check tránh double-report
-- [`../workflows/auto-fix.md`](../workflows/auto-fix.md) — khi kết hợp `--sca --auto-fix`, finding `VULNERABLE-DEPENDENCY` của Go/dotnet được bump version, build và chạy test của project, chỉ giữ khi test pass (có snapshot để khôi phục khi fail); npm/Composer/PyPI chỉ có gợi ý patch (`suggested_only`)
+- [`../workflows/auto-fix.md`](../workflows/auto-fix.md) — khi kết hợp `--sca --auto-fix`, finding `VULNERABLE-DEPENDENCY` của Go/dotnet được bump version, build và chạy test của project, chỉ giữ khi test pass (có snapshot để khôi phục khi fail); npm/Composer/PyPI/Pub chỉ có gợi ý patch (`suggested_only`)

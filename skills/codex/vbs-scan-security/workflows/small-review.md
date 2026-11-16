@@ -13,6 +13,7 @@ Inline scan workflow cho repo nhỏ-vừa (≤20 main-lang files VÀ ≤30 total
 - `$PRIMARY_LANG` — kết quả detect language
 - `$OVERLAY_AVAILABLE` — có rule chuyên sâu không
 - i18n strings đã load (từ `references/i18n/<lang>.md`)
+- `$CONTEXT_FILE` — luật dự án (có thể rỗng). Có → Read toàn bộ ở Step S1, giữ trong context suốt lượt quét
 
 ## Steps
 
@@ -21,10 +22,10 @@ Inline scan workflow cho repo nhỏ-vừa (≤20 main-lang files VÀ ≤30 total
 1. **Nạp phần phát hiện của bộ rule hiệu lực qua script (vài lệnh Bash, mỗi lệnh 1 phần):**
 
    ```bash
-   bash <skill-dir>/references/load-rules.sh --part 1 <primary_lang> [<lang2> ...]
+   bash <skill-dir>/references/load-rules.sh --root "$SCAN_ROOT" --part 1 <primary_lang> [<lang2> ...]
    ```
 
-   (`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → bỏ tham số lang.) Dòng cuối output cho biết tổng số phần (`PART 1/4`...) → chạy tiếp `--part 2`, `--part 3`... (chạy song song được) tới khi thấy "đã in đủ". Output chia phần vì Bash tool cắt output dài; **KHÔNG pipe qua `head`/`tail`**. Gộp lại, script in đủ 21 rule, mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
+   (`<skill-dir>` = thư mục chứa `SKILL.md`. Lang không có overlay → bỏ tham số lang.) Dòng cuối output cho biết tổng số phần (`PART 1/4`...) → chạy tiếp `--part 2`, `--part 3`... (chạy song song được) tới khi thấy "đã in đủ". Output chia phần vì Bash tool cắt output dài; **KHÔNG pipe qua `head`/`tail`**. Gộp lại, script in đủ các rule hiệu lực (rule có `load_when` mà repo không có dấu hiệu sẽ được liệt kê ở dòng cuối — ghi vào `coverage.rules_skipped`), mỗi rule chỉ gồm phần phát hiện: Intent, điều kiện severity, cách reasoning, search patterns. Rule có overlay cho lang đã detect → overlay đã thay generic (repo đa ngôn ngữ: in cả generic lẫn overlay khi chưa phải lang nào cũng có overlay). **KHÔNG Read lại từng file rule ở bước này.**
 
 2. **Phần chi tiết (Examples, Fix recommendation, Cross-references) chỉ đọc khi cần:**
    - Rule có finding **CRITICAL/HIGH** → Read file theo path ở header `=== RULE <id> (source: ...) ===` để lấy code fix và ví dụ cho verbose block trong report.
@@ -51,8 +52,8 @@ Cho mỗi file trong `$FILES`:
    - `file`, `line`, `rule_id`, `severity` (≤ `severity_max` của rule), `issue`, `fix`, `context`
 
 **Rule ID discipline (BẮT BUỘC):**
-- **Chỉ dùng 21 canonical rule IDs** đã list ở [SKILL.md Step 4](../SKILL.md#step-4--apply-rules). KHÔNG tự bịa rule mới (`INSECURE-COOKIE`, `AUTH-BYPASS`, `WEAK-CRYPTO`, `DATA-IN-URL`, `OAUTH-MISCONFIG`, `SUPPLY-CHAIN`, `INFO-DISCLOSURE`, `DATA-AT-REST`...).
-- Nếu phát hiện 1 issue mà không có rule khớp 100%, MAP về rule canonical gần nhất (xem mapping table trong [`../references/sub-agent-prompts.md`](../references/sub-agent-prompts.md#rule-id-discipline-critical--read-carefully)) và note lý do trong `issue`.
+- Dùng rule ID trong bảng ở [SKILL.md Step 4](../SKILL.md#step-4-apply-rules) khi lỗi đúng là loại đó. KHÔNG tự bịa ID (`INSECURE-COOKIE`, `WEAK-CRYPTO`, `SUPPLY-CHAIN`...) và KHÔNG ép vào rule gần giống.
+- Lỗi **có đường khai thác** mà không rule nào khớp (open redirect, XXE, SSTI, crypto sai mục đích, CI injection...) → `rule_id: OTHER-CWE-<n>` kèm `cwe: "CWE-<n>"`, severity tối đa HIGH, tính vào verdict. Không có đường khai thác → hardening note.
 - 1 dòng code dính 2 rule (vd IDOR + RACE) → tạo **2 finding riêng biệt**, mỗi cái 1 `rule_id`. Không gom comma-separated.
 
 ### Step S3 — Cross-rule checks
@@ -62,6 +63,8 @@ Một số rule cần đối chiếu cross-file:
 - **SLOPSQUATTING**: thu thập tất cả import statement → kiểm tra package name có phải hợp lệ (npm/PyPI/Packagist). Trong môi trường offline, dùng heuristics: tên có lookalike chars (l/I, 0/O), suffix `-js`/`-py` lạ, hoặc tên typo phổ biến (vd `requets` thay vì `requests`).
 - **OUTDATED-DEPENDENCY**: đọc `package.json` / `requirements.txt` / `go.mod` / `composer.json` / `Gemfile.lock` → check version có trong list known-vulnerable (rule sẽ có danh sách static, không fetch internet).
 - **IDOR + BROKEN-ACCESS-CONTROL**: cần đọc cả route definition + handler để verify có authz check.
+- **AUTHZ-PATH-PARITY / TENANT-ISOLATION / BUSINESS-STATE-INTEGRITY (v0.8+)**: với mỗi đối tượng nhạy (bảng có cột tenant, tiền, kỳ chốt, duyệt, quyền), liệt kê **mọi** đường ghi / đọc tới nó (route web, API, tool agent / MCP, job, import, khôi phục, sao chép) rồi so điều kiện kiểm. Có `$CONTEXT_FILE` → mỗi bất biến trong đó là một câu hỏi "đường nào phá được?".
+- **LLM-PROMPT-INJECTION / EXCESSIVE-AGENCY**: đọc chỗ đăng ký tool MCP / agent và chỗ ghép dữ liệu vào prompt; đối chiếu tool ghi với tool đọc cùng token.
 - **MASS-ASSIGNMENT**: cần đọc model definition + endpoint handler.
 - **CSRF**: kiểm tra middleware config global (Express `csurf`, Laravel `VerifyCsrfToken`...) trước khi flag từng endpoint.
 
@@ -150,6 +153,7 @@ Sau khi render report, double-check:
 - [ ] JSON summary cuối có đầy đủ fields theo schema
 - [ ] PASSED list có ít nhất các rule applicable đã check (không bỏ sót)
 - [ ] Không có chuỗi tiếng Việt/Anh hardcoded — đã dùng i18n key
-- [ ] **Mọi `rule_id` trong findings nằm trong 21 canonical IDs** (không có bịa)
+- [ ] **Mọi `rule_id` nằm trong bảng rule hoặc theo dạng `OTHER-CWE-<n>` kèm `cwe`** (không bịa, không ép rule gần nhất)
+- [ ] JSON có `vbsec_version` và `coverage`
 - [ ] **Counts sanity check**: `len(findings)` == `summary.critical + high + medium + low`
 - [ ] Nếu render `top_rules_by_count`: tổng count == `len(findings)` (không double-count)

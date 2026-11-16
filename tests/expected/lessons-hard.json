@@ -1,0 +1,561 @@
+{
+  "fixture": "tests/fixtures/lessons-hard",
+  "must_find": [
+    {
+      "file": "internal/httpapi/middleware.go",
+      "rule_id": [
+        "BRUTE-FORCE",
+        "MISSING-RATE-LIMIT",
+        "OTHER-CWE-348",
+        "OTHER-CWE-290"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        25,
+        34
+      ],
+      "alt_files": [
+        "internal/httpapi/account.go"
+      ],
+      "why": "clientIP lấy phần đầu X-Forwarded-For của mọi kết nối, không đối chiếu TRUSTED_PROXIES (cấu hình có nhưng không dùng); khoá đăng nhập theo email + IP, trần theo IP và ngoại lệ IP văn phòng đều dựa vào giá trị này → đổi header mỗi request là thử mật khẩu không giới hạn, hoặc tự nhận IP văn phòng để bỏ tầng IP."
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "OTHER-CWE-204",
+        "OTHER-CWE-203",
+        "OTHER-CWE-200",
+        "BRUTE-FORCE"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        85,
+        123
+      ],
+      "why": "forgotPassword trả 404 'no account uses this email' cho email lạ, còn email có tài khoản trả 202 → dò được email nào có tài khoản. Đường login thì trả cùng một câu và chạy bcrypt giả."
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "OTHER-CWE-640",
+        "OTHER-CWE-644",
+        "OTHER-CWE-20",
+        "OTHER-CWE-598",
+        "OTHER-CWE-312",
+        "OTHER-CWE-256"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        85,
+        123
+      ],
+      "alt_files": [
+        "internal/repo/accounts.go"
+      ],
+      "why": "Link đặt lại mật khẩu dựng từ header Host của request (không dùng APP_BASE_URL như link mời) → gửi Host giả là nạn nhân nhận link trỏ về máy kẻ tấn công; token nằm ở query string, sống 24 giờ và bảng password_resets lưu token dạng chữ thay vì băm."
+    },
+    {
+      "file": "internal/platform/mail.go",
+      "rule_id": [
+        "BUSINESS-STATE-INTEGRITY",
+        "OTHER-CWE-252",
+        "OTHER-CWE-754",
+        "OTHER-CWE-391",
+        "OTHER-CWE-703"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        31,
+        36
+      ],
+      "alt_files": [
+        "internal/httpapi/account.go"
+      ],
+      "why": "Enqueue bỏ thư âm thầm khi hàng đợi đầy (select default); forgotPassword đã trừ lượt 'forgot:<email>' và ghi token trước khi đưa vào hàng, vẫn trả 202 → làm đầy hàng đợi là người dùng thật hết lượt mà không nhận được thư nào."
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "BUSINESS-STATE-INTEGRITY",
+        "RACE-CONDITION",
+        "OTHER-CWE-362",
+        "OTHER-CWE-460",
+        "OTHER-CWE-703"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        125,
+        157
+      ],
+      "alt_files": [
+        "internal/repo/accounts.go"
+      ],
+      "why": "resetPassword tiêu token (ConsumeReset) rồi mới băm và đổi mật khẩu bằng lệnh riêng, không transaction: mật khẩu dài hơn 72 byte làm bcrypt lỗi sau khi link đã cháy; không kiểm tài khoản còn hoạt động trong cùng bước."
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "AUTH-SESSION-LIFECYCLE",
+        "OTHER-CWE-613"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        125,
+        157
+      ],
+      "alt_files": [
+        "internal/repo/accounts.go"
+      ],
+      "why": "Đặt lại mật khẩu qua link chỉ UPDATE users.password_hash: không xoá phiên đang sống, không đóng các link đặt lại khác đang chờ → kẻ đã chiếm phiên vẫn ở trong sau khi chủ tài khoản đặt lại mật khẩu. changePassword thì làm đủ trong một transaction."
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "MISSING-RATE-LIMIT",
+        "BRUTE-FORCE",
+        "RESOURCE-EXHAUSTION"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        190,
+        214
+      ],
+      "why": "acceptInvite nhận token mời mà không qua Allow như login / forgot / reset, lại băm bcrypt mật khẩu trước khi kiểm token → gọi không giới hạn, mỗi lần tốn một lượt bcrypt và truy vấn DB, không cần đăng nhập."
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "RESOURCE-EXHAUSTION",
+        "SENSITIVE-DATA-IN-LOGS",
+        "OTHER-CWE-779",
+        "OTHER-CWE-770",
+        "OTHER-CWE-400"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        25,
+        77
+      ],
+      "alt_files": [
+        "internal/repo/accounts.go"
+      ],
+      "why": "Mỗi lượt đăng nhập sai và mỗi lượt bị khoá ghi một dòng security_events, không trần theo tài khoản / ngày; màn 'hoạt động bảo mật' chỉ hiện 50 dòng mới nhất → kẻ tấn công bơm dòng làm sự kiện thật chìm và bảng phình vô hạn."
+    },
+    {
+      "file": "internal/platform/mail.go",
+      "rule_id": [
+        "SENSITIVE-DATA-IN-LOGS",
+        "OTHER-CWE-532"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        38,
+        61
+      ],
+      "why": "send bọc lỗi SMTP kèm địa chỉ người nhận ('smtp <email>: <phản hồi máy chủ>') và run ghi nguyên lỗi đó vào log → email người dùng và nguyên văn phản hồi của máy chủ thư nằm trong log."
+    },
+    {
+      "file": "internal/platform/mail.go",
+      "rule_id": [
+        "OTHER-CWE-93",
+        "OTHER-CWE-74",
+        "OTHER-CWE-116",
+        "OTHER-CWE-451",
+        "OTHER-CWE-20"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        73,
+        81
+      ],
+      "alt_files": [
+        "internal/service/members.go"
+      ],
+      "why": "InviteBody và TwoFactorResetBody ghép tên công ty / tên hiển thị (người dùng tự đặt, không lọc xuống dòng) vào thân thư dạng chữ → tên có '\\n\\n...' chèn được một đoạn giả vào thư mời và thư thông báo bảo mật gửi từ địa chỉ thật của hệ thống."
+    },
+    {
+      "file": "internal/platform/config.go",
+      "rule_id": [
+        "VERBOSE-ERROR-DEBUG-MODE",
+        "OTHER-CWE-1188",
+        "OTHER-CWE-453",
+        "OTHER-CWE-489",
+        "OTHER-CWE-15"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        31,
+        66
+      ],
+      "alt_files": [
+        "cmd/server/main.go"
+      ],
+      "why": "Mọi kiểm bắt buộc của bản thật (https, TRUSTED_PROXIES, TLS tới DB) và việc tắt route /debug chỉ chạy khi APP_ENV đúng bằng 'prod'; 'production', 'Prod' hay để trống đều lặng lẽ thành chế độ dev → máy chủ thật chạy không kiểm và mở /debug/config (in DSN), /debug/pprof."
+    },
+    {
+      "file": "internal/service/members.go",
+      "rule_id": [
+        "RACE-CONDITION",
+        "BROKEN-ACCESS-CONTROL",
+        "OTHER-CWE-367"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        62,
+        90
+      ],
+      "why": "Remove đọc vai của người bị xoá rồi mới UPDATE / DELETE bằng các lệnh riêng không transaction, không điều kiện vai trong câu ghi → giữa hai bước người đó được nâng lên admin / owner mà vẫn bị cho nghỉ bởi người không đủ quyền; nhật ký ghi sai."
+    },
+    {
+      "file": "internal/service/members.go",
+      "rule_id": [
+        "AUTH-SESSION-LIFECYCLE",
+        "BROKEN-ACCESS-CONTROL",
+        "AUTHZ-PATH-PARITY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        92,
+        107
+      ],
+      "why": "Reinstate bật lại dòng members cũ (status = 'active'); Remove không xoá member_permissions (và special_grants) nên quyền riêng do owner cấp trước đây (finance.view, requests.approve) sống lại, trong khi admin bấm khôi phục không có quyền cấp các quyền đó."
+    },
+    {
+      "file": "internal/service/members.go",
+      "rule_id": [
+        "AUTHZ-PATH-PARITY",
+        "BROKEN-ACCESS-CONTROL",
+        "TENANT-ISOLATION",
+        "IDOR",
+        "AUTH-SESSION-LIFECYCLE"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        153,
+        172
+      ],
+      "why": "ResetTwoFactor tra người bị tác động chỉ theo (company_id, user_id), thiếu m.status = 'active' / u.active = 1 mà authn.Load dùng → admin công ty cũ gỡ xác minh hai bước của người đã nghỉ (đang hoạt động ở công ty khác) hoặc của tài khoản đã bị khoá."
+    },
+    {
+      "file": "internal/service/members.go",
+      "rule_id": [
+        "SENSITIVE-DATA-IN-LOGS",
+        "OTHER-CWE-532",
+        "BUSINESS-STATE-INTEGRITY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        174,
+        197
+      ],
+      "alt_files": [
+        "internal/audit/audit.go"
+      ],
+      "why": "UpdateProfile ghi nguyên patch từ client (số điện thoại, số tài khoản ngân hàng, khoá lạ và giá trị lồng tuỳ ý) vào bảng activity mà mọi admin đọc được; dòng nhật ký nằm trong cùng transaction với cột VARCHAR(1000) ở strict mode nên patch dài làm hỏng luôn thao tác chính."
+    },
+    {
+      "file": "internal/service/projects.go",
+      "rule_id": [
+        "BUSINESS-STATE-INTEGRITY",
+        "BROKEN-ACCESS-CONTROL",
+        "MASS-ASSIGNMENT",
+        "AUTHZ-PATH-PARITY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        47,
+        77
+      ],
+      "why": "Update lấy gốc từ Get (đã che budget_cents = 0 cho người không có finance.view) rồi UPDATE đủ cột → người có projects.edit đổi tên dự án là xoá trắng ngân sách; cùng người đó gửi budget_cents là ghi được số mình không được xem."
+    },
+    {
+      "file": "internal/service/projects.go",
+      "rule_id": [
+        "BUSINESS-STATE-INTEGRITY",
+        "RESOURCE-EXHAUSTION",
+        "OTHER-CWE-770",
+        "OTHER-CWE-400"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        79,
+        142
+      ],
+      "alt_files": [
+        "migrations/001_init.sql"
+      ],
+      "why": "Mỗi ghi chú ≤ 500 ký tự nhưng số ghi chú không trần; Close nối mọi ghi chú vào projects.closing_summary VARCHAR(4000) trong transaction (strict mode) → thành viên thường thêm vài chục ghi chú là owner không đóng được dự án, chỉ nhận lỗi chung."
+    },
+    {
+      "file": "internal/service/files.go",
+      "rule_id": [
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL",
+        "EXCESSIVE-DATA-EXPOSURE"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        33,
+        55
+      ],
+      "why": "AttachReceipt nhận file_id và chỉ kiểm tệp cùng công ty, rồi trả tên gốc + sha256 → người có quyền tạo đề nghị dò id tăng dần để đọc tên mọi tệp của công ty và gắn tệp người khác tải lên vào đề nghị của mình. Đường tải xuống (StorageKey) thì kiểm người tải / người liên quan."
+    },
+    {
+      "file": "internal/jobs/cleanup.go",
+      "rule_id": [
+        "BUSINESS-STATE-INTEGRITY",
+        "OTHER-CWE-672",
+        "OTHER-CWE-664"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        40,
+        73
+      ],
+      "alt_files": [
+        "internal/service/files.go"
+      ],
+      "why": "sweepUploads xoá mọi tệp status = 'temp' quá một ngày; AttachReceipt ghi receipt_file_id nhưng không đổi status sang 'attached' (không chỗ nào đổi) → chứng từ đã gắn vào đề nghị bị job dọn xoá cả dòng lẫn byte."
+    },
+    {
+      "file": "internal/service/requests.go",
+      "rule_id": [
+        "BROKEN-ACCESS-CONTROL",
+        "AUTHZ-PATH-PARITY",
+        "BUSINESS-STATE-INTEGRITY",
+        "IDOR"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        67,
+        83
+      ],
+      "why": "Approvers lọc danh sách người duyệt (đang hoạt động, có requests.approve hoặc owner, không phải chính mình) nhưng Submit nhận approver_id bất kỳ → gọi thẳng API chọn chính mình hoặc người thông đồng làm người duyệt; ở chế độ relaxed người đó duyệt được."
+    },
+    {
+      "file": "internal/service/settings.go",
+      "rule_id": [
+        "BROKEN-ACCESS-CONTROL",
+        "AUTHZ-PATH-PARITY",
+        "BUSINESS-STATE-INTEGRITY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        65,
+        73
+      ],
+      "why": "Ở chế độ strict chỉ owner duyệt đề nghị (Requests.Decide), nhưng SetApprovalMode cho admin chuyển strict → relaxed; admin hạ chế độ, tự duyệt, rồi bật lại. SetRetention và SetMonthlyLimit thì đòi owner."
+    },
+    {
+      "file": "internal/service/settings.go",
+      "rule_id": [
+        "RACE-CONDITION",
+        "BUSINESS-STATE-INTEGRITY",
+        "OTHER-CWE-362"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        85,
+        106
+      ],
+      "why": "SetMonthlyLimit đọc giá trị cũ, UPDATE, rồi ghi setting_history bằng ba lệnh rời, không transaction, không khoá → hai request song song ghi 'giá trị cũ' sai vào lịch sử. Hàm change dùng cho các cấu hình khác thì có FOR UPDATE."
+    },
+    {
+      "file": "internal/service/imports.go",
+      "rule_id": [
+        "AUTHZ-PATH-PARITY",
+        "BROKEN-ACCESS-CONTROL",
+        "EXCESSIVE-AGENCY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        25,
+        75
+      ],
+      "why": "Nhập chi phí chỉ đòi expenses.write nhưng categoryFor tự tạo danh mục khi tên chưa có: không kiểm CanManageSettings, không trần 200, không nhật ký như Categories.Create → người chỉ có quyền ghi dữ liệu (hoặc agent bị dẫn bởi tệp ngoài) tạo tới 1.000 danh mục rác mỗi lượt vào cấu hình dùng chung."
+    },
+    {
+      "file": "internal/service/ops.go",
+      "rule_id": [
+        "OTHER-CWE-778",
+        "SENSITIVE-DATA-IN-LOGS",
+        "AUTHZ-PATH-PARITY",
+        "OTHER-CWE-223"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        50,
+        68
+      ],
+      "why": "Requests cho vai vận hành đọc đề nghị của công ty bất kỳ mà không ghi ops_access_log; Overview cùng file thì gọi audit.CrossTenant trước khi đọc → xem chéo tenant không để dấu."
+    },
+    {
+      "file": "internal/service/activity.go",
+      "rule_id": [
+        "RESOURCE-EXHAUSTION",
+        "OTHER-CWE-400",
+        "OTHER-CWE-770"
+      ],
+      "min_severity": "LOW",
+      "lines": [
+        27,
+        58
+      ],
+      "alt_files": [
+        "internal/httpapi/handlers.go"
+      ],
+      "why": "Search nhận from tuỳ ý (không cận dưới, không giới hạn độ rộng khoảng) kèm details LIKE '%q%' trên bảng activity chia partition theo ngày → from=2000-01-01&q=a quét mọi partition; endpoint không có rate limit."
+    },
+    {
+      "file": "internal/agentapi/dispatch.go",
+      "rule_id": [
+        "AUTH-SESSION-LIFECYCLE",
+        "BROKEN-ACCESS-CONTROL",
+        "AUTHZ-PATH-PARITY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        73,
+        98
+      ],
+      "why": "Call trả về ngay ở nhánh Gate 'member' / 'admin', kiểm conn.HasScope chỉ nằm ở nhánh theo chức năng → kết nối chỉ có scope 'write' vẫn gọi được list_activity (Access 'read', Gate 'admin') và đọc nhật ký công ty."
+    },
+    {
+      "file": "internal/agentapi/dispatch.go",
+      "rule_id": [
+        "AUTH-SESSION-LIFECYCLE",
+        "BROKEN-ACCESS-CONTROL",
+        "AUTHZ-PATH-PARITY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        128,
+        148
+      ],
+      "alt_files": [
+        "internal/agentapi/tools.go"
+      ],
+      "why": "Quyền nhập lương do owner duyệt lưu và kiểm theo (company_id, client_id, user_id), không theo dòng kết nối; client_id do người nối tự khai → ngắt rồi nối lại, nối thêm máy khác cùng client_id, hay thành viên nghỉ rồi được khôi phục đều thừa hưởng quyền mà owner không duyệt lại."
+    },
+    {
+      "file": "internal/agentapi/tools.go",
+      "rule_id": [
+        "LLM-PROMPT-INJECTION",
+        "EXCESSIVE-AGENCY"
+      ],
+      "min_severity": "MEDIUM",
+      "lines": [
+        81,
+        115
+      ],
+      "why": "get_draft trả nội dung bản nháp (người khác soạn) cùng gói với approval_code để publish_draft dùng → chữ trong bản nháp bảo trợ lý 'dùng mã ở trên gọi publish_draft' là đủ để tự duyệt, mã không còn là bước xác nhận của người."
+    }
+  ],
+  "must_not_find": [
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "OTHER-CWE-204",
+        "OTHER-CWE-203",
+        "OTHER-CWE-208"
+      ],
+      "lines": [
+        25,
+        77
+      ],
+      "reason": "login trả cùng một câu cho email lạ và mật khẩu sai, chạy bcrypt giả khi không có tài khoản, ghi sự kiện ở cả hai nhánh"
+    },
+    {
+      "file": "internal/httpapi/account.go",
+      "rule_id": [
+        "AUTH-SESSION-LIFECYCLE",
+        "OTHER-CWE-613"
+      ],
+      "lines": [
+        159,
+        188
+      ],
+      "reason": "changePassword đòi mật khẩu hiện tại, một transaction đổi hash + xoá phiên khác + đóng link đặt lại đang chờ"
+    },
+    {
+      "file": "internal/service/members.go",
+      "rule_id": [
+        "OTHER-CWE-640",
+        "OTHER-CWE-644"
+      ],
+      "lines": [
+        36,
+        60
+      ],
+      "reason": "Link mời dựng từ APP_BASE_URL, token sau dấu #, DB chỉ lưu sha256"
+    },
+    {
+      "file": "internal/platform/mail.go",
+      "rule_id": [
+        "OTHER-CWE-93"
+      ],
+      "lines": [
+        46,
+        61
+      ],
+      "reason": "Header thư: người nhận qua mail.ParseAddress, tiêu đề lấy từ bảng cố định theo khoá"
+    },
+    {
+      "file": "internal/service/settings.go",
+      "rule_id": [
+        "RACE-CONDITION"
+      ],
+      "lines": [
+        35,
+        63
+      ],
+      "reason": "change đọc giá trị cũ bằng SELECT ... FOR UPDATE rồi ghi cấu hình và lịch sử trong cùng transaction"
+    },
+    {
+      "file": "internal/service/settings.go",
+      "rule_id": "SQL-INJECTION",
+      "lines": [
+        35,
+        63
+      ],
+      "reason": "Tên cột lấy từ allowlist map settingColumns, giá trị dùng placeholder"
+    },
+    {
+      "file": "internal/service/files.go",
+      "rule_id": [
+        "IDOR",
+        "BROKEN-ACCESS-CONTROL"
+      ],
+      "lines": [
+        57,
+        72
+      ],
+      "reason": "StorageKey lọc theo công ty và người tải / người gửi / người duyệt của đề nghị hoặc quyền finance.view"
+    },
+    {
+      "file": "internal/service/ops.go",
+      "rule_id": [
+        "OTHER-CWE-778"
+      ],
+      "lines": [
+        35,
+        48
+      ],
+      "reason": "Overview ghi ops_access_log trước khi đọc dữ liệu của tenant"
+    },
+    {
+      "file": "internal/agentapi/tools.go",
+      "rule_id": "LLM-PROMPT-INJECTION",
+      "lines": [
+        54,
+        71
+      ],
+      "reason": "list_drafts bọc tiêu đề trong khối external_data đã escape, khoá nói rõ nguồn, không kèm mã hay cờ ra lệnh"
+    }
+  ],
+  "clean_files": [
+    "internal/service/categories.go",
+    "internal/agentapi/result.go",
+    "internal/platform/secrets.go"
+  ]
+}
