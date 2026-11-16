@@ -70,7 +70,17 @@ Repo có sẵn các bộ code mẫu cài lỗi biết trước. Mỗi bộ có t
 | Bắt được | **54/55** lỗi cài sẵn |
 | Báo nhầm bẫy an toàn | **0** |
 
-Kết quả đo v0.8 trên cả 13 bộ: xem bảng dưới, do người bảo trì cập nhật.
+v0.8 trên 4 bộ SaaS (Claude Opus 5.5, mỗi cấu hình 1 lượt, 16/11/2026):
+
+| Bộ (số lỗi cài sẵn) | Model không skill | vbsec v0.7 | vbsec v0.8 |
+|---|---|---|---|
+| saas-hard (17) | 17 | 11 | 17 (16 khi có `--context`) |
+| ledger-hard (13) | 12 | 7 | 12 |
+| misc-hard (3) | 3 | 0 | 3 (có `--context`) |
+| lessons-hard (28) | 15–18 | 10 | 19 |
+| **Tổng (61)** | **47–50** | **28** | **51** |
+
+Đọc cho đúng: trên bộ mẫu nhỏ, model mạnh không skill đã tìm được phần lớn lỗi, nên v0.8 chỉ hơn vài điểm; khác biệt lớn là so với v0.7, bản cũ bỏ mọi lỗi ngoài 21 mã. Trên một codebase thật nhiều tenant có máy chủ MCP (riêng tư, không công bố), cùng model không skill bắt 1 / 25 điểm Cao / Vừa đã biết, vbsec v0.8 kèm file luật dự án bắt 21,5 / 25.
 
 <!-- v0.8 bench -->
 
