@@ -167,7 +167,7 @@ Nếu có chunk failed → downgrade verdict 1 cấp (PASS→WARN, WARN→FAIL) 
 ### Step L10 — Cleanup
 
 ```bash
-rm -rf .vbsec-tmp    # cleanup sub-agent temp files (luôn xóa)
+rm -f .vbsec-tmp/*.md && rmdir .vbsec-tmp    # chỉ chứa file findings-*.md phẳng; không cần xoá đệ quy (nhiều máy chặn rm -r -f)
 # KHÔNG xóa vbsec-reports/ — đó là persisted output cho user
 ```
 

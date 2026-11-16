@@ -225,7 +225,7 @@ Sau khi tất cả sub-agents return:
 4. **Merge SCA findings** (nếu `--sca`): main agent tự chạy [`../references/dependency-scan.md`](dependency-scan.md) 1 lần (không qua sub-agent), thêm findings `VULNERABLE-DEPENDENCY` vào cùng danh sách trước khi render.
 5. **Translate**: Nếu `lang=vi`, dịch `issue` và `fix` sang tiếng Việt theo phrase template trong i18n file
 6. **Render report** theo `output-format.md`
-7. **Cleanup**: `rm -rf .vbsec-tmp/` sau khi done
+7. **Cleanup**: `rm -f .vbsec-tmp/*.md && rmdir .vbsec-tmp` sau khi done (không dùng xoá đệ quy)
 
 ## Edge cases
 

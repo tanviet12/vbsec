@@ -179,7 +179,7 @@ Nếu phải render report khi còn chunk chưa quét xong (context đầy, user
 ### Step L10 — Cleanup
 
 ```bash
-rm -rf .vbsec-tmp    # cleanup temp files (luôn xóa)
+rm -f .vbsec-tmp/*.md && rmdir .vbsec-tmp    # chỉ chứa file .md phẳng; không cần xoá đệ quy
 # KHÔNG xóa vbsec-reports/ — đó là persisted output cho user
 ```
 
