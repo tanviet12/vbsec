@@ -23,7 +23,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXPECTED_DIR = os.path.join(ROOT, "tests", "expected")
+EXPECTED_DIR = os.environ.get("VBSEC_EXPECTED_DIR", os.path.join(ROOT, "tests", "expected"))
 SEVERITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 RULES_DIR = os.path.join(ROOT, "skills", "vbs-scan-security", "rules", "generic")
 
