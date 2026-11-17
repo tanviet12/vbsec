@@ -70,9 +70,23 @@ Repo có sẵn các bộ code mẫu cài lỗi biết trước. Mỗi bộ có t
 | Bắt được | **54/55** lỗi cài sẵn |
 | Báo nhầm bẫy an toàn | **0** |
 
-v0.8 trên 4 bộ SaaS (Claude Opus 5.5, mỗi cấu hình 1 lượt, 16/11/2026):
+Kết quả v0.8, đo ngày 16/11/2026. **Mọi cột dùng cùng một model là Claude Opus 5.5**, chỉ khác có dùng vbsec hay không; mỗi cấu hình chạy 1 lượt.
 
-| Bộ (số lỗi cài sẵn) | Model không skill | vbsec v0.7 | vbsec v0.8 |
+**1. Mã thật** — một codebase SaaS đang chạy, nhiều công ty dùng chung, có máy chủ MCP cho trợ lý AI, khoảng 90 file Go. Đáp án là 25 lỗi mức Cao / Vừa mà các đợt soát bảo mật chuyên sâu (nhiều lượt, kèm tài liệu thiết kế) đã tìm ra trước đó; vbsec quét lại đúng bản mã còn các lỗi ấy.
+
+| | Opus không skill | vbsec v0.7 | Opus + vbsec v0.8 (kèm `--context`) |
+|---|---|---|---|
+| Lỗi mức Cao (5) | 0 | 0 | **5** |
+| Lỗi mức Vừa (20) | 1 | 0 | **16,5** |
+| **Tổng (25)** | **1 (4%)** | **0** \* | **21,5 (86%)** |
+
+\* v0.7: hai lượt quét cổng phát hành cùng giai đoạn, không bắt được điểm Cao / Vừa nào trong danh sách.
+
+Không có vbsec, model đọc hết mã nhưng kết luận "không thấy lỗi nghiêm trọng"; nó bỏ qua prompt injection qua MCP, tool để AI tự điền xác nhận, quyền vòng qua đường sao chép, lỗi ghi lại dữ liệu đã chốt. Đây là nhóm lỗi vbsec v0.8 được thiết kế để bắt.
+
+**2. Bộ test mẫu trong repo** (4 bộ SaaS mới, 61 lỗi cài sẵn, mỗi lỗi nằm gọn trong 1–3 file):
+
+| Bộ (số lỗi cài sẵn) | Opus không skill | Opus + vbsec v0.7 | Opus + vbsec v0.8 |
 |---|---|---|---|
 | saas-hard (17) | 17 | 11 | 17 (16 khi có `--context`) |
 | ledger-hard (13) | 12 | 7 | 12 |
@@ -80,7 +94,7 @@ v0.8 trên 4 bộ SaaS (Claude Opus 5.5, mỗi cấu hình 1 lượt, 16/11/2026
 | lessons-hard (28) | 15–18 | 10 | 19 |
 | **Tổng (61)** | **47–50** | **28** | **51** |
 
-Đọc cho đúng: trên bộ mẫu nhỏ, model mạnh không skill đã tìm được phần lớn lỗi, nên v0.8 chỉ hơn vài điểm; khác biệt lớn là so với v0.7, bản cũ bỏ mọi lỗi ngoài 21 mã.
+Bộ mẫu nhỏ, lỗi nằm gần nhau, nên model mạnh không skill cũng tìm được nhiều; v0.8 vẫn cao nhất và gần gấp đôi v0.7. Ngoài số lỗi, vbsec còn cho báo cáo lưu file theo chuẩn (mức độ, cách sửa, JSON cho CI) thay vì trả lời trong khung chat. Khoảng cách thật hiện ra ở mã lớn nhiều tầng như phần 1.
 
 <!-- v0.8 bench -->
 

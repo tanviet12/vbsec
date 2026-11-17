@@ -70,9 +70,23 @@ The repo ships sample apps with known, planted bugs. Each set also has traps tha
 | Bugs caught | **54/55** |
 | False alarms on safe traps | **0** |
 
-v0.8 on the 4 SaaS sets (Claude Opus 5.5, 1 run each, 2026-11-16):
+v0.8 results, measured 2026-11-16. **Every column uses the same model, Claude Opus 5.5**; the only difference is whether vbsec is used. One run per configuration.
 
-| Set (planted bugs) | Model, no skill | vbsec v0.7 | vbsec v0.8 |
+**1. Real code** — a production multi-tenant SaaS codebase with an MCP server for an AI assistant, about 90 Go files. The answer key is 25 High / Medium issues found earlier by in-depth security reviews (several passes, with design docs); vbsec re-scanned the exact code that still had them.
+
+| | Opus, no skill | vbsec v0.7 | Opus + vbsec v0.8 (with `--context`) |
+|---|---|---|---|
+| High issues (5) | 0 | 0 | **5** |
+| Medium issues (20) | 1 | 0 | **16.5** |
+| **Total (25)** | **1 (4%)** | **0** \* | **21.5 (86%)** |
+
+\* v0.7: two release-gate scans over the same period caught none of these High / Medium issues.
+
+Without vbsec, the model read all the code and concluded "no serious issues"; it missed prompt injection through MCP, tools where the AI fills in its own confirmation, permissions leaking through a copy path, and writes into already-closed records. These are the classes vbsec v0.8 was built to catch.
+
+**2. Test sets in this repo** (4 new SaaS sets, 61 planted bugs, each within 1–3 files):
+
+| Set (planted bugs) | Opus, no skill | Opus + vbsec v0.7 | Opus + vbsec v0.8 |
 |---|---|---|---|
 | saas-hard (17) | 17 | 11 | 17 (16 with `--context`) |
 | ledger-hard (13) | 12 | 7 | 12 |
@@ -80,7 +94,7 @@ v0.8 on the 4 SaaS sets (Claude Opus 5.5, 1 run each, 2026-11-16):
 | lessons-hard (28) | 15–18 | 10 | 19 |
 | **Total (61)** | **47–50** | **28** | **51** |
 
-Honest reading: on small synthetic sets a frontier model with no skill already finds most of these bugs, so v0.8 is only a few points ahead of it; the large gain is over v0.7, whose closed rule list dropped anything outside 21 IDs.
+The sets are small and each bug sits close to its cause, so a strong model with no skill finds many of them too; v0.8 still scores highest and nearly doubles v0.7. Beyond the count, vbsec gives a saved, standard report (severity, fix, JSON for CI) instead of a chat answer. The real gap shows on larger multi-layer code, as in part 1.
 
 <!-- v0.8 bench -->
 
